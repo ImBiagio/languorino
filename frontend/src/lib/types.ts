@@ -79,3 +79,139 @@ export interface Profile {
 
 /** I campi che si salvano con PATCH /api/profile (le preferenze hanno la loro API). */
 export type ProfileDraft = Omit<Profile, 'age' | 'onboarding_completed' | 'preferences'>
+
+/* ---------------------------------------------------------------- ricette -- */
+
+export type Category =
+  | 'produce'
+  | 'meat'
+  | 'fish'
+  | 'dairy'
+  | 'bakery'
+  | 'pantry'
+  | 'spices'
+  | 'frozen'
+  | 'drinks'
+  | 'other'
+export type Unit =
+  | 'g'
+  | 'kg'
+  | 'ml'
+  | 'l'
+  | 'pz'
+  | 'tbsp'
+  | 'tsp'
+  | 'cup'
+  | 'pinch'
+  | 'clove'
+  | 'slice'
+  | 'bunch'
+  | 'can'
+  | 'to_taste'
+export type Difficulty = 'easy' | 'medium' | 'hard'
+
+export interface Ingredient {
+  id: UUID
+  /** Nella lingua dell'interfaccia quando il catalogo ce l'ha. */
+  name: string
+  category: Category
+  allergens: Allergen[]
+  default_unit: Unit
+  grams_per_piece: number | null
+  staple: boolean
+  /** Aggiunto dall'utente: reparto e allergeni non curati. */
+  custom: boolean
+}
+
+export interface RecipeLine {
+  id: number
+  ingredient: Ingredient
+  /** Decimale serializzato; `null` per "q.b." o quando non c'e'. */
+  quantity: string | null
+  unit: Unit
+  note: string
+  optional: boolean
+}
+
+/** Una preferenza del profilo che la ricetta tocca (allergia, intolleranza, antipatia). */
+export interface RecipeWarning {
+  id: UUID
+  kind: PreferenceKind
+  label: string
+  allergen: Allergen | ''
+}
+
+export interface RecipeSummary {
+  id: UUID
+  title: string
+  servings: number
+  total_minutes: number
+  difficulty: Difficulty
+  meal_slots: MealSlot[]
+  tags: string[]
+  allergens: Allergen[]
+  warnings: RecipeWarning[]
+  /** Reparto dell'ingrediente principale: sceglie il disegno della card. */
+  main_category: Category
+  ingredient_count: number
+  in_cookbook: boolean
+  updated_at: string
+}
+
+export interface Recipe extends RecipeSummary {
+  description: string
+  prep_minutes: number
+  cook_minutes: number
+  steps: string[]
+  keeps_days: number | null
+  freezable: boolean
+  ingredients: RecipeLine[]
+  source: string
+  status: 'draft' | 'confirmed'
+  created_at: string
+}
+
+/** Una riga del form: dal catalogo (`ingredient_id`) o scritta a mano (`name`). */
+export interface RecipeLinePayload {
+  ingredient_id?: UUID | null
+  name?: string
+  quantity: string | null
+  unit: Unit
+  note: string
+  optional: boolean
+}
+
+export type RecipePayload = Pick<
+  Recipe,
+  | 'title'
+  | 'description'
+  | 'servings'
+  | 'prep_minutes'
+  | 'cook_minutes'
+  | 'difficulty'
+  | 'meal_slots'
+  | 'steps'
+  | 'keeps_days'
+  | 'freezable'
+  | 'tags'
+> & { ingredients: RecipeLinePayload[] }
+
+export interface Tag {
+  id: UUID
+  name: string
+  recipe_count: number
+}
+
+export interface Paginated<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
+export interface RecipeFilters {
+  q?: string
+  tag?: string[]
+  max_minutes?: number
+  slot?: MealSlot
+}

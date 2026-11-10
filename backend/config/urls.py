@@ -20,6 +20,7 @@ urlpatterns = [
     path("api/i18n/language", LanguageView.as_view(), name="i18n-language"),
     path("api/", include("apps.users.urls")),
     path("api/", include("apps.profiles.urls")),
+    path("api/", include("apps.recipes.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/docs/",

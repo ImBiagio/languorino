@@ -67,12 +67,13 @@ backend/
 └── apps/
     ├── core/            BaseModel, methods (token, hash, mail), i18n, task mail
     ├── users/           User custom + auth JWT + mail dell'account
-    └── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE)
+    ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE)
+    └── recipes/         ricette, tag, catalogo ingredienti (catalog.py) e riconoscimento dei nomi
 frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
 ├── lib/                 client HTTP, auth, i18n, format, tipi
 ├── components/          UI M3, layout, dialog di conferma
-└── features/            auth · account · home · onboarding · profile
+└── features/            auth · account · home · onboarding · profile · recipes
 deploy/                  compose di produzione, Caddy interno, edge condiviso
 docs/decisions/          ADR (modello in 0000-modello.md)
 ```
@@ -87,6 +88,9 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET/PATCH /api/me` | account (nome visibile, lingua) |
 | `GET/PATCH /api/profile` · `POST /api/profile/complete` | profilo alimentare e fine del wizard |
 | `GET/POST /api/profile/preferences` · `DELETE …/{id}` | gusti, antipatie, allergie, intolleranze |
+| `GET /api/ingredients?q=` | suggerimenti dal catalogo (e dagli ingredienti propri) |
+| `GET/POST /api/recipes` (`?q=`, `?tag=`, `?slot=`, `?max_minutes=`, `?difficulty=`, `?in_cookbook=`) · `GET/PATCH/DELETE …/{id}` | ricettario, con allergeni e avvisi dal profilo |
+| `GET /api/tags` · `DELETE /api/tags/{id}` | tag con il numero di ricette |
 | `GET /api/i18n/catalog` · `POST /api/i18n/language` | traduzioni del frontend e lingua scelta |
 | `GET /api/health` | healthcheck del container |
 
@@ -108,6 +112,12 @@ docker compose run --rm --no-deps frontend sh -c "npx tsc -b && npx eslint src -
 
 ```bash
 docker compose run --rm --no-deps backend python manage.py createsuperuser
+```
+
+Dopo una modifica a `backend/apps/recipes/catalog.py`:
+
+```bash
+docker compose exec backend python manage.py load_catalog
 ```
 
 Traduzioni: estrai, traduci in `backend/locale/en/LC_MESSAGES/*.po`, ricompila

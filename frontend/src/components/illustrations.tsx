@@ -4,7 +4,22 @@
 
 import { useId } from 'react'
 
-type Tone = 'light' | 'dark'
+type Tone = 'light' | 'dark' | 'strong'
+
+export type DoodleKind =
+  | 'carrot'
+  | 'leaf'
+  | 'fork'
+  | 'spoon'
+  | 'citrus'
+  | 'cherry'
+  | 'cup'
+  | 'wheat'
+  | 'fish'
+  | 'drumstick'
+  | 'bread'
+  | 'cheese'
+  | 'snowflake'
 
 /** Colori dei doodle: su fondo chiaro toni pieni, su fondo blu toni chiari. */
 const TONES: Record<Tone, { line: string; warm: string; green: string; soft: string }> = {
@@ -20,20 +35,27 @@ const TONES: Record<Tone, { line: string; warm: string; green: string; soft: str
     green: 'var(--illo-green-70)',
     soft: 'var(--illo-blue-50)',
   },
+  // Per i disegni grandi su un fondo tenue (le tessere delle ricette).
+  strong: {
+    line: 'var(--illo-blue-50)',
+    warm: 'var(--illo-orange-60)',
+    green: 'var(--illo-green-50)',
+    soft: '#ffffff',
+  },
 }
 
 /**
  * Un doodle da 24×24: tratti arrotondati, come le Material Symbols, ma
  * colorati. `x`, `y` e `rotate` lo piazzano nella tessera del motivo.
  */
-function Doodle({
+export function Doodle({
   kind,
   x,
   y,
   rotate = 0,
   colors,
 }: {
-  kind: 'carrot' | 'leaf' | 'fork' | 'spoon' | 'citrus' | 'cherry' | 'cup' | 'wheat'
+  kind: DoodleKind
   x: number
   y: number
   rotate?: number
@@ -90,6 +112,40 @@ function Doodle({
             stroke={colors.line}
           />
         </>
+      )}
+      {kind === 'fish' && (
+        <>
+          <path d="M3 12c3-5 9-6 14-2l4-3v10l-4-3c-5 4-11 3-14-2z" fill={colors.line} />
+          <circle cx="8" cy="11" r="1.2" fill={colors.soft} />
+        </>
+      )}
+      {kind === 'drumstick' && (
+        <>
+          <path d="M13 3a7 7 0 0 1 5 12l-3 1-3 3-3-3 1-3A7 7 0 0 1 13 3z" fill={colors.warm} />
+          <path d="M9 16 5 20" {...stroke} stroke={colors.line} strokeWidth={3} />
+          <circle cx="4.5" cy="20.5" r="1.8" fill={colors.line} />
+        </>
+      )}
+      {kind === 'bread' && (
+        <>
+          <path d="M4 12a8 6 0 0 1 16 0v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill={colors.warm} />
+          <path d="M8 10.5l2 3M12 10l2 3M16 10.5l1 2" {...stroke} stroke={colors.soft} />
+        </>
+      )}
+      {kind === 'cheese' && (
+        <>
+          <path d="M3 17 19 7l2 2v10H3z" fill={colors.warm} />
+          <circle cx="9" cy="15.5" r="1.4" fill={colors.soft} />
+          <circle cx="15" cy="14" r="1.8" fill={colors.soft} />
+          <circle cx="17.5" cy="17.5" r="1" fill={colors.soft} />
+        </>
+      )}
+      {kind === 'snowflake' && (
+        <path
+          d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5"
+          {...stroke}
+          stroke={colors.line}
+        />
       )}
       {kind === 'wheat' && (
         <path
@@ -182,6 +238,82 @@ export function EmptyPlateIllustration({ className }: { className?: string }) {
       <circle cx="186" cy="34" r="5" fill="var(--illo-orange-70)" />
       <circle cx="34" cy="116" r="4" fill="var(--illo-green-70)" />
       <path d="M180 120c4-6 10-8 16-6-2 6-8 9-16 6z" fill="var(--illo-green-70)" />
+    </svg>
+  )
+}
+
+/* ---------------------------------------------------------- ricette ---- */
+
+const RECIPE_ART: Record<string, { kind: DoodleKind; background: string }> = {
+  produce: { kind: 'carrot', background: 'var(--success-container)' },
+  meat: { kind: 'drumstick', background: 'var(--illo-orange-90)' },
+  fish: { kind: 'fish', background: 'var(--illo-blue-90)' },
+  dairy: { kind: 'cheese', background: 'var(--warning-container)' },
+  bakery: { kind: 'bread', background: 'var(--warning-container)' },
+  pantry: { kind: 'wheat', background: 'var(--illo-blue-95)' },
+  spices: { kind: 'leaf', background: 'var(--success-container)' },
+  frozen: { kind: 'snowflake', background: 'var(--illo-blue-90)' },
+  drinks: { kind: 'cup', background: 'var(--tertiary-container)' },
+  other: { kind: 'spoon', background: 'var(--surface-container-high)' },
+}
+
+/**
+ * La "foto" di una ricetta che non ne ha una: il fondo e il disegno del suo
+ * ingrediente principale, su una trama leggera di doodle.
+ */
+export function RecipeArt({
+  category,
+  size = 64,
+  className,
+}: {
+  category: string
+  /** Lato del disegno al centro, in px. */
+  size?: number
+  className?: string
+}) {
+  const art = RECIPE_ART[category] ?? RECIPE_ART.other
+  return (
+    <div
+      aria-hidden
+      className={className ?? 'relative h-full w-full overflow-hidden'}
+      style={{ background: art.background }}
+    >
+      <FoodPattern opacity={0.22} />
+      <svg
+        viewBox="0 0 24 24"
+        width={size}
+        height={size}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 drop-shadow-sm"
+      >
+        <Doodle kind={art.kind} x={0} y={0} colors={TONES.strong} />
+      </svg>
+    </div>
+  )
+}
+
+/** Un ricettario aperto con qualche doodle sulle pagine: il ricettario vuoto. */
+export function CookbookIllustration({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 220 140" className={className ?? 'h-32 w-auto'} fill="none">
+      <ellipse cx="110" cy="124" rx="78" ry="8" fill="var(--illo-blue-95)" />
+      {/* copertina */}
+      <path d="M22 30h176v86a6 6 0 0 1-6 6H28a6 6 0 0 1-6-6z" fill="var(--illo-blue-50)" />
+      {/* pagine */}
+      <path d="M30 24c28-8 56-6 78 6v88c-22-12-50-14-78-6z" fill="#ffffff" />
+      <path d="M190 24c-28-8-56-6-78 6v88c22-12 50-14 78-6z" fill="#ffffff" />
+      <path d="M110 30v88" stroke="var(--illo-blue-90)" strokeWidth="3" />
+      {/* righe di testo */}
+      <g stroke="var(--illo-blue-90)" strokeWidth="3" strokeLinecap="round">
+        <path d="M44 84h48M44 94h40M128 82h46M128 92h34M128 102h42" />
+      </g>
+      <g transform="translate(50 40) scale(1.6)">
+        <Doodle kind="carrot" x={0} y={0} colors={TONES.strong} />
+      </g>
+      <g transform="translate(134 38) scale(1.5)">
+        <Doodle kind="cherry" x={0} y={0} colors={TONES.strong} />
+      </g>
+      <circle cx="198" cy="22" r="5" fill="var(--illo-orange-70)" />
+      <path d="M14 112c4-6 10-8 16-6-2 6-8 9-16 6z" fill="var(--illo-green-70)" />
     </svg>
   )
 }

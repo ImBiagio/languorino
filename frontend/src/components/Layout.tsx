@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { gettext } from '../lib/i18n'
 import { Icon } from './ui'
@@ -15,10 +16,17 @@ interface Destination {
 /** Poche sezioni, sempre tutte visibili: rail su desktop, barra in basso su mobile. */
 const DESTINATIONS: Destination[] = [
   { to: '/', label: gettext('Oggi'), icon: 'today', end: true },
+  { to: '/ricette', label: gettext('Ricette'), icon: 'menu_book' },
   { to: '/profilo', label: gettext('Profilo'), icon: 'person' },
 ]
 
 export function AppLayout() {
+  // Ogni pagina nuova parte dall'alto: senza, dopo "Salva" in fondo a un form
+  // il dettaglio si apriva gia' scrollato.
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [pathname])
   // Contatori da mostrare sulle voci (es. non letti): percorso -> numero.
   const badges: Record<string, number> = {}
   return (

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.users",
     "apps.profiles",
+    "apps.recipes",
 ]
 
 MIDDLEWARE = [
