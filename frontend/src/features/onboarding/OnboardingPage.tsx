@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 
 import { useCompleteOnboarding, useProfile, useUpdateProfile } from '../../api/hooks'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
@@ -68,6 +68,26 @@ function Wizard({ profile }: { profile: Profile }) {
           max={SECTIONS.length}
           label={gettext('Avanzamento del profilo')}
         />
+
+        {step === 0 && (
+          <Link
+            to="/intervista"
+            className="state mt-5 flex items-center gap-4 rounded-card bg-primary-container p-4 text-on-primary-container"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-primary text-on-primary">
+              <Icon name="forum" size={24} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-body-large font-medium">
+                {gettext('Preferisci raccontarmelo?')}
+              </span>
+              <span className="block text-body-small opacity-80">
+                {gettext('Due chiacchiere, anche a voce, al posto delle domande')}
+              </span>
+            </span>
+            <Icon name="chevron_right" size={22} />
+          </Link>
+        )}
 
         <section className="card-elevated mt-5 overflow-hidden bg-surface">
           {/* Testata a doodle con l'icona del passo che ci si appoggia sopra. */}

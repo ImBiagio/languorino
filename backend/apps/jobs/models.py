@@ -22,6 +22,7 @@ class Job(BaseModel):
         COOK_IDEAS = "cook_ideas", _("Idee per cucinare")
         NUTRITIONIST_PLAN = "nutritionist_plan", _("Leggi il piano del nutrizionista")
         RECIPE_IMAGE = "recipe_image", _("Disegna la ricetta")
+        INTERVIEW = "interview", _("Intervista per il profilo")
 
     class Status(models.TextChoices):
         QUEUED = "queued", _("In coda")
@@ -79,4 +80,9 @@ class JobFile(BaseModel):
             "image/heic": ".heic",
             "image/heif": ".heif",
             "application/pdf": ".pdf",
+            "audio/webm": ".webm",
+            "audio/ogg": ".ogg",
+            "audio/wav": ".wav",
+            "audio/mp3": ".mp3",
+            "audio/mp4": ".m4a",
         }.get(self.content_type, "")

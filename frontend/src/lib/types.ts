@@ -282,7 +282,13 @@ export interface ImportedRecipeDraft {
 
 export interface Job {
   id: UUID
-  kind: 'import_recipes' | 'fridge_scan' | 'cook_ideas' | 'nutritionist_plan' | 'recipe_image'
+  kind:
+    | 'import_recipes'
+    | 'fridge_scan'
+    | 'cook_ideas'
+    | 'nutritionist_plan'
+    | 'recipe_image'
+    | 'interview'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]
@@ -296,6 +302,12 @@ export interface Job {
     ideas?: RecipeSummary[]
     /** Piano del nutrizionista: la bozza creata dalla lettura. */
     nutritionist_plan?: UUID
+    /** Intervista: la risposta, la trascrizione della voce e le proposte. */
+    reply?: string
+    heard?: string
+    updates?: Partial<ProfileDraft>
+    preferences?: { kind: PreferenceKind; label: string; allergen: string }[]
+    done?: boolean
   }
   error: string
   files: { id: UUID; content_type: string; original_name: string; size: number }[]

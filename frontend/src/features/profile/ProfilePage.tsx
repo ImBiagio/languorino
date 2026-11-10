@@ -22,6 +22,21 @@ export function ProfilePage() {
       <div className="grid gap-4 px-5 md:px-8">
         <ErrorBanner error={error} />
         {!profile && !error && <RowsSkeleton rows={4} />}
+        <Link
+          to="/intervista"
+          className="state flex items-center gap-4 rounded-card bg-primary-container p-5 text-on-primary-container"
+        >
+          <Icon name="forum" size={24} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-body-large font-medium">
+              {gettext('Aggiorna il profilo chiacchierando')}
+            </span>
+            <span className="block text-body-small opacity-80">
+              {gettext('Raccontami cosa è cambiato, anche a voce: poi controlli e salvi')}
+            </span>
+          </span>
+          <Icon name="chevron_right" size={24} />
+        </Link>
         {profile &&
           SECTIONS.map((section) => (
             <SectionCard key={section.id} section={section} profile={profile} />

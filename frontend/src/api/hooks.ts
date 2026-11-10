@@ -211,8 +211,13 @@ export function useJob(id: UUID | undefined) {
     queryKey: keys.job(id!),
     queryFn: () => api.get<Job>(`/api/jobs/${id}`),
     enabled: Boolean(id),
+    // L'intervista e' una chiacchierata: si controlla piu' spesso.
     refetchInterval: (query) =>
-      query.state.data && WORKING.includes(query.state.data.status) ? 2000 : false,
+      query.state.data && WORKING.includes(query.state.data.status)
+        ? query.state.data.kind === 'interview'
+          ? 800
+          : 2000
+        : false,
   })
 }
 
@@ -716,5 +721,24 @@ export function useCopySharedRecipe() {
       void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
       void client.invalidateQueries({ queryKey: keys.tags })
     },
+  })
+}
+
+/* --------------------------------------------------------- intervista -- */
+
+export type InterviewMessage = { role: 'assistant' | 'user'; text: string }
+
+/** Un turno dell'intervista: la conversazione e, se si parla, la registrazione. */
+export function useInterviewTurn() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ messages, audio }: { messages: InterviewMessage[]; audio?: File }) => {
+      if (!audio) return api.post<Job>('/api/profile/interview', { messages })
+      const form = new FormData()
+      form.append('messages', JSON.stringify(messages))
+      form.append('audio', audio)
+      return api.post<Job>('/api/profile/interview', form)
+    },
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
   })
 }

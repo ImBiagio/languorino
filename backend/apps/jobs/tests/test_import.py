@@ -290,3 +290,19 @@ def test_pulizia_notturna(user, api, gemini, django_capture_on_commit_callbacks)
     assert Job.objects.get(id=job_id).status == Job.Status.READY
     stuck.refresh_from_db()
     assert stuck.status == Job.Status.FAILED
+
+
+def test_ricetta_raccontata_a_voce(user, api, gemini, django_capture_on_commit_callbacks):
+    voice = SimpleUploadedFile("racconto.m4a", b"\x00\x00\x00\x20ftypM4A " + b"\x00" * 300)
+    job_id = _ready_job(api, user, django_capture_on_commit_callbacks, files=[voice])
+    assert gemini["files"][0] == ("audio/mp4", 312)
+    assert "racconta una\nricetta a voce" in gemini["files"][-1]
+    draft = _reviewed(api, user, job_id)
+    api(user).post(f"{JOBS}/{job_id}/confirm", {"recipes": [draft]}, format="json")
+    assert Recipe.objects.get().source == Recipe.Source.VOICE
+
+
+def test_audio_insieme_alle_foto_rifiutato(user, api, gemini, django_capture_on_commit_callbacks):
+    voice = SimpleUploadedFile("racconto.ogg", b"OggS" + b"\x00" * 100)
+    response = _start(api, user, [_image(), voice], django_capture_on_commit_callbacks)
+    assert response.status_code == 400
