@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.ai",
     "apps.jobs",
     "apps.plans",
+    "apps.shopping",
 ]
 
 MIDDLEWARE = [

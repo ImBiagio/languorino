@@ -352,3 +352,37 @@ export interface MealPlan {
 export interface MealPlanDetail extends MealPlan {
   meals: PlannedMeal[]
 }
+
+/* ------------------------------------------------------------------ spesa -- */
+
+export interface ShoppingItem {
+  id: number
+  label: string
+  /** Decimale serializzato; `null` per "q.b." o voci a mano senza quantita'. */
+  quantity: string | null
+  unit: Unit | ''
+  category: Category
+  checked: boolean
+  /** "Ce l'ho gia'": non va comprato. */
+  in_pantry: boolean
+  manual: boolean
+  edited: boolean
+  sources: { date: string; slot: MealSlot; recipe: string }[]
+}
+
+export interface ShoppingList {
+  id: UUID
+  title: string
+  plan: UUID | null
+  date_from: string | null
+  date_to: string | null
+  status: 'open' | 'done'
+  /** Voci da comprare (senza quelle "ce l'ho gia'"). */
+  item_count: number
+  checked_count: number
+  created_at: string
+}
+
+export interface ShoppingListDetail extends ShoppingList {
+  items: ShoppingItem[]
+}

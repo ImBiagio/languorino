@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 15:31+0100\n"
+"POT-Creation-Date: 2026-11-10 15:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,6 +29,9 @@ msgstr "Today"
 
 msgid "Piano"
 msgstr "Plan"
+
+msgid "Spesa"
+msgstr "Shopping"
 
 msgid "Ricette"
 msgstr "Recipes"
@@ -412,6 +415,9 @@ msgid "%s porzione"
 msgid_plural "%s porzioni"
 msgstr[0] "%s serving"
 msgstr[1] "%s servings"
+
+msgid "Fai la spesa"
+msgstr "Go shopping"
 
 msgid "Elimina il piano"
 msgstr "Delete the plan"
@@ -1459,6 +1465,99 @@ msgstr[1] "cans"
 
 msgid "q.b."
 msgstr "to taste"
+
+msgid "Nessuna lista aperta"
+msgstr "No open list"
+
+msgid "Calcolo io cosa comprare dal tuo piano, già diviso per reparto."
+msgstr "I'll work out what to buy from your plan, already split by aisle."
+
+msgid "Scrivi una lista a mano, o crea un piano e la calcolo io."
+msgstr "Write a list by hand, or create a plan and I'll work it out."
+
+msgid "Lista vuota"
+msgstr "Empty list"
+
+msgid "Dal piano"
+msgstr "From the plan"
+
+msgid "Liste fatte"
+msgstr "Finished lists"
+
+msgid "Prossimi 3 giorni"
+msgstr "Next 3 days"
+
+msgid "Una settimana"
+msgstr "One week"
+
+msgid "Fino alla fine del piano"
+msgstr "Until the end of the plan"
+
+msgid "Per quali giorni fai la spesa?"
+msgstr "Which days are you shopping for?"
+
+msgid "Spesa fatta"
+msgstr "Shopping done"
+
+msgid "Lista della spesa"
+msgstr "Shopping list"
+
+#, javascript-format
+msgid "%s di %s nel carrello"
+msgstr "%s of %s in the cart"
+
+msgid "Nel carrello"
+msgstr "In the cart"
+
+msgid "Ricalcola dal piano"
+msgstr "Recalculate from the plan"
+
+msgid "Elimina la lista"
+msgstr "Delete the list"
+
+msgid "Eliminare la lista?"
+msgstr "Delete the list?"
+
+msgid "Niente da comprare"
+msgstr "Nothing to buy"
+
+#, javascript-format
+msgid "Ce l’ho già (%s)"
+msgstr "Already have it (%s)"
+
+msgid "Riapri la lista"
+msgstr "Reopen the list"
+
+msgid "Aggiungi qualcosa (es. detersivo, pane)"
+msgstr "Add something (e.g. washing-up liquid, bread)"
+
+msgid "Da comprare"
+msgstr "To buy"
+
+msgid "Ce l’ho già"
+msgstr "Already have it"
+
+msgid "Modifica la voce"
+msgstr "Edit item"
+
+msgid "Cosa"
+msgstr "What"
+
+#, javascript-format
+msgid "Quantità (%s)"
+msgstr "Quantity (%s)"
+
+#, javascript-format
+msgid "Serve per %s pasto del piano."
+msgid_plural "Serve per %s pasti del piano."
+msgstr[0] "Needed for %s meal in the plan."
+msgstr[1] "Needed for %s meals in the plan."
+
+msgid "Se la cambi, ricalcolando dal piano resta com’è."
+msgstr "If you change it, recalculating from the plan leaves it as it is."
+
+msgid "Togli"
+msgstr "Remove"
 
 #, javascript-format
 msgid "Errore %s"

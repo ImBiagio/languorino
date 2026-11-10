@@ -76,6 +76,10 @@ def test_varianti_singolare_plurale():
         ("Cipolla tritata finemente", None),
         ("cipolla rossa tritata", "cipolla rossa"),
         ("macinato misto", "macinato misto"),
+        ("farro perlato", "farro"),
+        ("lenticchie rosse decorticate", "lenticchie"),
+        ("albume d'uovo", "uova"),
+        ("farina d'avena", "fiocchi d'avena"),
     ],
 )
 def test_ingrediente_riconosciuto(user, name, expected):

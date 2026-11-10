@@ -22,6 +22,9 @@ import type {
   RecipeFilters,
   RecipePayload,
   RecipeSummary,
+  ShoppingItem,
+  ShoppingList,
+  ShoppingListDetail,
   Tag,
   UUID,
 } from '../lib/types'
@@ -41,6 +44,8 @@ export const keys = {
   plans: ['plans'] as const,
   plan: (id: UUID) => ['plans', 'detail', id] as const,
   currentPlan: ['plans', 'current'] as const,
+  shoppingLists: ['shopping'] as const,
+  shoppingList: (id: UUID) => ['shopping', 'detail', id] as const,
 }
 
 /* ------------------------------------------------------ profilo alimentare -- */
@@ -418,5 +423,131 @@ export function useUpdateMeal(planId: UUID) {
       )
       void client.invalidateQueries({ queryKey: keys.currentPlan })
     },
+  })
+}
+
+/* ------------------------------------------------------------------ spesa -- */
+
+export function useShoppingLists() {
+  return useQuery({
+    queryKey: keys.shoppingLists,
+    queryFn: () => api.get<ShoppingList[]>('/api/shopping'),
+  })
+}
+
+export function useShoppingList(id: UUID | undefined) {
+  return useQuery({
+    queryKey: keys.shoppingList(id!),
+    queryFn: () => api.get<ShoppingListDetail>(`/api/shopping/${id}`),
+    enabled: Boolean(id),
+  })
+}
+
+function useListMutation<T>(fn: (arg: T) => Promise<ShoppingListDetail>) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (list) => {
+      client.setQueryData(keys.shoppingList(list.id), list)
+      void client.invalidateQueries({ queryKey: keys.shoppingLists, exact: true })
+    },
+  })
+}
+
+export function useCreateShoppingList() {
+  return useListMutation(
+    (body: { plan?: UUID; date_from?: string; date_to?: string; title?: string }) =>
+      api.post<ShoppingListDetail>('/api/shopping', body),
+  )
+}
+
+export function useRegenerateShoppingList() {
+  return useListMutation((id: UUID) =>
+    api.post<ShoppingListDetail>(`/api/shopping/${id}/regenerate`),
+  )
+}
+
+export function useUpdateShoppingList() {
+  return useListMutation(
+    ({ id, ...body }: { id: UUID; title?: string; status?: 'open' | 'done' }) =>
+      api.patch<ShoppingListDetail>(`/api/shopping/${id}`, body),
+  )
+}
+
+export function useDeleteShoppingList() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.delete<void>(`/api/shopping/${id}`),
+    onSuccess: (_data, id) => {
+      client.removeQueries({ queryKey: keys.shoppingList(id) })
+      void client.invalidateQueries({ queryKey: keys.shoppingLists, exact: true })
+    },
+  })
+}
+
+/** Aggiorna una voce nella cache della lista (e i contatori). */
+function patchItem(
+  list: ShoppingListDetail | undefined,
+  id: number,
+  change: (item: ShoppingItem) => ShoppingItem | null,
+): ShoppingListDetail | undefined {
+  if (!list) return list
+  const items = list.items.flatMap((item) => {
+    if (item.id !== id) return [item]
+    const next = change(item)
+    return next ? [next] : []
+  })
+  const toBuy = items.filter((item) => !item.in_pantry)
+  return {
+    ...list,
+    items,
+    item_count: toBuy.length,
+    checked_count: toBuy.filter((item) => item.checked).length,
+  }
+}
+
+export function useAddShoppingItem(listId: UUID) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { label: string; quantity?: string | null; unit?: string }) =>
+      api.post<ShoppingItem>(`/api/shopping/${listId}/items`, body),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.shoppingList(listId) }),
+  })
+}
+
+/**
+ * Spuntare deve essere istantaneo anche con il telefono in un angolo del
+ * supermercato: la cache cambia subito e torna indietro se la richiesta fallisce.
+ */
+export function useUpdateShoppingItem(listId: UUID) {
+  const client = useQueryClient()
+  const key = keys.shoppingList(listId)
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: number } & Partial<ShoppingItem>) =>
+      api.patch<ShoppingItem>(`/api/shopping/${listId}/items/${id}`, body),
+    onMutate: async ({ id, ...body }) => {
+      await client.cancelQueries({ queryKey: key })
+      const before = client.getQueryData<ShoppingListDetail>(key)
+      client.setQueryData<ShoppingListDetail>(key, (list) =>
+        patchItem(list, id, (item) => ({ ...item, ...body })),
+      )
+      return { before }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.before) client.setQueryData(key, context.before)
+    },
+    onSuccess: (item) => {
+      client.setQueryData<ShoppingListDetail>(key, (list) => patchItem(list, item.id, () => item))
+    },
+  })
+}
+
+export function useDeleteShoppingItem(listId: UUID) {
+  const client = useQueryClient()
+  const key = keys.shoppingList(listId)
+  return useMutation({
+    mutationFn: (id: number) => api.delete<void>(`/api/shopping/${listId}/items/${id}`),
+    onSuccess: (_data, id) =>
+      client.setQueryData<ShoppingListDetail>(key, (list) => patchItem(list, id, () => null)),
   })
 }
