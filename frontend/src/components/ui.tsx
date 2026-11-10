@@ -573,3 +573,135 @@ export function Fab({
     </button>
   )
 }
+
+/* ------------------------------------------------------------ stepper --- */
+
+/** Numero piccolo con − e + (sedute di sport, persone in casa). */
+export function Stepper({
+  value,
+  onChange,
+  min,
+  max,
+  label,
+  format,
+}: {
+  value: number
+  onChange: (value: number) => void
+  min: number
+  max: number
+  label: string
+  /** Testo al posto del numero (es. "Mai" per zero). */
+  format?: (value: number) => string
+}) {
+  return (
+    <div className="flex items-center gap-3" role="group" aria-label={label}>
+      <IconButton
+        icon="remove"
+        size="md"
+        label={gettext('Meno')}
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={value <= min}
+        className="bg-surface-container-high disabled:opacity-40"
+      />
+      <span className="min-w-[4.5rem] text-center text-title-medium" aria-live="polite">
+        {format ? format(value) : value}
+      </span>
+      <IconButton
+        icon="add"
+        size="md"
+        label={gettext('Più')}
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
+        className="bg-surface-container-high disabled:opacity-40"
+      />
+    </div>
+  )
+}
+
+/* -------------------------------------------------------- chip editor --- */
+
+/**
+ * Elenco di voci libere come chip: si tolgono con la x, si aggiungono
+ * scrivendo (Invio) o toccando uno spunto. Le voci gia' presenti spariscono
+ * dagli spunti, senza badare alle maiuscole.
+ */
+export function ChipEditor({
+  items,
+  onAdd,
+  onRemove,
+  suggestions = [],
+  inputLabel,
+  disabled,
+}: {
+  items: { key: string; label: string }[]
+  onAdd: (label: string) => void
+  onRemove: (key: string) => void
+  suggestions?: string[]
+  inputLabel: string
+  disabled?: boolean
+}) {
+  const [text, setText] = useState('')
+  const present = new Set(items.map((item) => item.label.toLowerCase()))
+  const open = suggestions.filter((suggestion) => !present.has(suggestion.toLowerCase()))
+
+  const add = (raw: string) => {
+    const label = raw.replace(/\s+/g, ' ').trim()
+    if (!label || present.has(label.toLowerCase())) return
+    onAdd(label)
+  }
+  const submit = () => {
+    add(text)
+    setText('')
+  }
+
+  return (
+    <div className="grid gap-3">
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item) => (
+            <Chip
+              key={item.key}
+              selected
+              label={item.label}
+              trailingIcon="close"
+              onClick={() => onRemove(item.key)}
+            />
+          ))}
+        </div>
+      )}
+      {/* Niente <form>: l'editor sta spesso dentro il form di una sezione. */}
+      <div className="flex items-end gap-2">
+        <Field label={inputLabel} className="min-w-0 flex-1">
+          <input
+            className="field-input"
+            value={text}
+            maxLength={80}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter') return
+              event.preventDefault()
+              submit()
+            }}
+            disabled={disabled}
+          />
+        </Field>
+        <button
+          type="button"
+          className="btn-tonal mb-0.5 px-4"
+          disabled={disabled || !text.trim()}
+          onClick={submit}
+        >
+          <Icon name="add" size={20} />
+          {gettext('Aggiungi')}
+        </button>
+      </div>
+      {open.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {open.map((suggestion) => (
+            <Chip key={suggestion} icon="add" label={suggestion} onClick={() => add(suggestion)} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

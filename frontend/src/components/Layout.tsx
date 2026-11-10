@@ -14,8 +14,8 @@ interface Destination {
 
 /** Poche sezioni, sempre tutte visibili: rail su desktop, barra in basso su mobile. */
 const DESTINATIONS: Destination[] = [
-  { to: '/', label: gettext('Home'), icon: 'home', end: true },
-  { to: '/account', label: gettext('Account'), icon: 'account_circle' },
+  { to: '/', label: gettext('Oggi'), icon: 'today', end: true },
+  { to: '/profilo', label: gettext('Profilo'), icon: 'person' },
 ]
 
 export function AppLayout() {

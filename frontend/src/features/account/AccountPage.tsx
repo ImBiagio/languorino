@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
 import { Page } from '../../components/Layout'
@@ -17,6 +18,10 @@ export function AccountPage() {
   return (
     <Page className="px-5 pt-5 md:px-8 md:pt-8">
       <div className="grid gap-5">
+        <Link to="/profilo" className="btn-text btn-sm -mb-3 -ml-3 w-fit">
+          <Icon name="arrow_back" size={20} />
+          {gettext('Profilo')}
+        </Link>
         <header className="flex flex-wrap items-center gap-3">
           <h1 className="flex-1 text-[28px] font-medium leading-9 md:text-headline-small">
             {gettext('Account')}
@@ -47,7 +52,7 @@ function ProfileSection({ user }: { user: User }) {
       <div className="mb-4 flex items-center gap-3">
         <Avatar name={user.display_name} size={44} />
         <div className="min-w-0">
-          <h2 className="text-body-large font-medium">{gettext('Profilo')}</h2>
+          <h2 className="text-body-large font-medium">{gettext('Nome visibile')}</h2>
           <p className="text-body-small text-on-surface-variant">
             {gettext('Il nome che vedono gli altri.')}
           </p>
