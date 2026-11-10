@@ -243,6 +243,12 @@ class Recipe(BaseModel):
     # Foto vera o generata (ADR 0011), sempre WebP; vuota = disegno per categoria.
     image = models.ImageField(upload_to=recipe_image_path, max_length=200, blank=True)
     image_source = models.CharField(max_length=8, choices=ImageSource.choices, blank=True)
+    # Link di condivisione /r/<token> (ADR 0012): vuoto = non condivisa.
+    share_token = models.CharField(max_length=32, unique=True, null=True, blank=True)
+    # La ricetta da cui e' stata copiata con "Copia nel mio ricettario".
+    copied_from = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="copies"
+    )
 
     class Meta:
         ordering = ["-updated_at"]

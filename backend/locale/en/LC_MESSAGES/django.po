@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:25+0100\n"
+"POT-Creation-Date: 2026-11-10 16:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,7 +56,9 @@ msgstr ""
 msgid ""
 "La chiave Gemini non ha quota per le immagini (piano gratuito): attiva la "
 "fatturazione su Google AI Studio."
-msgstr "The Gemini key has no quota for images (free tier): enable billing in Google AI Studio."
+msgstr ""
+"The Gemini key has no quota for images (free tier): enable billing in Google "
+"AI Studio."
 
 #: apps/ai/client.py:213
 msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
@@ -164,7 +166,7 @@ msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:75
-#: apps/plans/views.py:274 apps/recipes/views.py:230 apps/recipes/views.py:392
+#: apps/plans/views.py:274 apps/recipes/views.py:232 apps/recipes/views.py:394
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -626,15 +628,15 @@ msgstr "Drawn by AI"
 msgid "Scegli o scrivi un ingrediente."
 msgstr "Pick or type an ingredient."
 
-#: apps/recipes/serializers.py:222
+#: apps/recipes/serializers.py:226
 msgid "Dai un nome alla ricetta."
 msgstr "Give the recipe a name."
 
-#: apps/recipes/serializers.py:257
+#: apps/recipes/serializers.py:261
 msgid "Ingrediente non trovato."
 msgstr "Ingredient not found."
 
-#: apps/recipes/serializers.py:326
+#: apps/recipes/serializers.py:330
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
@@ -642,53 +644,57 @@ msgstr "Give the cookbook a name."
 msgid "Questa parte del ricettario ci sta mettendo troppo. Riprova."
 msgstr "This part of the cookbook is taking too long. Try again."
 
-#: apps/recipes/views.py:235
+#: apps/recipes/views.py:237
 msgid "Carica un PDF."
 msgstr "Upload a PDF."
 
-#: apps/recipes/views.py:238
+#: apps/recipes/views.py:240
 msgid "Il file non è un PDF."
 msgstr "The file isn't a PDF."
 
-#: apps/recipes/views.py:242
+#: apps/recipes/views.py:244
 #, python-format
 msgid "Il PDF è troppo grande (massimo %(mb)d MB)."
 msgstr "The PDF is too big (max %(mb)d MB)."
 
-#: apps/recipes/views.py:253
+#: apps/recipes/views.py:255
 #, python-format
 msgid "Il PDF deve avere da 1 a %(n)d pagine."
 msgstr "The PDF must have 1 to %(n)d pages."
 
-#: apps/recipes/views.py:258
+#: apps/recipes/views.py:260
 msgid "Ricettario"
 msgstr "Cookbook"
 
-#: apps/recipes/views.py:316
+#: apps/recipes/views.py:318
 msgid "Si può riprendere solo una lettura interrotta."
 msgstr "Only a stopped reading can be resumed."
 
-#: apps/recipes/views.py:353
+#: apps/recipes/views.py:355
 msgid "Scegli una foto."
 msgstr "Choose a photo."
 
-#: apps/recipes/views.py:357
+#: apps/recipes/views.py:359
 msgid "Serve una foto JPEG, PNG o WebP (le HEIC dell'iPhone non ancora)."
 msgstr "A JPEG, PNG or WebP photo is needed (iPhone HEIC not yet)."
 
-#: apps/recipes/views.py:362
+#: apps/recipes/views.py:364
 #, python-format
 msgid "Foto troppo grande (massimo %(mb)d MB)."
 msgstr "Photo too large (max %(mb)d MB)."
 
-#: apps/recipes/views.py:397
+#: apps/recipes/views.py:399
 msgid "Ha già una foto vera: toglila prima di farne disegnare una."
 msgstr "It already has a real photo: remove it before having one drawn."
 
-#: apps/recipes/views.py:403
+#: apps/recipes/views.py:405
 #, python-format
 msgid "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
 msgstr "You've used up today's images (%(n)d a day). Try again tomorrow."
+
+#: apps/recipes/views.py:477
+msgid "È già nel tuo ricettario."
+msgstr "It's already in your cookbook."
 
 #: apps/shopping/models.py:20
 msgid "Da fare"

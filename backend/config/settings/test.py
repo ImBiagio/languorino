@@ -17,6 +17,7 @@ REST_FRAMEWORK = {
         "auth": "10000/min",
         "refresh": "10000/min",
         "ai": "10000/min",
+        "public": "10000/min",
     },
 }
 STORAGES = {

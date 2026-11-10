@@ -24,6 +24,7 @@ import type {
   RecipeFilters,
   RecipePayload,
   RecipeSummary,
+  SharedRecipe,
   ShoppingItem,
   ShoppingList,
   ShoppingListDetail,
@@ -678,5 +679,42 @@ export function useDrawRecipeImage() {
   return useMutation({
     mutationFn: (id: UUID) => api.post<Job>(`/api/recipes/${id}/image/draw`),
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
+/* --------------------------------------------- condivisione delle ricette -- */
+
+export function useShareRecipe() {
+  return useRecipeImageMutation(({ id, renew }: { id: UUID; renew?: boolean }) =>
+    api.post<Recipe>(`/api/recipes/${id}/share`, { renew: Boolean(renew) }),
+  )
+}
+
+export function useUnshareRecipe() {
+  return useRecipeImageMutation((id: UUID) => api.delete<Recipe>(`/api/recipes/${id}/share`))
+}
+
+/**
+ * ``viewer``: chi guarda (id o "anon"), noto solo a sessione caricata. Prima
+ * la richiesta partirebbe senza token e il proprietario risulterebbe ospite.
+ */
+export function useSharedRecipe(token: string | undefined, viewer: string | undefined) {
+  return useQuery({
+    queryKey: ['shared-recipe', token, viewer],
+    queryFn: () => api.get<SharedRecipe>(`/api/shared/recipes/${token}`),
+    enabled: Boolean(token && viewer),
+    retry: false,
+  })
+}
+
+export function useCopySharedRecipe() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (token: string) => api.post<Recipe>(`/api/shared/recipes/${token}/copy`),
+    onSuccess: (recipe) => {
+      client.setQueryData(keys.recipe(recipe.id), recipe)
+      void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
+      void client.invalidateQueries({ queryKey: keys.tags })
+    },
   })
 }

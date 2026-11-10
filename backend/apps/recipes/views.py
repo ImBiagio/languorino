@@ -10,7 +10,7 @@ from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics, serializers, status
 from rest_framework.parsers import JSONParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -29,9 +29,11 @@ from .serializers import (
     RecipeBookSerializer,
     RecipeListSerializer,
     RecipeSerializer,
+    SharedRecipeSerializer,
     TagSerializer,
 )
 from .services import visible_ingredients
+from .sharing import copy_recipe, share, unshare
 from .tasks import enqueue_book
 
 SEARCH_LIMIT = 12
@@ -414,3 +416,68 @@ class RecipeImageDrawView(APIView):
             enqueue_job(job)
         job.refresh_from_db()
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
+# --- condivisione (ADR 0012) ----------------------------------------------------------------
+
+
+class RecipeShareView(APIView):
+    """Crea il link (POST, ``renew`` per un link nuovo che spegne il vecchio) o lo spegne."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={200: RecipeSerializer})
+    def post(self, request, pk):
+        recipe = get_object_or_404(recipes_of(request.user), pk=pk)
+        share(recipe, renew=bool(request.data.get("renew")))
+        return Response(RecipeSerializer(recipe, context={"request": request}).data)
+
+    @extend_schema(responses={200: RecipeSerializer})
+    def delete(self, request, pk):
+        recipe = get_object_or_404(recipes_of(request.user), pk=pk)
+        unshare(recipe)
+        return Response(RecipeSerializer(recipe, context={"request": request}).data)
+
+
+def shared_recipe(token: str) -> Recipe:
+    return get_object_or_404(
+        Recipe.objects.select_related("owner").prefetch_related(
+            "tags",
+            Prefetch(
+                "ingredients",
+                queryset=RecipeIngredient.objects.select_related("ingredient").order_by("position"),
+            ),
+        ),
+        share_token=token,
+    )
+
+
+class SharedRecipeView(APIView):
+    """La pagina pubblica: chiunque abbia il link, anche senza account."""
+
+    permission_classes = [AllowAny]
+    throttle_scope = "public"
+
+    @extend_schema(responses={200: SharedRecipeSerializer})
+    def get(self, request, token):
+        recipe = shared_recipe(token)
+        return Response(SharedRecipeSerializer(recipe, context={"request": request}).data)
+
+
+class SharedRecipeCopyView(APIView):
+    """ "Copia nel mio ricettario": serve l'account."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "public"
+
+    @extend_schema(request=None, responses={201: RecipeSerializer})
+    def post(self, request, token):
+        recipe = shared_recipe(token)
+        if recipe.owner_id == request.user.id:
+            raise serializers.ValidationError({"detail": _("È già nel tuo ricettario.")})
+        copy = copy_recipe(recipe, request.user)
+        copy = recipes_of(request.user).get(pk=copy.pk)
+        return Response(
+            RecipeSerializer(copy, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
