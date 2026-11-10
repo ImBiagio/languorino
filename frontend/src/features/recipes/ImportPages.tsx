@@ -20,6 +20,7 @@ import { EmptyState, ErrorBanner, Icon, IconButton, Skeleton, Switch } from '../
 import { ApiError } from '../../lib/api'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Job } from '../../lib/types'
+import { useBookUploader } from './BooksPages'
 import { RecipeEditor, draftFromImport, payloadFrom } from './RecipeEditor'
 import type { Draft } from './RecipeEditor'
 
@@ -32,7 +33,8 @@ export function ImportPage() {
   const start = useStartImport()
   const [files, setFiles] = useState<File[]>([])
   const photos = useRef<HTMLInputElement>(null)
-  const pdf = useRef<HTMLInputElement>(null)
+  // Un PDF diventa un ricettario da sfogliare (ADR 0006), non una revisione.
+  const uploader = useBookUploader()
 
   const add = (list: FileList | null) => {
     if (!list) return
@@ -61,7 +63,7 @@ export function ImportPage() {
             <h2 className="text-title-large">{gettext('Dalla carta al ricettario')}</h2>
             <p className="mt-1 text-body-large">
               {gettext(
-                'Fotografa le ricette scritte a mano o carica il PDF del nutrizionista: le leggo io, tu controlli e confermi.',
+                'Fotografa le ricette scritte a mano: le leggo io, tu controlli e confermi. Un PDF diventa un ricettario da sfogliare.',
               )}
             </p>
           </div>
@@ -86,7 +88,8 @@ export function ImportPage() {
           <button
             type="button"
             className="state flex items-center gap-4 rounded-card bg-surface-container-low p-5 text-left"
-            onClick={() => pdf.current?.click()}
+            onClick={uploader.open}
+            disabled={uploader.upload.isPending}
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-accent text-white">
               <Icon name="picture_as_pdf" size={26} />
@@ -94,7 +97,9 @@ export function ImportPage() {
             <span>
               <span className="block text-body-large font-medium">{gettext('PDF')}</span>
               <span className="block text-body-small text-on-surface-variant">
-                {gettext('Un ricettario o il piano del nutrizionista')}
+                {uploader.upload.isPending
+                  ? gettext('Carico…')
+                  : gettext('Un ricettario intero: lo leggo pagina per pagina')}
               </span>
             </span>
           </button>
@@ -110,17 +115,7 @@ export function ImportPage() {
             event.target.value = ''
           }}
         />
-        <input
-          ref={pdf}
-          type="file"
-          accept="application/pdf"
-          multiple
-          hidden
-          onChange={(event) => {
-            add(event.target.files)
-            event.target.value = ''
-          }}
-        />
+        {uploader.element}
 
         {files.length > 0 && (
           <section className="rounded-card bg-surface-container-low p-5">
@@ -145,13 +140,13 @@ export function ImportPage() {
           <Icon name="lightbulb" size={18} />
           {interpolate(
             gettext(
-              'Una pagina per foto, dritta e con buona luce. Al massimo %s file alla volta: foto fino a 10 MB, PDF fino a 18 MB.',
+              'Una pagina per foto, dritta e con buona luce. Al massimo %s foto alla volta, fino a 10 MB l’una.',
             ),
             [MAX_FILES],
           )}
         </p>
 
-        <ErrorBanner error={start.error} />
+        <ErrorBanner error={start.error ?? uploader.upload.error} />
         <div className="flex justify-end">
           <button
             type="button"

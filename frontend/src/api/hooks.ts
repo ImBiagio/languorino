@@ -14,6 +14,7 @@ import type {
   Profile,
   ProfileDraft,
   Recipe,
+  RecipeBook,
   RecipeFilters,
   RecipePayload,
   RecipeSummary,
@@ -31,6 +32,8 @@ export const keys = {
   jobs: ['jobs'] as const,
   jobList: (statuses: JobStatus[]) => ['jobs', 'list', statuses] as const,
   job: (id: UUID) => ['jobs', 'detail', id] as const,
+  books: ['books'] as const,
+  book: (id: UUID) => ['books', id] as const,
 }
 
 /* ------------------------------------------------------ profilo alimentare -- */
@@ -89,11 +92,12 @@ export function useRemovePreference() {
 
 /* ---------------------------------------------------------------- ricette -- */
 
-export function useRecipes(filters: RecipeFilters) {
+export function useRecipes(filters: RecipeFilters, options: { poll?: boolean } = {}) {
   return useQuery({
     queryKey: keys.recipeList(filters),
     queryFn: () =>
       api.get<Paginated<RecipeSummary>>('/api/recipes', {
+        book: filters.book,
         q: filters.q || undefined,
         tag: filters.tag?.length ? filters.tag : undefined,
         max_minutes: filters.max_minutes,
@@ -102,6 +106,22 @@ export function useRecipes(filters: RecipeFilters) {
       }),
     // Mentre si scrive nella ricerca resta il risultato di prima, senza lampi.
     placeholderData: keepPreviousData,
+    // Un ricettario in lettura: le ricette arrivano man mano.
+    refetchInterval: options.poll ? 4000 : false,
+  })
+}
+
+/** Una ricetta di un ricettario PDF entra nel ricettario dell'utente. */
+export function useSaveToCookbook() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<Recipe>(`/api/recipes/${id}/save`),
+    onSuccess: (recipe) => {
+      client.setQueryData(keys.recipe(recipe.id), recipe)
+      void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
+      void client.invalidateQueries({ queryKey: keys.books })
+      void client.invalidateQueries({ queryKey: keys.tags })
+    },
   })
 }
 
@@ -227,6 +247,80 @@ export function useConfirmImport() {
       void client.invalidateQueries({ queryKey: keys.jobs })
       void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
       void client.invalidateQueries({ queryKey: keys.tags })
+    },
+  })
+}
+
+/* ---------------------------------------------------------- ricettari -- */
+
+const READING = ['queued', 'reading']
+
+export function useBooks() {
+  return useQuery({
+    queryKey: keys.books,
+    queryFn: () => api.get<RecipeBook[]>('/api/recipe-books'),
+    refetchInterval: (query) =>
+      query.state.data?.some((book) => READING.includes(book.status)) ? 4000 : false,
+  })
+}
+
+export function useBook(id: UUID | undefined) {
+  return useQuery({
+    queryKey: keys.book(id!),
+    queryFn: () => api.get<RecipeBook>(`/api/recipe-books/${id}`),
+    enabled: Boolean(id),
+    refetchInterval: (query) =>
+      query.state.data && READING.includes(query.state.data.status) ? 3000 : false,
+  })
+}
+
+export function useUploadBook() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return api.post<RecipeBook>('/api/recipe-books', form)
+    },
+    onSuccess: (book) => {
+      client.setQueryData(keys.book(book.id), book)
+      void client.invalidateQueries({ queryKey: keys.books })
+    },
+  })
+}
+
+export function useRetryBook() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<RecipeBook>(`/api/recipe-books/${id}/retry`),
+    onSuccess: (book) => {
+      client.setQueryData(keys.book(book.id), book)
+      void client.invalidateQueries({ queryKey: keys.books })
+    },
+  })
+}
+
+export function useRenameBook() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, title }: { id: UUID; title: string }) =>
+      api.patch<RecipeBook>(`/api/recipe-books/${id}`, { title }),
+    onSuccess: (book) => {
+      client.setQueryData(keys.book(book.id), book)
+      void client.invalidateQueries({ queryKey: keys.books })
+      void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
+    },
+  })
+}
+
+export function useDeleteBook() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.delete<void>(`/api/recipe-books/${id}`),
+    onSuccess: (_data, id) => {
+      client.removeQueries({ queryKey: keys.book(id) })
+      void client.invalidateQueries({ queryKey: keys.books })
+      void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
     },
   })
 }

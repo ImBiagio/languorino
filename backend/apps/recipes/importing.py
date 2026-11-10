@@ -181,12 +181,19 @@ def to_draft(recipe: ImportedRecipe, user) -> dict:
     }
 
 
-def read_recipes(files: list[tuple[bytes, str]], *, user, language: str = "it") -> dict:
+def read_recipes(
+    files: list[tuple[bytes, str]],
+    *,
+    user,
+    language: str = "it",
+    extra_instructions: str = "",
+) -> dict:
     """Legge le ricette dai file ``(contenuto, mime type)``.
 
     Restituisce ``{"recipes": [bozze], "problem": str, "model": str}``.
     """
-    prompt = PROMPT.format(language=LANGUAGES.get(language[:2], "italiano"))
+    # extra_instructions: per i ricettari a pezzi, quale parte si sta leggendo.
+    prompt = PROMPT.format(language=LANGUAGES.get(language[:2], "italiano")) + extra_instructions
     result, model = generate(
         lambda types: [
             *[types.Part.from_bytes(data=data, mime_type=mime) for data, mime in files],

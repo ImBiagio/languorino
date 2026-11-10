@@ -37,6 +37,11 @@ class AIError(Exception):
     """Errore da mostrare all'utente cosi' com'e' (finisce in ``Job.error``)."""
 
 
+class AIOverloaded(AIError):
+    """Tutti i modelli sovraccarichi o irraggiungibili: passa da solo, si puo'
+    riprovare piu' tardi (i ricettari PDF lo fanno senza fermarsi)."""
+
+
 def is_enabled() -> bool:
     return bool(settings.GEMINI_API_KEY)
 
@@ -159,7 +164,7 @@ def generate[Schema: BaseModel](
         if pause is not None:
             time.sleep(pause)
 
-    raise AIError(
+    raise AIOverloaded(
         _(
             "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
             "Riprova tra qualche minuto."

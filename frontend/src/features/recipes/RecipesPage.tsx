@@ -9,6 +9,7 @@ import { Chip, EmptyState, ErrorBanner, Fab, Icon, Modal, Skeleton } from '../..
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Job, RecipeFilters, RecipeSummary } from '../../lib/types'
 import { preferenceLabel } from '../profile/options'
+import { RecipeTabs } from './BooksPages'
 import { difficultyLabel, formatMinutes } from './options'
 
 /** Le ricette "veloci" del filtro rapido: quelle da fare in mezz'ora. */
@@ -54,6 +55,7 @@ export function RecipesPage() {
         }
       />
       <div className="grid gap-4 px-5 md:px-8">
+        <RecipeTabs />
         {jobs?.map((job) => (
           <JobBanner key={job.id} job={job} />
         ))}
@@ -152,7 +154,11 @@ export function RecipesPage() {
   )
 }
 
-function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
+/**
+ * La card di una ricetta. `showSaved`: nei ricettari PDF, il segno su quelle
+ * gia' salvate nel proprio ricettario.
+ */
+export function RecipeCard({ recipe, showSaved }: { recipe: RecipeSummary; showSaved?: boolean }) {
   const restrictions = recipe.warnings.filter((item) => item.kind !== 'dislike')
   const dislikes = recipe.warnings.filter((item) => item.kind === 'dislike')
   return (
@@ -169,6 +175,12 @@ function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           >
             <Icon name="warning" size={14} filled />
             <span className="truncate">{restrictions.map(preferenceLabel).join(', ')}</span>
+          </span>
+        )}
+        {showSaved && recipe.in_cookbook && (
+          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-pill bg-primary px-2.5 py-1 text-label-small text-on-primary">
+            <Icon name="bookmark_added" size={14} filled />
+            {gettext('Nel tuo ricettario')}
           </span>
         )}
       </div>

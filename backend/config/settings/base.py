@@ -206,7 +206,10 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
 # Tutto cio' che chiama Gemini va sulla coda "ai", con un worker suo a
 # concorrenza bassa: un import lungo non blocca le mail e non si sfora la quota.
-CELERY_TASK_ROUTES = {"apps.jobs.tasks.run_job": {"queue": "ai"}}
+CELERY_TASK_ROUTES = {
+    "apps.jobs.tasks.run_job": {"queue": "ai"},
+    "apps.recipes.tasks.read_book_chunk": {"queue": "ai"},
+}
 CELERY_TASK_ALWAYS_EAGER = False
 
 # Sincronizzato nel DB da django-celery-beat all'avvio dello scheduler.
@@ -214,6 +217,11 @@ CELERY_BEAT_SCHEDULE = {
     "flush-expired-tokens": {
         "task": "apps.users.tasks.flush_expired_tokens",
         "schedule": crontab(hour=4, minute=0),
+    },
+    # Letture di ricettari PDF interrotte (worker riavviato): si riprendono.
+    "resume-stalled-books": {
+        "task": "apps.recipes.tasks.resume_stalled_books",
+        "schedule": crontab(minute="*/10"),
     },
     # File degli import vecchi e lavori rimasti appesi.
     "clean-jobs": {
@@ -242,7 +250,7 @@ EMAIL_TIMEOUT = 15
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Languorino <no-reply@languorino.local>")
 
 # --- Upload ---
-UPLOAD_MAX_BYTES = int(env("UPLOAD_MAX_BYTES", str(20 * 1024 * 1024)))
+UPLOAD_MAX_BYTES = int(env("UPLOAD_MAX_BYTES", str(55 * 1024 * 1024)))
 FILE_UPLOAD_MAX_MEMORY_SIZE = UPLOAD_MAX_BYTES
 DATA_UPLOAD_MAX_MEMORY_SIZE = UPLOAD_MAX_BYTES + 1024 * 1024
 
@@ -266,6 +274,13 @@ JOB_MAX_TOTAL_BYTES = int(env("JOB_MAX_TOTAL_BYTES", str(18 * 1024 * 1024)))
 JOB_IMAGE_MAX_SIDE = int(env("JOB_IMAGE_MAX_SIDE", "2400"))
 # Dopo quanti giorni si cancellano i file caricati per un import.
 JOB_FILES_KEEP_DAYS = int(env("JOB_FILES_KEEP_DAYS", "30"))
+
+# --- Ricettari PDF (ADR 0006) ---
+# Il PDF si legge a pezzi: una chiamata per gruppo di pagine (piu' una pagina
+# di contesto), cosi' un ricettario lungo non si ferma alla prima ricetta.
+BOOK_MAX_BYTES = int(env("BOOK_MAX_BYTES", str(50 * 1024 * 1024)))
+BOOK_MAX_PAGES = int(env("BOOK_MAX_PAGES", "200"))
+BOOK_PAGES_PER_CHUNK = int(env("BOOK_PAGES_PER_CHUNK", "4"))
 
 # Il link di reset vale 2 ore (il default di Django sono 3 giorni).
 PASSWORD_RESET_TIMEOUT = int(env("PASSWORD_RESET_TIMEOUT", str(2 * 60 * 60)))

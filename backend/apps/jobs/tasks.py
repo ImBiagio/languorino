@@ -33,7 +33,7 @@ def _import_recipes(job: Job) -> None:
 RUNNERS = {Job.Kind.IMPORT_RECIPES: _import_recipes}
 
 
-@shared_task(soft_time_limit=300, time_limit=330)
+@shared_task(soft_time_limit=300, time_limit=330, acks_late=True, reject_on_worker_lost=True)
 def run_job(job_id: str) -> None:
     """Esegue un job in coda. Gli errori finiscono in ``Job.error``, non in Sentry."""
     job = Job.objects.filter(id=job_id, status=Job.Status.QUEUED).select_related("owner").first()

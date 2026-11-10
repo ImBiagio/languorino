@@ -1,16 +1,34 @@
 from __future__ import annotations
 
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.db import transaction
 from django.db.models import Count, F, Prefetch, Q
+from django.shortcuts import get_object_or_404
+from django.utils.translation import get_language
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.ai.client import is_enabled
+from apps.jobs.files import PDF, sniff
+
+from .books import BookRejected, page_count
 from .matching import normalize, variants
-from .models import Recipe, RecipeIngredient, Tag
-from .serializers import IngredientSerializer, RecipeListSerializer, RecipeSerializer, TagSerializer
+from .models import Recipe, RecipeBook, RecipeIngredient, Tag
+from .serializers import (
+    IngredientSerializer,
+    RecipeBookSerializer,
+    RecipeListSerializer,
+    RecipeSerializer,
+    TagSerializer,
+)
 from .services import visible_ingredients
+from .tasks import enqueue_book
 
 SEARCH_LIMIT = 12
 
@@ -49,12 +67,16 @@ class IngredientSearchView(APIView):
 
 
 def recipes_of(user):
-    return Recipe.objects.filter(owner=user).prefetch_related(
-        "tags",
-        Prefetch(
-            "ingredients",
-            queryset=RecipeIngredient.objects.select_related("ingredient").order_by("position"),
-        ),
+    return (
+        Recipe.objects.filter(owner=user)
+        .select_related("book")
+        .prefetch_related(
+            "tags",
+            Prefetch(
+                "ingredients",
+                queryset=RecipeIngredient.objects.select_related("ingredient").order_by("position"),
+            ),
+        )
     )
 
 
@@ -74,6 +96,7 @@ class RecipeListView(generics.ListCreateAPIView):
             OpenApiParameter("max_minutes", int),
             OpenApiParameter("difficulty", str),
             OpenApiParameter("in_cookbook", bool),
+            OpenApiParameter("book", str, description="solo le ricette di un ricettario PDF"),
         ]
     )
     def get(self, request, *args, **kwargs):
@@ -82,8 +105,12 @@ class RecipeListView(generics.ListCreateAPIView):
     def get_queryset(self):
         params = self.request.query_params
         recipes = recipes_of(self.request.user)
-        # Le ricette scritte dal piano e mai salvate non sono nel ricettario.
-        recipes = recipes.filter(in_cookbook=params.get("in_cookbook", "true") != "false")
+        if book := params.get("book"):
+            # Un ricettario PDF mostra tutte le sue ricette, salvate o no.
+            recipes = recipes.filter(book_id=book)
+        else:
+            # Ricette dei PDF e del piano mai salvate non sono nel ricettario.
+            recipes = recipes.filter(in_cookbook=params.get("in_cookbook", "true") != "false")
         if query := " ".join(params.get("q", "").split()):
             key = normalize(query)
             recipes = recipes.filter(
@@ -145,3 +172,151 @@ class TagDetailView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         deleted.delete(hard=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RecipeSaveView(APIView):
+    """Una ricetta di un ricettario PDF entra nel ricettario dell'utente."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={200: RecipeSerializer})
+    def post(self, request, pk):
+        recipe = get_object_or_404(recipes_of(request.user), pk=pk)
+        recipe.in_cookbook = True
+        recipe.status = Recipe.Status.CONFIRMED
+        recipe.save(update_fields=["in_cookbook", "status", "updated_at"])
+        return Response(RecipeSerializer(recipe, context={"request": request}).data)
+
+
+def books_of(user):
+    alive = Q(recipes__deleted_at__isnull=True)
+    return RecipeBook.objects.filter(owner=user).annotate(
+        recipe_count=Count("recipes", filter=alive),
+        saved_count=Count("recipes", filter=alive & Q(recipes__in_cookbook=True)),
+    )
+
+
+class RecipeBookListView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, JSONParser]
+
+    def get_throttles(self):
+        self.throttle_scope = "ai" if self.request.method == "POST" else None
+        return super().get_throttles()
+
+    @extend_schema(responses={200: RecipeBookSerializer(many=True)})
+    def get(self, request):
+        return Response(RecipeBookSerializer(books_of(request.user), many=True).data)
+
+    @extend_schema(
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "file": {"type": "string", "format": "binary"},
+                    "title": {"type": "string"},
+                },
+            }
+        },
+        responses={202: RecipeBookSerializer},
+    )
+    def post(self, request):
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise serializers.ValidationError({"file": _("Carica un PDF.")})
+        data = upload.read()
+        if sniff(data[:16]) != PDF:
+            raise serializers.ValidationError({"file": _("Il file non è un PDF.")})
+        if len(data) > settings.BOOK_MAX_BYTES:
+            raise serializers.ValidationError(
+                {
+                    "file": _("Il PDF è troppo grande (massimo %(mb)d MB).")
+                    % {"mb": settings.BOOK_MAX_BYTES // (1024 * 1024)}
+                }
+            )
+        try:
+            pages = page_count(data)
+        except BookRejected as exc:
+            raise serializers.ValidationError({"file": str(exc)}) from exc
+        if not pages or pages > settings.BOOK_MAX_PAGES:
+            raise serializers.ValidationError(
+                {
+                    "file": _("Il PDF deve avere da 1 a %(n)d pagine.")
+                    % {"n": settings.BOOK_MAX_PAGES}
+                }
+            )
+        name = (upload.name or "")[:200]
+        default_title = name.rsplit(".", 1)[0].replace("_", " ").strip() or _("Ricettario")
+        title = " ".join((request.data.get("title") or default_title).split())[:120]
+        with transaction.atomic():
+            book = RecipeBook(
+                owner=request.user,
+                title=title,
+                original_name=name,
+                size=len(data),
+                page_count=pages,
+                language=(get_language() or "it")[:2],
+            )
+            book.file.save("upload.pdf", ContentFile(data), save=False)
+            book.save()
+            enqueue_book(book)
+        return Response(
+            RecipeBookSerializer(books_of(request.user).get(pk=book.pk)).data,
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class RecipeBookDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: RecipeBookSerializer})
+    def get(self, request, pk):
+        return Response(RecipeBookSerializer(get_object_or_404(books_of(request.user), pk=pk)).data)
+
+    @extend_schema(request=RecipeBookSerializer, responses={200: RecipeBookSerializer})
+    def patch(self, request, pk):
+        book = get_object_or_404(books_of(request.user), pk=pk)
+        serializer = RecipeBookSerializer(book, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(RecipeBookSerializer(books_of(request.user).get(pk=pk)).data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, pk):
+        """Via il PDF e le sue ricette non salvate; quelle salvate restano."""
+        book = get_object_or_404(RecipeBook, pk=pk, owner=request.user)
+        with transaction.atomic():
+            for recipe in book.recipes.filter(in_cookbook=False):
+                recipe.delete(hard=True)
+            book.file.delete(save=False)
+            book.delete(hard=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RecipeBookRetryView(APIView):
+    """Riprende la lettura dalla pagina a cui si era fermata."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: RecipeBookSerializer})
+    def post(self, request, pk):
+        book = get_object_or_404(RecipeBook, pk=pk, owner=request.user)
+        if book.status != RecipeBook.Status.FAILED:
+            raise serializers.ValidationError(
+                {"detail": _("Si può riprendere solo una lettura interrotta.")}
+            )
+        with transaction.atomic():
+            book.status = RecipeBook.Status.QUEUED
+            book.error = ""
+            book.save(update_fields=["status", "error", "updated_at"])
+            enqueue_book(book)
+        return Response(
+            RecipeBookSerializer(books_of(request.user).get(pk=pk)).data,
+            status=status.HTTP_202_ACCEPTED,
+        )
