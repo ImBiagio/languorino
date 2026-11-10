@@ -16,6 +16,7 @@ interface Destination {
 /** Poche sezioni, sempre tutte visibili: rail su desktop, barra in basso su mobile. */
 const DESTINATIONS: Destination[] = [
   { to: '/', label: gettext('Oggi'), icon: 'today', end: true },
+  { to: '/piano', label: gettext('Piano'), icon: 'calendar_month' },
   { to: '/ricette', label: gettext('Ricette'), icon: 'menu_book' },
   { to: '/profilo', label: gettext('Profilo'), icon: 'person' },
 ]

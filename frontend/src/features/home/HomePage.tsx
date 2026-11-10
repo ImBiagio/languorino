@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom'
 
-import { useProfile } from '../../api/hooks'
+import { useCurrentPlan, useProfile } from '../../api/hooks'
 import { Page } from '../../components/Layout'
 import { EmptyPlateIllustration, FoodPattern } from '../../components/illustrations'
 import { Chip, EmptyState, Icon } from '../../components/ui'
 import { useAuth } from '../../lib/auth'
 import { gettext, interpolate, intlLocale } from '../../lib/i18n'
+import { addDays, formatDayLong, formatWeekday, todayIso } from '../plans/dates'
+import { MealRow } from '../plans/PlanPages'
 import { GOAL_OPTIONS, preferenceLabel } from '../profile/options'
 
 /**
@@ -15,6 +17,18 @@ import { GOAL_OPTIONS, preferenceLabel } from '../profile/options'
 export function HomePage() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
+  const { data: plan } = useCurrentPlan()
+  const today = todayIso()
+  const tomorrow = addDays(today, 1)
+  const order = ['breakfast', 'morning_snack', 'lunch', 'afternoon_snack', 'dinner']
+  const mealsOf = (day: string) =>
+    (plan?.meals ?? [])
+      .filter((meal) => meal.date === day)
+      .sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot))
+  // Cosa si cucina oggi per i giorni dopo (meal prep).
+  const prepToday = (plan?.meals ?? []).filter(
+    (meal) => meal.cooked_on === today && meal.date !== today && meal.recipe,
+  )
   const restrictions =
     profile?.preferences.filter((item) => item.kind === 'allergy' || item.kind === 'intolerance') ??
     []
@@ -34,13 +48,86 @@ export function HomePage() {
             <p className="mt-1 text-body-large opacity-90">{gettext('Cosa mangiamo oggi?')}</p>
           </div>
         </header>
-        <EmptyState
-          illustration={<EmptyPlateIllustration />}
-          title={gettext('Ancora nessun piano')}
-          description={gettext(
-            'Quando avrai un piano alimentare, qui troverai i pasti di oggi e di domani e cosa preparare.',
-          )}
-        />
+        {plan ? (
+          <>
+            {[today, tomorrow].map((day) => {
+              const meals = mealsOf(day)
+              if (!meals.length) return null
+              return (
+                <section key={day} className="rounded-card bg-surface-container-low p-4">
+                  <header className="mb-2 flex items-center justify-between gap-2">
+                    <h2 className="text-title-medium">
+                      {day === today ? gettext('Oggi mangi') : gettext('Domani')}
+                    </h2>
+                    <Link to={`/piano/${plan.id}`} className="btn-text btn-sm">
+                      {gettext('Tutto il piano')}
+                      <Icon name="chevron_right" size={18} />
+                    </Link>
+                  </header>
+                  <ul className="grid gap-2">
+                    {meals.map((meal) => (
+                      <MealRow key={meal.id} meal={meal} />
+                    ))}
+                  </ul>
+                </section>
+              )
+            })}
+            {plan.start_date > tomorrow && (
+              <Link
+                to={`/piano/${plan.id}`}
+                className="state flex items-center gap-4 rounded-card bg-surface-container-low p-5"
+              >
+                <Icon name="event_upcoming" size={28} className="text-primary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-title-medium">
+                    {interpolate(gettext('Il tuo piano parte %s'), [
+                      formatDayLong(plan.start_date).toLowerCase(),
+                    ])}
+                  </span>
+                  <span className="block text-body-small text-on-surface-variant">
+                    {gettext('Guarda cosa preparare per iniziare')}
+                  </span>
+                </span>
+                <Icon name="chevron_right" size={22} />
+              </Link>
+            )}
+            {prepToday.length > 0 && (
+              <section className="rounded-card bg-primary-container p-4 text-on-primary-container">
+                <h2 className="mb-2 flex items-center gap-2 text-title-medium">
+                  <Icon name="kitchen" size={22} />
+                  {gettext('Oggi prepari anche')}
+                </h2>
+                <ul className="grid gap-1 text-body-medium">
+                  {prepToday.map((meal) => (
+                    <li key={meal.id}>
+                      <Link
+                        to={`/ricette/${meal.recipe!.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {meal.recipe!.title}
+                      </Link>{' '}
+                      {interpolate(gettext('per %s'), [formatWeekday(meal.date)])}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
+        ) : (
+          <EmptyState
+            illustration={<EmptyPlateIllustration />}
+            title={gettext('Ancora nessun piano')}
+            description={gettext(
+              'Quando avrai un piano alimentare, qui troverai i pasti di oggi e di domani e cosa preparare.',
+            )}
+            action={
+              <Link to="/piano/nuovo" className="btn-filled">
+                <Icon name="auto_awesome" size={20} />
+                {gettext('Crea il piano')}
+              </Link>
+            }
+          />
+        )}
         {profile && (
           <section className="rounded-card bg-surface-container-low p-5">
             <header className="mb-3 flex items-center gap-3">

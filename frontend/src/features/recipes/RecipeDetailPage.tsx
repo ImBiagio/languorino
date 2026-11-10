@@ -33,7 +33,13 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
   const save = useSaveToCookbook()
   // Una ricetta di un ricettario PDF non ancora salvata: si torna al ricettario.
   const fromBook = recipe.book && !recipe.in_cookbook
-  const backTo = fromBook ? `/ricette/ricettari/${recipe.book!.id}` : '/ricette'
+  // Scritta dall'LLM per un piano e non ancora salvata.
+  const fromPlan = !recipe.book && !recipe.in_cookbook && recipe.source === 'plan'
+  const backTo = fromBook
+    ? `/ricette/ricettari/${recipe.book!.id}`
+    : fromPlan
+      ? '/piano'
+      : '/ricette'
   const [servings, setServings] = useState(recipe.servings)
   const factor = servings / recipe.servings
   const restrictions = recipe.warnings.filter((item) => item.kind !== 'dislike')
@@ -132,6 +138,23 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
                 gettext('Dal ricettario “%s”, letta automaticamente e non ancora rivista.'),
                 [recipe.book!.title],
               )}
+            </p>
+            <button
+              type="button"
+              className="btn-filled btn-sm"
+              disabled={save.isPending}
+              onClick={() => save.mutate(recipe.id)}
+            >
+              <Icon name="bookmark_add" size={18} />
+              {gettext('Salva nel mio ricettario')}
+            </button>
+          </section>
+        )}
+        {fromPlan && (
+          <section className="flex flex-wrap items-center gap-3 rounded-row bg-tertiary-container px-4 py-3 text-on-tertiary-container">
+            <Icon name="auto_awesome" size={22} />
+            <p className="min-w-0 flex-1 text-body-medium">
+              {gettext('Scritta per il tuo piano: non è ancora nel tuo ricettario.')}
             </p>
             <button
               type="button"

@@ -290,3 +290,65 @@ export interface RecipeBook {
   created_at: string
   finished_at: string | null
 }
+
+/* ------------------------------------------------------- piano alimentare -- */
+
+export type PrepMode = 'none' | 'evening_before' | 'every_2' | 'every_3' | 'weekend'
+export type PlanStatus = 'generating' | 'draft' | 'active' | 'archived' | 'failed'
+
+/** Le scelte della procedura "Nuovo piano" (backend `PlanSettingsSerializer`). */
+export interface PlanPayload {
+  start_date: string
+  days: 7 | 14 | 21 | 28
+  slots: MealSlot[]
+  servings: number
+  prep_mode: PrepMode
+  minutes: number
+  difficulty: Difficulty
+  use_cookbook: boolean
+  books: UUID[]
+  include_tags: string[]
+  exclude_tags: string[]
+  goal_note: string
+}
+
+export interface PlannedMeal {
+  id: number
+  date: string
+  slot: MealSlot
+  recipe: RecipeSummary | null
+  servings: number
+  /** Il giorno in cui si cucina: prima di `date` se viene dal meal prep. */
+  cooked_on: string
+  /** Perche' il pasto e' vuoto o e' stato cambiato. */
+  note: string
+  eaten: boolean
+}
+
+export interface MealPlan {
+  id: UUID
+  start_date: string
+  end_date: string
+  days: number
+  status: PlanStatus
+  settings: {
+    slots: MealSlot[]
+    servings: number
+    prep_mode: PrepMode
+    minutes: number
+    difficulty: Difficulty
+    sources: { cookbook: boolean; books: UUID[] }
+    include_tags: string[]
+    exclude_tags: string[]
+    goal_note: string
+  }
+  weeks_done: number
+  weeks_total: number
+  error: string
+  created_at: string
+  finished_at: string | null
+}
+
+export interface MealPlanDetail extends MealPlan {
+  meals: PlannedMeal[]
+}

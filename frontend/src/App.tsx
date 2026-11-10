@@ -12,6 +12,8 @@ import {
 } from './features/auth/AuthPages'
 import { HomePage } from './features/home/HomePage'
 import { OnboardingPage } from './features/onboarding/OnboardingPage'
+import { NewPlanPage } from './features/plans/NewPlanPage'
+import { PlanHomePage, PlanPage } from './features/plans/PlanPages'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { BookPage, BooksPage } from './features/recipes/BooksPages'
 import { ImportJobPage, ImportPage } from './features/recipes/ImportPages'
@@ -69,6 +71,9 @@ export default function App() {
         }
       >
         <Route index element={<HomePage />} />
+        <Route path="piano" element={<PlanHomePage />} />
+        <Route path="piano/nuovo" element={<NewPlanPage />} />
+        <Route path="piano/:planId" element={<PlanPage />} />
         <Route path="ricette" element={<RecipesPage />} />
         <Route path="ricette/nuova" element={<RecipeFormPage />} />
         <Route path="ricette/ricettari" element={<BooksPage />} />
