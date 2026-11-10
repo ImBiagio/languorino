@@ -18,6 +18,8 @@ from apps.core.models import BaseModel
 class Job(BaseModel):
     class Kind(models.TextChoices):
         IMPORT_RECIPES = "import_recipes", _("Importa ricette")
+        FRIDGE_SCAN = "fridge_scan", _("Leggi il frigo")
+        COOK_IDEAS = "cook_ideas", _("Idee per cucinare")
 
     class Status(models.TextChoices):
         QUEUED = "queued", _("In coda")

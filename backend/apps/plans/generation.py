@@ -26,7 +26,8 @@ from pydantic import BaseModel, Field
 
 from apps.ai.client import generate
 from apps.profiles.models import FoodPreference, MealSlot, Profile
-from apps.recipes.importing import ImportedRecipe, to_draft
+from apps.recipes.generated import save_generated
+from apps.recipes.importing import ImportedRecipe
 from apps.recipes.matching import normalize
 from apps.recipes.models import Recipe, RecipeIngredient
 from apps.recipes.services import PreferenceIndex, recipe_allergens
@@ -147,12 +148,16 @@ def describe_candidate(number: int, recipe: Recipe) -> str:
 
 
 def profile_summary(plan: MealPlan) -> tuple[str, list[str]]:
+    return user_profile_summary(plan.owner)
+
+
+def user_profile_summary(user) -> tuple[str, list[str]]:
     """Quello che serve all'LLM, senza nome, email o data di nascita.
 
     Restituisce anche le etichette da non usare mai (allergie, intolleranze),
     che vanno nel prompt delle ricette nuove.
     """
-    profile = Profile.objects.filter(user=plan.owner).first()
+    profile = Profile.objects.filter(user=user).first()
     if profile is None:
         return "Nessun profilo compilato.", []
     lines = []
@@ -275,8 +280,6 @@ def write_recipe(
     plan: MealPlan, title: str, idea: str, uses: list[dict], profile: str, forbidden: list[str]
 ) -> Recipe | None:
     """Scrive e salva una ricetta nuova per il piano; None se tocca un divieto."""
-    from apps.recipes.serializers import RecipeSerializer
-
     options = plan.settings
     slots = sorted({SLOT_NAMES[row["slot"]] for row in uses})
     prompt = NEW_RECIPE_PROMPT.format(
@@ -298,25 +301,9 @@ def write_recipe(
         timeout_ms=60_000,
         temperature=0.6,
     )
-    draft = to_draft(written, plan.owner)
-    draft["servings"] = options.get("servings", draft["servings"])
-    serializer = RecipeSerializer(data=draft, context={})
-    if not serializer.is_valid():
-        logger.warning("Ricetta nuova del piano %s scartata: %s", plan.id, serializer.errors)
-        return None
-    recipe = serializer.save(
-        owner=plan.owner,
-        source=Recipe.Source.PLAN,
-        in_cookbook=False,
-        status=Recipe.Status.DRAFT,
+    return save_generated(
+        plan.owner, written, source=Recipe.Source.PLAN, servings=options.get("servings")
     )
-    # Controllo di sicurezza sugli ingredienti veri, non su quello che ha detto l'LLM.
-    warnings = PreferenceIndex(plan.owner).warnings(recipe, recipe_allergens(recipe))
-    if any(warning["kind"] != FoodPreference.Kind.DISLIKE for warning in warnings):
-        logger.warning("Ricetta nuova %r scartata: tocca %s", recipe.title, warnings)
-        recipe.delete(hard=True)
-        return None
-    return recipe
 
 
 # --- 4. una settimana dall'inizio alla fine -----------------------------------------------

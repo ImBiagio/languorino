@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { useDeleteRecipe, useRecipe, useSaveToCookbook } from '../../api/hooks'
 import { useConfirm } from '../../components/ConfirmDialog'
@@ -33,13 +33,21 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
   const save = useSaveToCookbook()
   // Una ricetta di un ricettario PDF non ancora salvata: si torna al ricettario.
   const fromBook = recipe.book && !recipe.in_cookbook
-  // Scritta dall'LLM per un piano e non ancora salvata.
-  const fromPlan = !recipe.book && !recipe.in_cookbook && recipe.source === 'plan'
-  const backTo = fromBook
-    ? `/ricette/ricettari/${recipe.book!.id}`
-    : fromPlan
-      ? '/piano'
-      : '/ricette'
+  // Scritta dall'LLM (per un piano o per "cosa cucino oggi") e non ancora salvata.
+  const written = !recipe.book && !recipe.in_cookbook
+  const fromPlan = written && recipe.source === 'plan'
+  const fromFridge = written && recipe.source === 'fridge'
+  // Aperta da "cosa cucino oggi": la freccia torna li', ai risultati.
+  const from = (useLocation().state as { from?: string } | null)?.from
+  const backTo = from
+    ? from
+    : fromBook
+      ? `/ricette/ricettari/${recipe.book!.id}`
+      : fromPlan
+        ? '/piano'
+        : fromFridge
+          ? '/cosa-cucino'
+          : '/ricette'
   const [servings, setServings] = useState(recipe.servings)
   const factor = servings / recipe.servings
   const restrictions = recipe.warnings.filter((item) => item.kind !== 'dislike')
@@ -150,11 +158,13 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
             </button>
           </section>
         )}
-        {fromPlan && (
+        {(fromPlan || fromFridge) && (
           <section className="flex flex-wrap items-center gap-3 rounded-row bg-tertiary-container px-4 py-3 text-on-tertiary-container">
             <Icon name="auto_awesome" size={22} />
             <p className="min-w-0 flex-1 text-body-medium">
-              {gettext('Scritta per il tuo piano: non è ancora nel tuo ricettario.')}
+              {fromPlan
+                ? gettext('Scritta per il tuo piano: non è ancora nel tuo ricettario.')
+                : gettext('Un’idea con quello che hai in casa: non è ancora nel tuo ricettario.')}
             </p>
             <button
               type="button"

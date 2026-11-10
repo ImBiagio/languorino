@@ -21,7 +21,7 @@ from .serializers import ImportConfirmSerializer, JobSerializer
 from .tasks import run_job
 
 
-def _enqueue(job: Job) -> None:
+def enqueue_job(job: Job) -> None:
     # Dopo il commit: il worker deve trovare job e file gia' salvati.
     transaction.on_commit(lambda: run_job.delay(str(job.id)))
 
@@ -61,7 +61,8 @@ class JobListView(APIView):
     )
     def post(self, request):
         kind = request.data.get("kind")
-        if kind not in Job.Kind.values:
+        # Gli altri lavori hanno i loro endpoint (es. /api/cook-today/...).
+        if kind != Job.Kind.IMPORT_RECIPES:
             raise serializers.ValidationError({"kind": _("Lavoro sconosciuto.")})
         if not is_enabled():
             return Response(
@@ -89,7 +90,7 @@ class JobListView(APIView):
                 )
                 item.file.save("upload", ContentFile(data), save=False)
                 item.save()
-            _enqueue(job)
+            enqueue_job(job)
         job.refresh_from_db()
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
 
@@ -130,7 +131,7 @@ class JobRetryView(APIView):
         job.error = ""
         job.result = {}
         job.save(update_fields=["status", "error", "result", "updated_at"])
-        _enqueue(job)
+        enqueue_job(job)
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
 
 

@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "apps.jobs",
     "apps.plans",
     "apps.shopping",
+    "apps.kitchen",
 ]
 
 MIDDLEWARE = [
@@ -229,6 +230,11 @@ CELERY_BEAT_SCHEDULE = {
     "resume-stalled-plans": {
         "task": "apps.plans.tasks.resume_stalled_plans",
         "schedule": crontab(minute="*/10"),
+    },
+    # Idee di "cosa cucino oggi" mai salvate, dopo una settimana.
+    "clean-cook-ideas": {
+        "task": "apps.kitchen.tasks.clean_ideas",
+        "schedule": crontab(hour=4, minute=45),
     },
     # File degli import vecchi e lavori rimasti appesi.
     "clean-jobs": {

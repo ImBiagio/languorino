@@ -5,6 +5,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 
 import { api } from '../lib/api'
 import type {
+  CookSuggestions,
   FoodPreference,
   Ingredient,
   Job,
@@ -549,5 +550,35 @@ export function useDeleteShoppingItem(listId: UUID) {
     mutationFn: (id: number) => api.delete<void>(`/api/shopping/${listId}/items/${id}`),
     onSuccess: (_data, id) =>
       client.setQueryData<ShoppingListDetail>(key, (list) => patchItem(list, id, () => null)),
+  })
+}
+
+/* -------------------------------------------------------- cosa cucino oggi -- */
+
+export function useScanFridge() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (files: File[]) => {
+      const form = new FormData()
+      for (const file of files) form.append('files', file)
+      return api.post<Job>('/api/cook-today/scan', form)
+    },
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
+export function useCookSuggestions() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: {
+      ingredients: string[]
+      slot?: string | null
+      minutes?: number | null
+      servings: number
+      include_books: boolean
+    }) => api.post<CookSuggestions>('/api/cook-today/suggest', body),
+    onSuccess: (result) => {
+      if (result.job) client.setQueryData(keys.job(result.job.id), result.job)
+    },
   })
 }

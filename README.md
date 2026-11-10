@@ -2,8 +2,8 @@
 
 Cosa mangio questa settimana? Languorino parte dal profilo (gusti, allergie,
 obiettivi, stile di vita), genera il piano alimentare con il meal prep, tiene
-il ricettario di casa (anche dalle foto delle ricette scritte a mano) e
-calcola la spesa. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
+il ricettario di casa (anche dalle foto delle ricette scritte a mano),
+calcola la spesa e, dalla foto del frigo, dice cosa cucinare oggi. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
 progettata in [docs/progettazione.md](docs/progettazione.md).
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
@@ -75,12 +75,13 @@ backend/
     ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
     ├── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
     ├── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py)
-    └── shopping/        lista della spesa: somme e conversioni dal piano (aggregate.py), ricalcolo
+    ├── shopping/        lista della spesa: somme e conversioni dal piano (aggregate.py), ricalcolo
+    └── kitchen/         cosa cucino oggi: foto del frigo, ricette che si possono fare, idee nuove (cook_today.py), pulizia delle idee mai salvate
 frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
 ├── lib/                 client HTTP, auth, i18n, format, tipi
 ├── components/          UI M3, layout, dialog di conferma
-└── features/            auth · account · home · onboarding · profile · recipes · plans · shopping
+└── features/            auth · account · home · onboarding · profile · recipes · plans · shopping · kitchen
 deploy/                  compose di produzione, Caddy interno, edge condiviso
 docs/decisions/          ADR (modello in 0000-modello.md)
 ```
@@ -101,11 +102,13 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET/POST /api/jobs` (multipart `kind`, `files`) · `GET/DELETE /api/jobs/{id}` | lavori lunghi: import di ricette da foto e PDF |
 | `POST /api/jobs/{id}/retry` · `POST /api/jobs/{id}/confirm` `{recipes}` | riprova un lavoro non riuscito · le bozze riviste diventano ricette |
 | `GET/POST /api/recipe-books` (multipart `file`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/retry` | ricettari PDF letti a pezzi ([ADR 0006](docs/decisions/0006-ricettari-pdf.md)); le ricette con `GET /api/recipes?book={id}` |
-| `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF o del piano entra nel proprio ricettario |
+| `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
 | `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto |
 | `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)) |
 | `POST /api/shopping/{id}/items` · `PATCH/DELETE …/items/{item_id}` | voci a mano, spunta, "ce l'ho già", modifica |
+| `POST /api/cook-today/scan` (multipart `files`) | foto del frigo → job con gli alimenti riconosciuti ([ADR 0009](docs/decisions/0009-cosa-cucino-oggi.md)) |
+| `POST /api/cook-today/suggest` | ricette che si possono fare con quegli ingredienti e job con due idee nuove |
 | `GET /api/i18n/catalog` · `POST /api/i18n/language` | traduzioni del frontend e lingua scelta |
 | `GET /api/health` | healthcheck del container |
 
