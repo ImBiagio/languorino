@@ -27,13 +27,13 @@ def test_registrazione_manda_la_conferma(django_capture_on_commit_callbacks):
     with django_capture_on_commit_callbacks(execute=True):
         response = APIClient().post(
             "/api/auth/register",
-            {"email": "Nuova@Templatino.test", "password": "una-password-lunga"},
+            {"email": "Nuova@Languorino.test", "password": "una-password-lunga"},
             format="json",
         )
     assert response.status_code == 201
     assert "access" not in response.data
     [message] = mail.outbox
-    assert message.to == ["nuova@templatino.test"]
+    assert message.to == ["nuova@languorino.test"]
     assert message.alternatives[0][1] == "text/html"
     token = _link(message, "verifica-email")
     assert APIClient().post(f"/api/auth/verify-email/{token}").status_code == 200
@@ -60,7 +60,7 @@ def test_login_non_confermato_e_reinvio(user, django_capture_on_commit_callbacks
 def test_reinvio_e_reset_non_dicono_chi_e_registrato(django_capture_on_commit_callbacks):
     with django_capture_on_commit_callbacks(execute=True):
         for url in ("/api/auth/verify-email/resend", "/api/auth/password-reset"):
-            response = APIClient().post(url, {"email": "nessuno@templatino.test"}, format="json")
+            response = APIClient().post(url, {"email": "nessuno@languorino.test"}, format="json")
             assert response.status_code == 204
     assert mail.outbox == []
 

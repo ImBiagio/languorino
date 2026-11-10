@@ -1,6 +1,6 @@
-# 0001 — Stack e fondamenta da templatino
+# 0001 — Stack e fondamenta da languorino
 
-Il progetto parte da [templatino](https://github.com/ImBiagio/templatino), le
+Il progetto parte da [languorino](https://github.com/ImBiagio/languorino), le
 fondamenta comuni estratte da soldino e regalino (e cinemino per mail e
 deploy): Django + DRF + Postgres + Celery/Redis, React/Vite/TypeScript con
 Tailwind e token Material 3, auth JWT con refresh in cookie `httpOnly`, mail
@@ -21,7 +21,7 @@ mantenere.
 
 **Costo accettato:** Celery, Redis e beat girano anche quando servono solo per
 mail e pulizia dei token: tre container in più per un'app piccola. I fix alle
-parti comuni vanno portati a mano fra i progetti e in templatino (sono copie,
+parti comuni vanno portati a mano fra i progetti e in languorino (sono copie,
 non una libreria).
 
 **Quando rivederla:** se le parti comuni divergono spesso, estrarle in un

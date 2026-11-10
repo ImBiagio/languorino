@@ -36,7 +36,7 @@ function Shell({
             />
           </div>
           <div className="px-6 pb-6 pt-11 sm:px-8 sm:pb-8">
-            <p className="text-title-large">Templatino</p>
+            <p className="text-title-large">Languorino</p>
             <p className="text-body-medium text-on-surface-variant">
               {gettext('Il tagline della tua app.')}
             </p>

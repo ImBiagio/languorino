@@ -14,7 +14,7 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 from apps.core.methods import sign, unsign
 
-EMAIL_VERIFY_SALT = "templatino.email-verify"
+EMAIL_VERIFY_SALT = "languorino.email-verify"
 DEFAULT_MAX_AGE = 60 * 60 * 24 * 3  # 3 giorni
 
 

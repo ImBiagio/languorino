@@ -28,7 +28,7 @@ export function AppLayout() {
         aria-label={gettext('Sezioni')}
         className="sticky top-0 z-40 hidden h-screen w-24 shrink-0 flex-col items-center bg-surface-container-low py-5 md:flex"
       >
-        <img src="/logo-mark.svg" alt="Templatino" width={48} height={48} className="h-12 w-12" />
+        <img src="/logo-mark.svg" alt="Languorino" width={48} height={48} className="h-12 w-12" />
         <div className="mt-8 flex flex-col items-center gap-3.5">
           {DESTINATIONS.map((destination) => (
             <NavItem

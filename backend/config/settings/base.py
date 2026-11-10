@@ -26,12 +26,12 @@ def env_list(key: str, default: str = "") -> list[str]:
 
 # Nome mostrato nelle mail e nell'API: fuori dalle stringhe tradotte, cosi'
 # rinominare il progetto non rompe i cataloghi gettext.
-APP_NAME = "Templatino"
+APP_NAME = "Languorino"
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", "insecure-dev-key")
 DEBUG = False
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5190")
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5177")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -90,9 +90,9 @@ TEMPLATES = [
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", "templatino"),
-        "USER": env("POSTGRES_USER", "templatino"),
-        "PASSWORD": env("POSTGRES_PASSWORD", "templatino"),
+        "NAME": env("POSTGRES_DB", "languorino"),
+        "USER": env("POSTGRES_USER", "languorino"),
+        "PASSWORD": env("POSTGRES_PASSWORD", "languorino"),
         "HOST": env("POSTGRES_HOST", "db"),
         "PORT": env("POSTGRES_PORT", "5432"),
         "ATOMIC_REQUESTS": True,
@@ -185,7 +185,7 @@ SIMPLE_JWT = {
 # I cookie non distinguono le porte: due stack sullo stesso host (due progetti
 # in locale, o un worktree) devono usare nomi diversi, altrimenti il login su
 # uno sovrascrive il cookie dell'altro.
-REFRESH_COOKIE_NAME = env("REFRESH_COOKIE_NAME", "templatino_refresh")
+REFRESH_COOKIE_NAME = env("REFRESH_COOKIE_NAME", "languorino_refresh")
 REFRESH_COOKIE_SECURE = env_bool("REFRESH_COOKIE_SECURE", True)
 REFRESH_COOKIE_SAMESITE = env("REFRESH_COOKIE_SAMESITE", "Lax")
 REFRESH_COOKIE_PATH = "/api/auth"
@@ -227,7 +227,7 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 EMAIL_TIMEOUT = 15
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Templatino <no-reply@templatino.local>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Languorino <no-reply@languorino.local>")
 
 # --- Upload ---
 UPLOAD_MAX_BYTES = int(env("UPLOAD_MAX_BYTES", str(10 * 1024 * 1024)))
@@ -244,10 +244,10 @@ GEMINI_TIMEOUT = float(env("GEMINI_TIMEOUT", "30"))
 
 # Il link di reset vale 2 ore (il default di Django sono 3 giorni).
 PASSWORD_RESET_TIMEOUT = int(env("PASSWORD_RESET_TIMEOUT", str(2 * 60 * 60)))
-FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", "http://localhost:5190")
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", "http://localhost:5177")
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5190")
+CORS_ALLOWED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5177")
 
 LOGGING = {
     "version": 1,

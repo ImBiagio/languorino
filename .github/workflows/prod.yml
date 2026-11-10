@@ -18,12 +18,12 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: templatino
-          POSTGRES_USER: templatino
-          POSTGRES_PASSWORD: templatino
+          POSTGRES_DB: languorino
+          POSTGRES_USER: languorino
+          POSTGRES_PASSWORD: languorino
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U templatino"
+          --health-cmd "pg_isready -U languorino"
           --health-interval 3s
           --health-timeout 3s
           --health-retries 10
@@ -61,11 +61,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - image: templatino-backend
+          - image: languorino-backend
             context: backend
             dockerfile: backend/Dockerfile
             target: prod
-          - image: templatino-web
+          - image: languorino-web
             context: .
             dockerfile: deploy/web.Dockerfile
             target: ""

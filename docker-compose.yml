@@ -2,13 +2,13 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-templatino}
-      POSTGRES_USER: ${POSTGRES_USER:-templatino}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-templatino}
+      POSTGRES_DB: ${POSTGRES_DB:-languorino}
+      POSTGRES_USER: ${POSTGRES_USER:-languorino}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-languorino}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-templatino} -d ${POSTGRES_DB:-templatino}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-languorino} -d ${POSTGRES_DB:-languorino}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -35,7 +35,7 @@ services:
              python manage.py collectstatic --noinput &&
              gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     ports:
-      - "8090:8000"
+      - "8030:8000"
     # Risponde solo dopo migrate: worker e beat aspettano questo, non il
     # semplice avvio del container (beat crasha se le sue tabelle mancano).
     healthcheck:
@@ -70,7 +70,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "5190:5190"
+      - "5177:5177"
 
 volumes:
   pgdata:

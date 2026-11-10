@@ -2,10 +2,10 @@
 # prod) e aggiornate da Watchtower. Sul server servono solo questo file e un
 # .env accanto (modello in deploy/.env.prod.example). Nessuna porta pubblicata:
 # il traffico arriva dal proxy "edge" (deploy/edge) sulla rete Docker "edge".
-name: templatino
+name: languorino
 
 x-backend: &backend
-  image: ghcr.io/imbiagio/templatino-backend:prod
+  image: ghcr.io/imbiagio/languorino-backend:prod
   restart: unless-stopped
   env_file: .env
   environment:
@@ -23,13 +23,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-templatino}
-      POSTGRES_USER: ${POSTGRES_USER:-templatino}
+      POSTGRES_DB: ${POSTGRES_DB:-languorino}
+      POSTGRES_USER: ${POSTGRES_USER:-languorino}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?impostare POSTGRES_PASSWORD nel .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-templatino} -d ${POSTGRES_DB:-templatino}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-languorino} -d ${POSTGRES_DB:-languorino}"]
       interval: 3s
       timeout: 3s
       retries: 10
@@ -79,7 +79,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ghcr.io/imbiagio/templatino-web:prod
+    image: ghcr.io/imbiagio/languorino-web:prod
     restart: unless-stopped
     depends_on:
       - backend
@@ -88,13 +88,13 @@ services:
     networks:
       default:
       edge:
-        aliases: [templatino-web]
+        aliases: [languorino-web]
     labels:
       - com.centurylinklabs.watchtower.enable=true
 
   backup:
     # pg_dump compresso ogni notte a mezzanotte (ora italiana) e a ogni avvio,
-    # in ~/templatino/backups: tiene 7 giornalieri, 4 settimanali e 6 mensili.
+    # in ~/languorino/backups: tiene 7 giornalieri, 4 settimanali e 6 mensili.
     # Restore e prova in README (Deploy) e nel vault.
     image: prodrigestivill/postgres-backup-local:16
     restart: unless-stopped
@@ -103,8 +103,8 @@ services:
     environment:
       TZ: Europe/Rome
       POSTGRES_HOST: db
-      POSTGRES_DB: ${POSTGRES_DB:-templatino}
-      POSTGRES_USER: ${POSTGRES_USER:-templatino}
+      POSTGRES_DB: ${POSTGRES_DB:-languorino}
+      POSTGRES_USER: ${POSTGRES_USER:-languorino}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       SCHEDULE: "@daily"
       BACKUP_ON_START: "TRUE"
@@ -120,7 +120,7 @@ services:
   media-backup:
     # I file caricati (volume "media") non stanno in Postgres: archivio
     # tar.gz ogni notte alle 23:30 UTC (00:30 o 01:30 in Italia) e a ogni
-    # avvio, in ~/templatino/backups/media: 7 giornalieri, 4 settimanali (la
+    # avvio, in ~/languorino/backups/media: 7 giornalieri, 4 settimanali (la
     # domenica) e l'ultimo. Un ciclo con sleep e non cron: busybox crond vuole
     # root, qui si gira come biagio. Restore nel README (Deploy) e nel vault.
     image: alpine:3.20

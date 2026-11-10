@@ -62,11 +62,11 @@ def test_registrazione_nella_lingua_del_cookie():
     client.cookies[COOKIE] = "en"
     response = client.post(
         "/api/auth/register",
-        {"email": "english@templatino.test", "password": "una-password-lunga"},
+        {"email": "english@languorino.test", "password": "una-password-lunga"},
         format="json",
     )
     assert response.status_code == 201
-    assert User.objects.get(email="english@templatino.test").language == "en"
+    assert User.objects.get(email="english@languorino.test").language == "en"
 
 
 def test_catalogo_inglese_traduce_il_frontend():

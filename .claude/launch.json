@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "templatino",
+      "name": "languorino",
       "runtimeExecutable": "docker",
       "runtimeArgs": ["compose", "up", "--build"],
-      "port": 5190
+      "port": 5177
     }
   ]
 }

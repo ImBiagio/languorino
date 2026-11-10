@@ -1,47 +1,9 @@
-# Templatino
+# Languorino
 
-<!-- template:start -->
-> **Questo è il template** dei progetti personali: le fondamenta comuni di
-> [soldino](https://github.com/ImBiagio/soldino) e
-> [regalino](https://github.com/ImBiagio/regalino) (e di
-> [cinemino](https://github.com/ImBiagio/cinemino) per mail e deploy), senza
-> il loro dominio. Dentro c'è anche il kit per lavorare con Claude: il modello
-> di `CLAUDE.md`, le note standard del vault Obsidian e il modello degli ADR
-> (in `.template/`, prima in claude-dev-kit).
->
-> ### Progetto nuovo
->
-> ```bash
-> gh repo create ImBiagio/<nome> --private --template ImBiagio/templatino --clone
-> cd <nome>
-> scripts/init-project.sh <nome> --app 5177 --api 8030 --db 5437
-> ```
->
-> Lo script rinomina tutto (`templatino` → `<nome>`), imposta porte e dominio
-> (`<nome senza "ino">.inoo.it`, cambiabile con `--domain`), crea `CLAUDE.md`
-> e la cartella del progetto nel vault `Dev/`, toglie questa parte del README e
-> poi cancella `.template/` e se stesso. Poi `docker compose up --build`.
->
-> Porte già prese, da non riusare:
->
-> | Progetto | App | API | Postgres |
-> |---|---|---|---|
-> | cinemino | 5173 | 8000 | — |
-> | soldino | 5173 | 8000 | 5433 |
-> | regalino | 5176 | 8020 | 5436 |
-> | languorino | 5177 | 8030 | 5437 |
-> | templatino | 5190 | 8090 | 5490 |
->
-> ### Tenere il template aggiornato
->
-> Un fix alle parti comuni (auth, mail, i18n, deploy, componenti UI) fatto in un
-> progetto va portato anche qui, e viceversa: sono copie, non una libreria
-> ([ADR 0001](docs/decisions/0001-stack.md)). Se cambia una regola di lavoro,
-> va cambiata in `.template/CLAUDE.md.template` **e** nei `CLAUDE.md` dei
-> progetti esistenti.
-<!-- template:end -->
-
-Descrizione del progetto, in due righe: per chi e quale problema risolve.
+Cosa mangio questa settimana? Languorino parte dal profilo (gusti, allergie,
+obiettivi, stile di vita), genera il piano alimentare con il meal prep, tiene
+il ricettario di casa (anche dalle foto delle ricette scritte a mano) e
+calcola la spesa. Specifica completa in [docs/specifica.md](docs/specifica.md).
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
 Tailwind con token Material 3, tutto in Docker Compose
@@ -57,13 +19,13 @@ cp .env.example .env && docker compose up --build
 
 | | |
 |---|---|
-| App | http://localhost:5190 |
-| API | http://localhost:8090/api |
-| Docs OpenAPI | http://localhost:8090/api/docs/ |
-| Admin Django | http://localhost:8090/admin/ |
+| App | http://localhost:5177 |
+| API | http://localhost:8030/api |
+| Docs OpenAPI | http://localhost:8030/api/docs/ |
+| Admin Django | http://localhost:8030/admin/ |
 
 Le porte sono diverse dagli altri progetti per farli girare insieme; per lo
-stesso motivo il cookie di refresh si chiama `templatino_refresh`.
+stesso motivo il cookie di refresh si chiama `languorino_refresh`.
 
 Con `.env.example` la verifica email è disattivata (`REQUIRE_EMAIL_VERIFICATION=0`):
 ci si registra ed entra subito. Le mail finiscono nei log del worker:
@@ -167,31 +129,31 @@ docker compose run --rm --no-deps backend python manage.py compilemessages -l en
 
 ## Deploy (produzione)
 
-**https://templat.inoo.it**, sul homeserver accanto agli altri progetti. Push
+**https://languor.inoo.it**, sul homeserver accanto agli altri progetti. Push
 sul branch `prod` → la GitHub Action (`.github/workflows/prod.yml`) fa ruff,
-pytest, tsc ed eslint e pubblica `templatino-backend:prod` e
-`templatino-web:prod` su ghcr.io → Watchtower (quello di cinemino) ricrea i
+pytest, tsc ed eslint e pubblica `languorino-backend:prod` e
+`languorino-web:prod` su ghcr.io → Watchtower (quello di cinemino) ricrea i
 container. Le migrazioni girano all'avvio del backend. Watchtower aggiorna le
 immagini ma non aggiunge servizi né reti: quando cambia
-`deploy/compose.prod.yaml` va ricopiato a mano in `~/templatino` e poi
+`deploy/compose.prod.yaml` va ricopiato a mano in `~/languorino` e poi
 `docker compose -f compose.prod.yaml up -d`.
 
 Primo avvio sul server:
 
-1. DNS: record A per `templat.inoo.it` → l'IP del server (come gli altri progetti);
-2. `~/templatino/compose.prod.yaml` (da `deploy/`) e `~/templatino/.env`
+1. DNS: record A per `languor.inoo.it` → l'IP del server (come gli altri progetti);
+2. `~/languorino/compose.prod.yaml` (da `deploy/`) e `~/languorino/.env`
    (modello `deploy/.env.prod.example`, SMTP Brevo come gli altri);
-3. il blocco `templat.inoo.it` del Caddyfile dell'edge (`deploy/edge/`,
+3. il blocco `languor.inoo.it` del Caddyfile dell'edge (`deploy/edge/`,
    condiviso fra i progetti) copiato in `~/edge/` e ricaricato con
    `docker exec edge-caddy-1 caddy reload --config /etc/caddy/Caddyfile`, che
    non ferma gli altri;
-4. `git push origin main:prod`, poi `cd ~/templatino && docker compose -f
+4. `git push origin main:prod`, poi `cd ~/languorino && docker compose -f
    compose.prod.yaml up -d` e `createsuperuser`.
 
 Backup notturni sul disco del server, a ogni avvio e poi ogni notte:
-Postgres (servizio `backup`) in `~/templatino/backups/{daily,weekly,monthly,last}`
-e i file caricati (servizio `media-backup`, volume `templatino_media`) in
-`~/templatino/backups/media/`. Per la copia fuori dal server aggiungere la
+Postgres (servizio `backup`) in `~/languorino/backups/{daily,weekly,monthly,last}`
+e i file caricati (servizio `media-backup`, volume `languorino_media`) in
+`~/languorino/backups/media/`. Per la copia fuori dal server aggiungere la
 cartella `backups` allo stack `~/offsite` (sorgenti in `soldino/deploy/offsite/`).
 
 ## Test

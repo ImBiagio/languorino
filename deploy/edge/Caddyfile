@@ -17,6 +17,6 @@ regal.inoo.it {
 	reverse_proxy regalino-web:80
 }
 
-templat.inoo.it {
-	reverse_proxy templatino-web:80
+languor.inoo.it {
+	reverse_proxy languorino-web:80
 }

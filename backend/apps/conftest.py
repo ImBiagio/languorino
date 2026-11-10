@@ -12,7 +12,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = User
 
-    email = factory.Sequence(lambda n: f"utente{n}@templatino.test")
+    email = factory.Sequence(lambda n: f"utente{n}@languorino.test")
     display_name = factory.Sequence(lambda n: f"Utente {n}")
     is_active = True
 

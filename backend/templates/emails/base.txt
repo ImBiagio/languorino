@@ -8,5 +8,5 @@
 {% if note %}
 {{ note }}
 {% endif %}
-Templatino
+Languorino
 {% endautoescape %}
