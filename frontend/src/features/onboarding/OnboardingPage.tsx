@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 
 import { useCompleteOnboarding, useProfile, useUpdateProfile } from '../../api/hooks'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
+import { FoodPattern } from '../../components/illustrations'
 import { ErrorBanner, Icon, Progress, Skeleton } from '../../components/ui'
 import { ApiError } from '../../lib/api'
 import { gettext, interpolate } from '../../lib/i18n'
@@ -68,47 +69,51 @@ function Wizard({ profile }: { profile: Profile }) {
           label={gettext('Avanzamento del profilo')}
         />
 
-        <section className="card-elevated mt-5 bg-surface p-5 sm:p-8">
-          <div className="mb-6 flex items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-primary-container text-on-primary-container">
-              <Icon name={section.icon} size={24} />
+        <section className="card-elevated mt-5 overflow-hidden bg-surface">
+          {/* Testata a doodle con l'icona del passo che ci si appoggia sopra. */}
+          <div className="relative h-20 bg-primary-container">
+            <FoodPattern opacity={0.9} />
+            <span className="absolute -bottom-7 left-5 flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary text-on-primary shadow-fab-mobile sm:left-8">
+              <Icon name={section.icon} size={28} />
             </span>
-            <div>
+          </div>
+          <div className="p-5 pt-10 sm:p-8 sm:pt-11">
+            <div className="mb-6">
               <h1 className="text-title-large">{section.title}</h1>
               <p className="text-body-medium text-on-surface-variant">{section.subtitle}</p>
             </div>
-          </div>
 
-          <section.Component
-            draft={draft}
-            set={(changes) => setDraft((current) => ({ ...current, ...changes }))}
-            errors={errors}
-            profile={profile}
-          />
+            <section.Component
+              draft={draft}
+              set={(changes) => setDraft((current) => ({ ...current, ...changes }))}
+              errors={errors}
+              profile={profile}
+            />
 
-          <div className="mt-6">
-            <ErrorBanner error={error} />
-          </div>
-          <div className="mt-4 flex items-center gap-3">
-            {step > 0 && (
-              <button
-                type="button"
-                className="btn-text"
-                onClick={() => {
-                  setError(null)
-                  setStep(step - 1)
-                }}
-                disabled={busy}
-              >
-                <Icon name="arrow_back" size={20} />
-                {gettext('Indietro')}
+            <div className="mt-6">
+              <ErrorBanner error={error} />
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              {step > 0 && (
+                <button
+                  type="button"
+                  className="btn-text"
+                  onClick={() => {
+                    setError(null)
+                    setStep(step - 1)
+                  }}
+                  disabled={busy}
+                >
+                  <Icon name="arrow_back" size={20} />
+                  {gettext('Indietro')}
+                </button>
+              )}
+              <span className="flex-1" />
+              <button type="button" className="btn-filled" onClick={next} disabled={busy}>
+                {last ? gettext('Inizia') : gettext('Avanti')}
+                <Icon name={last ? 'check' : 'arrow_forward'} size={20} />
               </button>
-            )}
-            <span className="flex-1" />
-            <button type="button" className="btn-filled" onClick={next} disabled={busy}>
-              {last ? gettext('Inizia') : gettext('Avanti')}
-              <Icon name={last ? 'check' : 'arrow_forward'} size={20} />
-            </button>
+            </div>
           </div>
         </section>
 

@@ -119,7 +119,7 @@ function OptionCard({
       className={clsx(
         'state flex w-full items-center gap-3 rounded-row px-4 py-3 text-left transition',
         selected
-          ? 'bg-secondary-container text-on-secondary-container'
+          ? 'bg-primary-container text-on-primary-container'
           : 'bg-surface-container text-on-surface',
       )}
     >
@@ -130,7 +130,7 @@ function OptionCard({
           <span
             className={clsx(
               'block text-body-small',
-              selected ? 'text-on-secondary-container' : 'text-on-surface-variant',
+              selected ? 'text-on-primary-container' : 'text-on-surface-variant',
             )}
           >
             {hint}

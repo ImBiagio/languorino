@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 
 import { useProfile } from '../../api/hooks'
-import { Page, PageHeader } from '../../components/Layout'
+import { Page } from '../../components/Layout'
+import { EmptyPlateIllustration, FoodPattern } from '../../components/illustrations'
 import { Chip, EmptyState, Icon } from '../../components/ui'
 import { useAuth } from '../../lib/auth'
-import { gettext, interpolate } from '../../lib/i18n'
+import { gettext, interpolate, intlLocale } from '../../lib/i18n'
 import { GOAL_OPTIONS, preferenceLabel } from '../profile/options'
 
 /**
@@ -21,13 +22,20 @@ export function HomePage() {
 
   return (
     <Page>
-      <PageHeader
-        title={interpolate(gettext('Ciao %s'), [user?.display_name ?? ''])}
-        subtitle={gettext('Cosa mangiamo oggi?')}
-      />
-      <div className="grid gap-4 px-5 md:px-8">
+      <div className="grid gap-4 px-5 pt-5 md:px-8 md:pt-8">
+        {/* Benvenuto: la sola superficie piena di blu della pagina. */}
+        <header className="relative overflow-hidden rounded-panel bg-primary px-6 py-7 text-on-primary md:px-8 md:py-9">
+          <FoodPattern tone="dark" opacity={0.35} />
+          <div className="relative">
+            <p className="text-body-large opacity-90">{todayLabel()}</p>
+            <h1 className="mt-1 text-[28px] font-medium leading-9 md:text-headline-small">
+              {interpolate(gettext('Ciao %s'), [user?.display_name ?? ''])}
+            </h1>
+            <p className="mt-1 text-body-large opacity-90">{gettext('Cosa mangiamo oggi?')}</p>
+          </div>
+        </header>
         <EmptyState
-          icon="restaurant_menu"
+          illustration={<EmptyPlateIllustration />}
           title={gettext('Ancora nessun piano')}
           description={gettext(
             'Quando avrai un piano alimentare, qui troverai i pasti di oggi e di domani e cosa preparare.',
@@ -85,4 +93,14 @@ function SummaryRow({
       </div>
     </div>
   )
+}
+
+/** "lunedì 10 novembre", nella lingua dell'interfaccia. */
+function todayLabel(): string {
+  const label = new Intl.DateTimeFormat(intlLocale(), {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date())
+  return label.charAt(0).toUpperCase() + label.slice(1)
 }
