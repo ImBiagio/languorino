@@ -84,7 +84,7 @@ frontend/src/
 ├── lib/                 client HTTP, auth, i18n, format, tipi
 ├── components/          UI M3, layout, dialog di conferma
 └── features/            auth · account · home · onboarding · profile · interview · recipes · plans · shopping · kitchen
-deploy/                  compose di produzione, Caddy interno, edge condiviso
+deploy/                  compose di produzione e Caddy interno (edge e offsite: repo homeserver)
 docs/decisions/          ADR (modello in 0000-modello.md)
 ```
 
@@ -181,18 +181,18 @@ Primo avvio sul server:
 1. DNS: record A per `languor.inoo.it` → l'IP del server (come gli altri progetti);
 2. `~/languorino/compose.prod.yaml` (da `deploy/`) e `~/languorino/.env`
    (modello `deploy/.env.prod.example`, SMTP Brevo come gli altri);
-3. il blocco `languor.inoo.it` del Caddyfile dell'edge (`deploy/edge/`,
-   condiviso fra i progetti) copiato in `~/edge/` e ricaricato con
-   `docker exec edge-caddy-1 caddy reload --config /etc/caddy/Caddyfile`, che
-   non ferma gli altri;
+3. il blocco `languor.inoo.it { reverse_proxy languorino-web:80 }` nel Caddyfile
+   dell'edge, che sta nel repo [homeserver](https://github.com/ImBiagio/homeserver)
+   (`edge/`), applicato con `./deploy.sh edge` (valida, fa il backup e
+   ricarica senza fermare gli altri siti);
 4. `git push origin main:prod`, poi `cd ~/languorino && docker compose -f
    compose.prod.yaml up -d` e `createsuperuser`.
 
 Backup notturni sul disco del server, a ogni avvio e poi ogni notte:
 Postgres (servizio `backup`) in `~/languorino/backups/{daily,weekly,monthly,last}`
 e i file caricati (servizio `media-backup`, volume `languorino_media`) in
-`~/languorino/backups/media/`. Per la copia fuori dal server aggiungere la
-cartella `backups` allo stack `~/offsite` (sorgenti in `soldino/deploy/offsite/`).
+`~/languorino/backups/media/`. La copia cifrata fuori dal server, ogni notte su
+Google Drive, la fa lo stack `~/offsite` del repo homeserver (`offsite/`).
 
 ## Test
 

@@ -1,5 +1,5 @@
 # Caddy interno di languorino: HTTP semplice sulla rete Docker. HTTPS e
-# certificati li gestisce il proxy "edge" davanti (deploy/edge), che smista
+# certificati li gestisce il proxy "edge" davanti (repo homeserver, edge/), che smista
 # tutti i domini *.inoo.it sullo stesso server.
 {
 	auto_https off

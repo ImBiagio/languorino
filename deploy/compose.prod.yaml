@@ -1,7 +1,7 @@
 # Produzione su homeserver: immagini pre-buildate dalla GitHub Action (branch
 # prod) e aggiornate da Watchtower. Sul server servono solo questo file e un
 # .env accanto (modello in deploy/.env.prod.example). Nessuna porta pubblicata:
-# il traffico arriva dal proxy "edge" (deploy/edge) sulla rete Docker "edge".
+# il traffico arriva dal proxy "edge" (repo homeserver, edge/) sulla rete Docker "edge".
 name: languorino
 
 x-backend: &backend
