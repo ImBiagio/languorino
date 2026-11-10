@@ -17,6 +17,7 @@ interface Destination {
 const DESTINATIONS: Destination[] = [
   { to: '/', label: gettext('Oggi'), icon: 'today', end: true },
   { to: '/piano', label: gettext('Piano'), icon: 'calendar_month' },
+  { to: '/spesa', label: gettext('Spesa'), icon: 'shopping_cart' },
   { to: '/ricette', label: gettext('Ricette'), icon: 'menu_book' },
   { to: '/profilo', label: gettext('Profilo'), icon: 'person' },
 ]

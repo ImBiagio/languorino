@@ -37,6 +37,7 @@ import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { MealPlanDetail, PlannedMeal } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
 import { formatMinutes } from '../recipes/options'
+import { MakeShoppingDialog } from '../shopping/ShoppingPages'
 import {
   addDays,
   formatDayLong,
@@ -108,6 +109,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
   const retry = useRetryPlan()
   const remove = useDeletePlan()
   const [view, setView] = useState<'eat' | 'cook'>('eat')
+  const [shopping, setShopping] = useState(false)
   const today = todayIso()
   const days = useMemo(
     () => Array.from({ length: plan.days }, (_, offset) => addDays(plan.start_date, offset)),
@@ -154,6 +156,15 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
             </p>
           </div>
           <div className="flex gap-1">
+            {(plan.status === 'active' || plan.status === 'draft') && (
+              <IconButton
+                icon="shopping_cart"
+                size="md"
+                inheritColor
+                label={gettext('Fai la spesa')}
+                onClick={() => setShopping(true)}
+              />
+            )}
             <IconButton
               icon="add"
               size="md"
@@ -186,6 +197,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
       </header>
 
       <ErrorBanner error={mutationError} />
+      {shopping && <MakeShoppingDialog plan={plan} onClose={() => setShopping(false)} />}
 
       {plan.status === 'generating' && <Generating plan={plan} />}
 

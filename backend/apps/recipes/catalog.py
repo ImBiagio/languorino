@@ -225,7 +225,13 @@ CATALOG: list[Item] = [
     fish("polpo", "octopus", 1, ("molluscs",)),
     # --- latticini e uova ---
     dairy(
-        "uova", "eggs", 21, "pz", 60, ("eggs",), ("uovo", "tuorlo", "tuorli", "albume", "albumi")
+        "uova",
+        "eggs",
+        21,
+        "pz",
+        60,
+        ("eggs",),
+        ("uovo", "tuorlo", "tuorli", "albume", "albumi", "albume d'uovo", "albumi d'uovo"),
     ),
     dairy("latte", "milk", 5, "ml", aliases=("latte intero", "latte parzialmente scremato")),
     dairy("burro", "butter", 30, aliases=("burro chiarificato",)),
@@ -333,7 +339,7 @@ CATALOG: list[Item] = [
     pantry("quinoa", "quinoa"),
     pantry("bulgur", "bulgur", ("gluten",)),
     pantry("polenta", "polenta", aliases=("farina di mais", "polenta istantanea")),
-    pantry("fiocchi d'avena", "rolled oats", ("gluten",), aliases=("avena",)),
+    pantry("fiocchi d'avena", "rolled oats", ("gluten",), aliases=("avena", "farina d'avena")),
     pantry("farina 00", "plain flour", ("gluten",), aliases=("farina", "farina di grano tenero")),
     pantry("farina integrale", "wholemeal flour", ("gluten",)),
     pantry("semola", "semolina", ("gluten",), aliases=("semola rimacinata",)),

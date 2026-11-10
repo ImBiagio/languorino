@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 15:29+0100\n"
+"POT-Creation-Date: 2026-11-10 15:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -579,6 +579,43 @@ msgstr "Cookbook"
 #: apps/recipes/views.py:312
 msgid "Si può riprendere solo una lettura interrotta."
 msgstr "Only a stopped reading can be resumed."
+
+#: apps/shopping/models.py:20
+msgid "Da fare"
+msgstr "To do"
+
+#: apps/shopping/models.py:21
+msgid "Fatta"
+msgstr "Done"
+
+#: apps/shopping/serializers.py:33
+msgid "Scrivi cosa comprare."
+msgstr "Write what to buy."
+
+#: apps/shopping/serializers.py:38
+msgid "Unità sconosciuta."
+msgstr "Unknown unit."
+
+#: apps/shopping/serializers.py:91
+msgid "Piano non trovato."
+msgstr "Plan not found."
+
+#: apps/shopping/serializers.py:97
+msgid "L'intervallo di giorni è vuoto."
+msgstr "The date range is empty."
+
+#: apps/shopping/views.py:68
+#, python-format
+msgid "Spesa dal %(start)s al %(end)s"
+msgstr "Shopping from %(start)s to %(end)s"
+
+#: apps/shopping/views.py:73
+msgid "Spesa"
+msgstr "Shopping"
+
+#: apps/shopping/views.py:116
+msgid "Questa lista non viene da un piano."
+msgstr "This list doesn't come from a plan."
 
 #: apps/users/emails.py:22
 msgid "Conferma il tuo indirizzo email"

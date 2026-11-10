@@ -111,6 +111,18 @@ PREPARATION_WORDS = {
     "diced",
     "peeled",
     "minced",
+    # Descrittivi che i ricettari aggiungono al nome ("farro perlato").
+    "perlato",
+    "perlata",
+    "decorticato",
+    "decorticata",
+    "decorticati",
+    "decorticate",
+    "biologico",
+    "biologica",
+    "biologici",
+    "biologiche",
+    "bio",
 }
 
 
