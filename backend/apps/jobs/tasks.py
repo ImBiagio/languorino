@@ -84,11 +84,21 @@ def _nutritionist_plan(job: Job) -> None:
     job.result = {"nutritionist_plan": str(plan.id), "problem": ""}
 
 
+def _recipe_image(job: Job) -> None:
+    from apps.recipes.images import draw_image
+    from apps.recipes.models import Recipe
+
+    recipe = Recipe.objects.get(id=job.input["recipe"], owner=job.owner)
+    job.model = draw_image(recipe, job.owner)
+    job.result = {"recipe": str(recipe.id), "image": recipe.image.url}
+
+
 RUNNERS = {
     Job.Kind.IMPORT_RECIPES: _import_recipes,
     Job.Kind.FRIDGE_SCAN: _fridge_scan,
     Job.Kind.COOK_IDEAS: _cook_ideas,
     Job.Kind.NUTRITIONIST_PLAN: _nutritionist_plan,
+    Job.Kind.RECIPE_IMAGE: _recipe_image,
 }
 
 

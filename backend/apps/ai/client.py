@@ -171,3 +171,61 @@ def generate[Schema: BaseModel](
         )
         % {"models": ", ".join(dict.fromkeys(tried)), "error": last_error}
     )
+
+
+def generate_image(
+    prompt: str, *, feature: str, user=None, timeout_ms: int = 120_000
+) -> tuple[bytes, str, str]:
+    """Un'immagine da un testo: ``(byte, tipo, modello)``. Un solo modello,
+    senza riserve: le immagini non sono urgenti e costano."""
+    if not is_enabled():
+        raise AIError(
+            _("Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e riavvia.")
+        )
+
+    from google import genai
+    from google.genai import errors, types
+
+    client = genai.Client(
+        api_key=settings.GEMINI_API_KEY,
+        http_options=types.HttpOptions(timeout=timeout_ms, api_version=API_VERSION),
+    )
+    model = settings.GEMINI_MODEL_IMAGE
+    started = time.monotonic()
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=[prompt],
+            config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+        )
+    except errors.APIError as exc:
+        _log(user, feature, model, started, error=f"{exc.code} {exc.message or ''}")
+        if exc.code == 429 and "limit: 0" in str(exc):
+            # Piano gratuito: per le immagini la quota e' zero, non passa aspettando.
+            raise AIError(
+                _(
+                    "La chiave Gemini non ha quota per le immagini (piano gratuito): "
+                    "attiva la fatturazione su Google AI Studio."
+                )
+            ) from exc
+        if exc.code in TRANSIENT_CODES:
+            raise AIOverloaded(
+                _("Gemini è sovraccarico in questo momento. Riprova tra qualche minuto.")
+            ) from exc
+        if exc.code in (401, 403):
+            raise AIError(_("Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY.")) from exc
+        raise AIError(
+            _("Gemini ha risposto con un errore (%(code)s).") % {"code": exc.code}
+        ) from exc
+    except SoftTimeLimitExceeded:
+        raise
+    except Exception as exc:  # rete, timeout
+        _log(user, feature, model, started, error=str(exc) or type(exc).__name__)
+        raise AIOverloaded(_("Gemini non risponde. Riprova tra qualche minuto.")) from exc
+    _log(user, feature, model, started, response=response)
+    for candidate in response.candidates or []:
+        for part in getattr(candidate.content, "parts", None) or []:
+            inline = getattr(part, "inline_data", None)
+            if inline is not None and inline.data:
+                return inline.data, inline.mime_type or "image/png", model
+    raise AIError(_("Gemini non ha disegnato niente questa volta. Riprova."))

@@ -646,3 +646,37 @@ export function useDeleteNutritionistPlan() {
     onSuccess: () => client.invalidateQueries({ queryKey: keys.nutritionistPlans }),
   })
 }
+
+/* ------------------------------------------------ immagini delle ricette -- */
+
+function useRecipeImageMutation<T>(fn: (input: T) => Promise<Recipe>) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (recipe) => {
+      client.setQueryData(keys.recipe(recipe.id), recipe)
+      void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
+    },
+  })
+}
+
+export function useUploadRecipeImage() {
+  return useRecipeImageMutation(({ id, file }: { id: UUID; file: File }) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<Recipe>(`/api/recipes/${id}/image`, form)
+  })
+}
+
+export function useRemoveRecipeImage() {
+  return useRecipeImageMutation((id: UUID) => api.delete<Recipe>(`/api/recipes/${id}/image`))
+}
+
+/** Gemini disegna l'immagine: torna il job da seguire. */
+export function useDrawRecipeImage() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<Job>(`/api/recipes/${id}/image/draw`),
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}

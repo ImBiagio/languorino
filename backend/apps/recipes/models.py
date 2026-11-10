@@ -14,6 +14,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Lower
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
 
@@ -178,6 +180,13 @@ class RecipeBook(BaseModel):
         return self.title
 
 
+def recipe_image_path(instance: Recipe, filename: str) -> str:
+    # Nome nuovo a ogni immagine: in produzione /media ha cache lunga e immutabile.
+    from apps.core.methods import random_token
+
+    return f"recipes/{instance.owner_id}/{instance.id}-{random_token(6)}.webp"
+
+
 class Recipe(BaseModel):
     class Source(models.TextChoices):
         MANUAL = "manual", _("Scritta a mano")
@@ -227,6 +236,14 @@ class Recipe(BaseModel):
     )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.CONFIRMED)
 
+    class ImageSource(models.TextChoices):
+        PHOTO = "photo", _("Foto")
+        AI = "ai", _("Disegnata dall'AI")
+
+    # Foto vera o generata (ADR 0011), sempre WebP; vuota = disegno per categoria.
+    image = models.ImageField(upload_to=recipe_image_path, max_length=200, blank=True)
+    image_source = models.CharField(max_length=8, choices=ImageSource.choices, blank=True)
+
     class Meta:
         ordering = ["-updated_at"]
 
@@ -254,3 +271,10 @@ class RecipeIngredient(models.Model):
 
     def __str__(self) -> str:
         return f"{self.quantity or ''} {self.unit} {self.ingredient}".strip()
+
+
+@receiver(post_delete, sender=Recipe)
+def _delete_image(sender, instance: Recipe, **kwargs) -> None:
+    """Cancellata davvero (non il soft delete): via anche l'immagine dal disco."""
+    if instance.image:
+        instance.image.delete(save=False)

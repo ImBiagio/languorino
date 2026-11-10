@@ -16,8 +16,12 @@ from rest_framework.views import APIView
 
 from apps.ai.client import is_enabled
 from apps.jobs.files import PDF, sniff
+from apps.jobs.models import Job
+from apps.jobs.serializers import JobSerializer
+from apps.jobs.views import enqueue_job
 
 from .books import BookRejected, page_count
+from .images import ImageRejected, clear_image, images_today, set_image
 from .matching import normalize, variants
 from .models import Recipe, RecipeBook, RecipeIngredient, Tag
 from .serializers import (
@@ -320,3 +324,93 @@ class RecipeBookRetryView(APIView):
             RecipeBookSerializer(books_of(request.user).get(pk=pk)).data,
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+# --- immagini (ADR 0011) ------------------------------------------------------------------
+
+PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+class RecipeImageView(APIView):
+    """Foto vera della ricetta (POST multipart ``file``) o via l'immagine (DELETE)."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    @extend_schema(
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {"file": {"type": "string", "format": "binary"}},
+            }
+        },
+        responses={200: RecipeSerializer},
+    )
+    def post(self, request, pk):
+        recipe = get_object_or_404(recipes_of(request.user), pk=pk)
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise serializers.ValidationError({"file": _("Scegli una foto.")})
+        data = upload.read()
+        if sniff(data[:16]) not in PHOTO_TYPES:
+            raise serializers.ValidationError(
+                {"file": _("Serve una foto JPEG, PNG o WebP (le HEIC dell'iPhone non ancora).")}
+            )
+        if len(data) > settings.JOB_MAX_IMAGE_BYTES:
+            raise serializers.ValidationError(
+                {
+                    "file": _("Foto troppo grande (massimo %(mb)d MB).")
+                    % {"mb": settings.JOB_MAX_IMAGE_BYTES // (1024 * 1024)}
+                }
+            )
+        try:
+            set_image(recipe, data, Recipe.ImageSource.PHOTO)
+        except ImageRejected as exc:
+            raise serializers.ValidationError({"file": str(exc)}) from exc
+        recipe = recipes_of(request.user).get(pk=pk)
+        return Response(RecipeSerializer(recipe, context={"request": request}).data)
+
+    @extend_schema(responses={200: RecipeSerializer})
+    def delete(self, request, pk):
+        recipe = get_object_or_404(recipes_of(request.user), pk=pk)
+        clear_image(recipe)
+        recipe = recipes_of(request.user).get(pk=pk)
+        return Response(RecipeSerializer(recipe, context={"request": request}).data)
+
+
+class RecipeImageDrawView(APIView):
+    """Gemini disegna l'immagine della ricetta, in un job (ADR 0011)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: JobSerializer})
+    def post(self, request, pk):
+        recipe = get_object_or_404(recipes_of(request.user), pk=pk)
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if recipe.image_source == Recipe.ImageSource.PHOTO:
+            raise serializers.ValidationError(
+                {"detail": _("Ha già una foto vera: toglila prima di farne disegnare una.")}
+            )
+        if images_today(request.user) >= settings.AI_IMAGES_PER_DAY:
+            raise serializers.ValidationError(
+                {
+                    "detail": _(
+                        "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
+                    )
+                    % {"n": settings.AI_IMAGES_PER_DAY}
+                }
+            )
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.RECIPE_IMAGE,
+                input={"recipe": str(recipe.id), "language": (get_language() or "it")[:2]},
+            )
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)

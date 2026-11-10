@@ -4,6 +4,8 @@
 
 import { useId } from 'react'
 
+import { mediaUrl } from '../lib/api'
+
 type Tone = 'light' | 'dark' | 'strong'
 
 export type DoodleKind =
@@ -289,6 +291,32 @@ export function RecipeArt({
       </svg>
     </div>
   )
+}
+
+/**
+ * La copertina di una ricetta: la sua immagine (foto vera o disegnata
+ * dall'AI, ADR 0011) se c'e', altrimenti il disegno della categoria.
+ */
+export function RecipeCover({
+  recipe,
+  size = 64,
+  className,
+}: {
+  recipe: { image?: string | null; main_category: string }
+  size?: number
+  className?: string
+}) {
+  if (recipe.image) {
+    return (
+      <img
+        src={mediaUrl(recipe.image)}
+        alt=""
+        loading="lazy"
+        className={className ?? 'absolute inset-0 h-full w-full object-cover'}
+      />
+    )
+  }
+  return <RecipeArt category={recipe.main_category} size={size} className={className} />
 }
 
 /** Un ricettario aperto con qualche doodle sulle pagine: il ricettario vuoto. */

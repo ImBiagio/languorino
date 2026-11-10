@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom'
 
 import { useCookSuggestions, useJob, useProfile, useScanFridge } from '../../api/hooks'
 import { Page } from '../../components/Layout'
-import { FoodPattern, RecipeArt } from '../../components/illustrations'
+import { FoodPattern, RecipeCover } from '../../components/illustrations'
 import {
   Chip,
   ChipEditor,
@@ -321,7 +321,7 @@ function MatchCard({ match }: { match: CookMatch }) {
       className="state card-elevated flex gap-3 overflow-hidden bg-surface-container-low"
     >
       <div className="relative w-24 shrink-0">
-        <RecipeArt category={match.recipe.main_category} size={36} />
+        <RecipeCover recipe={match.recipe} size={36} />
       </div>
       <div className="min-w-0 flex-1 py-3 pr-3">
         <p className="truncate text-body-large font-medium">{match.recipe.title}</p>
@@ -385,7 +385,7 @@ function Ideas({ jobId }: { jobId: string }) {
               className="state card-elevated flex gap-3 overflow-hidden bg-surface-container-low"
             >
               <div className="relative w-24 shrink-0">
-                <RecipeArt category={recipe.main_category} size={36} />
+                <RecipeCover recipe={recipe} size={36} />
               </div>
               <div className="min-w-0 flex-1 py-3 pr-3">
                 <p className="truncate text-body-large font-medium">{recipe.title}</p>

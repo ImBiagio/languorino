@@ -21,6 +21,7 @@ class Job(BaseModel):
         FRIDGE_SCAN = "fridge_scan", _("Leggi il frigo")
         COOK_IDEAS = "cook_ideas", _("Idee per cucinare")
         NUTRITIONIST_PLAN = "nutritionist_plan", _("Leggi il piano del nutrizionista")
+        RECIPE_IMAGE = "recipe_image", _("Disegna la ricetta")
 
     class Status(models.TextChoices):
         QUEUED = "queued", _("In coda")
