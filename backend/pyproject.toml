@@ -19,6 +19,9 @@ dependencies = [
     "python-dotenv>=1.0",
     "Pillow>=10.3",
     "httpx>=0.27",
+    # Gemini (ADR 0005): stessa libreria e versioni di soldino.
+    "google-genai>=1.0,<3",
+    "pydantic>=2.7",
 ]
 
 [project.optional-dependencies]

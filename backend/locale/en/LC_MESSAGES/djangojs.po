@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 13:15+0100\n"
+"POT-Creation-Date: 2026-11-10 14:11+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -636,6 +636,146 @@ msgstr "Meals and nutritionist"
 msgid "L’ultima cosa: come vuoi organizzare la giornata."
 msgstr "One last thing: how you want to organise your day."
 
+msgid "Importa ricette"
+msgstr "Import recipes"
+
+msgid "Dalla carta al ricettario"
+msgstr "From paper to cookbook"
+
+msgid ""
+"Fotografa le ricette scritte a mano o carica il PDF del nutrizionista: le "
+"leggo io, tu controlli e confermi."
+msgstr ""
+"Take photos of handwritten recipes or upload your nutritionist's PDF: I "
+"read them, you check and confirm."
+
+msgid "Foto"
+msgstr "Photos"
+
+msgid "Scatta o scegli dalla galleria, anche più pagine"
+msgstr "Take or pick from your gallery, several pages too"
+
+msgid "PDF"
+msgstr "PDF"
+
+msgid "Un ricettario o il piano del nutrizionista"
+msgstr "A cookbook or your nutritionist's plan"
+
+#, javascript-format
+msgid "%s file da leggere"
+msgid_plural "%s file da leggere"
+msgstr[0] "%s file to read"
+msgstr[1] "%s files to read"
+
+#, javascript-format
+msgid ""
+"Una pagina per foto, dritta e con buona luce. Al massimo %s file alla volta: "
+"foto fino a 10 MB, PDF fino a 18 MB."
+msgstr ""
+"One page per photo, straight and well lit. At most %s files at a time: "
+"photos up to 10 MB, PDFs up to 18 MB."
+
+msgid "Carico…"
+msgstr "Uploading…"
+
+msgid "Leggi le ricette"
+msgstr "Read the recipes"
+
+msgid "Togli il file"
+msgstr "Remove file"
+
+msgid "Sto leggendo le ricette…"
+msgstr "Reading the recipes…"
+
+#, javascript-format
+msgid ""
+"Di solito ci vuole meno di un minuto per %s file. Puoi anche uscire: la "
+"lettura continua e la ritrovi nel ricettario."
+msgid_plural ""
+"Di solito ci vuole meno di un minuto per %s file. Puoi anche uscire: la "
+"lettura continua e la ritrovi nel ricettario."
+msgstr[0] "It usually takes less than a minute for %s file. You can leave: reading carries on and you'll find it in your cookbook."
+msgstr[1] "It usually takes less than a minute for %s files. You can leave: reading carries on and you'll find it in your cookbook."
+
+msgid "Non sono riuscito a leggere le ricette"
+msgstr "I couldn't read the recipes"
+
+msgid "Lascia perdere"
+msgstr "Never mind"
+
+msgid "Riprova"
+msgstr "Try again"
+
+msgid "Non ho trovato ricette"
+msgstr "I found no recipes"
+
+msgid "Prova con una foto più nitida o un altro file."
+msgstr "Try a sharper photo or another file."
+
+msgid "Prova con altri file"
+msgstr "Try other files"
+
+#, javascript-format
+msgid "%s ricetta aggiunta al ricettario"
+msgid_plural "%s ricette aggiunte al ricettario"
+msgstr[0] "%s recipe added to your cookbook"
+msgstr[1] "%s recipes added to your cookbook"
+
+msgid "Apri la ricetta"
+msgstr "Open the recipe"
+
+msgid "Vai al ricettario"
+msgstr "Go to the cookbook"
+
+#, javascript-format
+msgid "Ho trovato %s ricetta"
+msgid_plural "Ho trovato %s ricette"
+msgstr[0] "I found %s recipe"
+msgstr[1] "I found %s recipes"
+
+msgid ""
+"Controlla e correggi prima di aggiungerle. Quello che il testo non diceva "
+"l’ho stimato io: lo trovi segnato come"
+msgstr ""
+"Check and fix them before adding them. What the text didn't say I "
+"estimated myself: you'll find it marked as"
+
+msgid "Dedotto"
+msgstr "Estimated"
+
+msgid "Senza nome"
+msgstr "Untitled"
+
+#, javascript-format
+msgid "%s ingrediente"
+msgid_plural "%s ingredienti"
+msgstr[0] "%s ingredient"
+msgstr[1] "%s ingredients"
+
+msgid "Da correggere"
+msgstr "Needs fixing"
+
+msgid "Aggiungi questa ricetta"
+msgstr "Add this recipe"
+
+msgid "Scartare tutto?"
+msgstr "Discard everything?"
+
+msgid "Le ricette lette e i file caricati spariscono."
+msgstr "The recipes read and the uploaded files will disappear."
+
+msgid "Scarta"
+msgstr "Discard"
+
+msgid "Scarta tutto"
+msgstr "Discard all"
+
+#, javascript-format
+msgid "Aggiungi %s ricetta"
+msgid_plural "Aggiungi %s ricette"
+msgstr[0] "Add %s recipe"
+msgstr[1] "Add %s recipes"
+
 msgid "Elimina"
 msgstr "Delete"
 
@@ -696,12 +836,6 @@ msgstr "No steps written."
 msgid "Modifica la ricetta"
 msgstr "Edit the recipe"
 
-msgid "Modifica ricetta"
-msgstr "Edit recipe"
-
-msgid "Nuova ricetta"
-msgstr "New recipe"
-
 msgid "Nome della ricetta"
 msgstr "Recipe name"
 
@@ -709,8 +843,7 @@ msgid "Descrizione"
 msgstr "Description"
 
 msgid "Facoltativa: due righe su com’è o da dove viene."
-msgstr ""
-"Optional: a couple of lines on what it's like or where it comes from."
+msgstr "Optional: a couple of lines on what it's like or where it comes from."
 
 msgid "Porzioni e tempi"
 msgstr "Servings and times"
@@ -790,8 +923,8 @@ msgstr ""
 msgid "Aggiungi un tag"
 msgstr "Add a tag"
 
-msgid "Salva la ricetta"
-msgstr "Save the recipe"
+msgid "Il testo non lo diceva: l’ha dedotto l’intelligenza artificiale."
+msgstr "The text didn't say this: the AI estimated it."
 
 #, javascript-format
 msgid "Ingrediente %s"
@@ -814,6 +947,15 @@ msgstr "Note (e.g. chopped)"
 
 msgid "Facoltativo"
 msgstr "Optional"
+
+msgid "Modifica ricetta"
+msgstr "Edit recipe"
+
+msgid "Nuova ricetta"
+msgstr "New recipe"
+
+msgid "Salva la ricetta"
+msgstr "Save the recipe"
 
 #, javascript-format
 msgid "%s ricetta nel ricettario"
@@ -840,6 +982,9 @@ msgstr ""
 "Write down the recipes you usually make: your meal plan will start from "
 "these."
 
+msgid "Da foto o PDF"
+msgstr "From photo or PDF"
+
 msgid "Scrivi la prima ricetta"
 msgstr "Write your first recipe"
 
@@ -848,6 +993,30 @@ msgstr "No recipes found"
 
 msgid "Prova a togliere un filtro o a cercare un’altra parola."
 msgstr "Try removing a filter or searching for another word."
+
+#, javascript-format
+msgid "%s ricetta letta da rivedere"
+msgid_plural "%s ricette lette da rivedere"
+msgstr[0] "%s recipe read, to review"
+msgstr[1] "%s recipes read, to review"
+
+msgid "Lettura finita: guarda il risultato"
+msgstr "Reading finished: see the result"
+
+msgid "Sto leggendo le tue ricette…"
+msgstr "Reading your recipes…"
+
+msgid "Aggiungi una ricetta"
+msgstr "Add a recipe"
+
+msgid "Quaderno di casa, ricettario, piano del nutrizionista"
+msgstr "Family notebook, cookbook, nutritionist's plan"
+
+msgid "Scrivila a mano"
+msgstr "Write it by hand"
+
+msgid "Ingredienti dal catalogo, passi, tag"
+msgstr "Ingredients from the catalogue, steps, tags"
 
 msgid "Facile"
 msgstr "Easy"

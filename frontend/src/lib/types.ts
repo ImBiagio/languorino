@@ -215,3 +215,51 @@ export interface RecipeFilters {
   max_minutes?: number
   slot?: MealSlot
 }
+
+/* ------------------------------------------------------ lavori e import -- */
+
+export type JobStatus = 'queued' | 'running' | 'ready' | 'confirmed' | 'failed'
+
+/** Una ricetta letta da foto o PDF, prima della revisione (backend `recipes/importing.py`). */
+export interface ImportedRecipeDraft {
+  title: string
+  description: string
+  servings: number
+  prep_minutes: number
+  cook_minutes: number
+  difficulty: Difficulty
+  meal_slots: MealSlot[]
+  keeps_days: number | null
+  freezable: boolean
+  steps: string[]
+  tags: string[]
+  ingredients: {
+    ingredient_id: UUID | null
+    name: string
+    category: Category | null
+    quantity: string | null
+    unit: Unit
+    note: string
+    optional: boolean
+  }[]
+  /** I campi che l'LLM ha dedotto perche' il testo non li diceva. */
+  inferred: string[]
+}
+
+export interface Job {
+  id: UUID
+  kind: 'import_recipes'
+  status: JobStatus
+  result: {
+    recipes?: ImportedRecipeDraft[]
+    /** Perche' non c'e' nessuna ricetta (foto sfocata, non e' una ricetta). */
+    problem?: string
+    /** Dopo la conferma: le ricette create. */
+    created?: UUID[]
+  }
+  error: string
+  files: { id: UUID; content_type: string; original_name: string; size: number }[]
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+}

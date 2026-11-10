@@ -13,6 +13,7 @@ import {
 import { HomePage } from './features/home/HomePage'
 import { OnboardingPage } from './features/onboarding/OnboardingPage'
 import { ProfilePage } from './features/profile/ProfilePage'
+import { ImportJobPage, ImportPage } from './features/recipes/ImportPages'
 import { RecipeDetailPage } from './features/recipes/RecipeDetailPage'
 import { RecipeFormPage } from './features/recipes/RecipeFormPage'
 import { RecipesPage } from './features/recipes/RecipesPage'
@@ -69,6 +70,8 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="ricette" element={<RecipesPage />} />
         <Route path="ricette/nuova" element={<RecipeFormPage />} />
+        <Route path="ricette/importa" element={<ImportPage />} />
+        <Route path="ricette/importa/:jobId" element={<ImportJobPage />} />
         <Route path="ricette/:recipeId" element={<RecipeDetailPage />} />
         <Route path="ricette/:recipeId/modifica" element={<RecipeFormPage />} />
         <Route path="profilo" element={<ProfilePage />} />

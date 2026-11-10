@@ -256,6 +256,25 @@
     @apply block h-full rounded-pill bg-primary transition-[width] duration-500 ease-m3;
   }
 
+  /* Linear progress M3 indeterminato: per l'attesa di un job. */
+  .progress-indeterminate {
+    @apply relative h-1 overflow-hidden rounded-pill bg-secondary-container;
+  }
+  .progress-indeterminate::after {
+    content: '';
+    @apply absolute inset-y-0 rounded-pill bg-primary;
+    width: 40%;
+    animation: indeterminate 1.4s infinite var(--ease-m3);
+  }
+  @keyframes indeterminate {
+    from {
+      left: -40%;
+    }
+    to {
+      left: 100%;
+    }
+  }
+
   /* --- Importi e numeri: sempre mono a larghezza fissa --- */
   .amount {
     font-family: theme('fontFamily.mono');

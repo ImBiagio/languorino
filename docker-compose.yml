@@ -54,6 +54,17 @@ services:
         condition: service_healthy
     command: celery -A config worker -l info
 
+  # La coda "ai": tutto cio' che chiama Gemini (ADR 0005). Concorrenza bassa
+  # per stare nei limiti della chiave; un import lungo non blocca le mail.
+  worker-ai:
+    build:
+      context: ./backend
+    env_file: .env
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: celery -A config worker -l info -Q ai -c 2 -n ai@%h
+
   beat:
     build:
       context: ./backend

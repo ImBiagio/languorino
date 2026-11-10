@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 13:15+0100\n"
+"POT-Creation-Date: 2026-11-10 14:11+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,122 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/ai/client.py:81
+msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
+msgstr "The AI's answer wasn't in the expected format."
+
+#: apps/ai/client.py:104
+msgid ""
+"Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
+"riavvia."
+msgstr ""
+"Gemini key not configured: set GEMINI_API_KEY in the .env file and "
+"restart."
+
+#: apps/ai/client.py:139
+msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
+msgstr "Gemini rejected the key: check GEMINI_API_KEY."
+
+#: apps/ai/client.py:143
+#, python-format
+msgid "Gemini ha risposto con un errore (%(code)s)."
+msgstr "Gemini answered with an error (%(code)s)."
+
+#: apps/ai/client.py:146
+#, python-format
+msgid "errore %(code)s"
+msgstr "error %(code)s"
+
+#: apps/ai/client.py:164
+#, python-format
+msgid ""
+"Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
+"Riprova tra qualche minuto."
+msgstr ""
+"Gemini is overloaded right now (%(models)s; last: %(error)s). Try again "
+"in a few minutes."
+
+#: apps/jobs/files.py:58
+msgid "Carica almeno una foto o un PDF."
+msgstr "Upload at least one photo or PDF."
+
+#: apps/jobs/files.py:60
+#, python-format
+msgid "Al massimo %(n)d file alla volta."
+msgstr "At most %(n)d files at a time."
+
+#: apps/jobs/files.py:69
+#, python-format
+msgid "“%(name)s” non è una foto (JPEG, PNG, WebP, HEIC) né un PDF."
+msgstr "“%(name)s” is neither a photo (JPEG, PNG, WebP, HEIC) nor a PDF."
+
+#: apps/jobs/files.py:74
+#, python-format
+msgid "“%(name)s” è troppo grande (massimo %(mb)d MB)."
+msgstr "“%(name)s” is too big (max %(mb)d MB)."
+
+#: apps/jobs/files.py:83
+#, python-format
+msgid "“%(name)s” non si apre come immagine."
+msgstr "“%(name)s” can't be opened as an image."
+
+#: apps/jobs/files.py:89
+#, python-format
+msgid "I file insieme sono troppo grandi (massimo %(mb)d MB)."
+msgstr "The files together are too big (max %(mb)d MB)."
+
+#: apps/jobs/models.py:20
+msgid "Importa ricette"
+msgstr "Import recipes"
+
+#: apps/jobs/models.py:23
+msgid "In coda"
+msgstr "Queued"
+
+#: apps/jobs/models.py:24
+msgid "In lavorazione"
+msgstr "In progress"
+
+#: apps/jobs/models.py:25
+msgid "Da rivedere"
+msgstr "To review"
+
+#: apps/jobs/models.py:26
+msgid "Confermato"
+msgstr "Confirmed"
+
+#: apps/jobs/models.py:27
+msgid "Non riuscito"
+msgstr "Failed"
+
+#: apps/jobs/tasks.py:56
+msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
+msgstr "It's taking too long: try again with fewer pages at a time."
+
+#: apps/jobs/tasks.py:60
+msgid "Qualcosa è andato storto. Riprova tra poco."
+msgstr "Something went wrong. Try again shortly."
+
+#: apps/jobs/tasks.py:75
+msgid "Il lavoro si è interrotto. Riprova."
+msgstr "The job stopped. Try again."
+
+#: apps/jobs/views.py:65
+msgid "Lavoro sconosciuto."
+msgstr "Unknown job."
+
+#: apps/jobs/views.py:68
+msgid "La lettura con l'intelligenza artificiale non è configurata."
+msgstr "AI reading isn't configured."
+
+#: apps/jobs/views.py:127
+msgid "Si può riprovare solo un lavoro non riuscito."
+msgstr "Only a failed job can be retried."
+
+#: apps/jobs/views.py:146
+msgid "Non c'è niente da confermare."
+msgstr "There's nothing to confirm."
 
 #: apps/profiles/allergens.py:22
 msgid "Glutine"

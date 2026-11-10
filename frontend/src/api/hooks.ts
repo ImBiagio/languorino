@@ -7,6 +7,8 @@ import { api } from '../lib/api'
 import type {
   FoodPreference,
   Ingredient,
+  Job,
+  JobStatus,
   Paginated,
   PreferenceKind,
   Profile,
@@ -26,6 +28,9 @@ export const keys = {
   recipe: (id: UUID) => ['recipes', 'detail', id] as const,
   tags: ['tags'] as const,
   ingredients: (query: string) => ['ingredients', query] as const,
+  jobs: ['jobs'] as const,
+  jobList: (statuses: JobStatus[]) => ['jobs', 'list', statuses] as const,
+  job: (id: UUID) => ['jobs', 'detail', id] as const,
 }
 
 /* ------------------------------------------------------ profilo alimentare -- */
@@ -146,5 +151,82 @@ export function useIngredientSearch(query: string) {
     queryFn: () => api.get<Ingredient[]>('/api/ingredients', { q: trimmed }),
     enabled: trimmed.length >= 2,
     staleTime: 5 * 60_000,
+  })
+}
+
+/* ------------------------------------------------------ lavori e import -- */
+
+const WORKING: JobStatus[] = ['queued', 'running']
+
+/** I lavori in corso o da rivedere: il banner sopra il ricettario. */
+export function useJobs(statuses: JobStatus[]) {
+  return useQuery({
+    queryKey: keys.jobList(statuses),
+    queryFn: () => api.get<Job[]>('/api/jobs', { status: statuses }),
+    // Finche' qualcosa e' in lavorazione si ricontrolla da soli.
+    refetchInterval: (query) =>
+      query.state.data?.some((job) => WORKING.includes(job.status)) ? 3000 : false,
+  })
+}
+
+export function useJob(id: UUID | undefined) {
+  return useQuery({
+    queryKey: keys.job(id!),
+    queryFn: () => api.get<Job>(`/api/jobs/${id}`),
+    enabled: Boolean(id),
+    refetchInterval: (query) =>
+      query.state.data && WORKING.includes(query.state.data.status) ? 2000 : false,
+  })
+}
+
+export function useStartImport() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (files: File[]) => {
+      const form = new FormData()
+      form.append('kind', 'import_recipes')
+      for (const file of files) form.append('files', file)
+      return api.post<Job>('/api/jobs', form)
+    },
+    onSuccess: (job) => {
+      client.setQueryData(keys.job(job.id), job)
+      void client.invalidateQueries({ queryKey: keys.jobs })
+    },
+  })
+}
+
+export function useRetryJob() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<Job>(`/api/jobs/${id}/retry`),
+    onSuccess: (job) => {
+      client.setQueryData(keys.job(job.id), job)
+      void client.invalidateQueries({ queryKey: keys.jobs })
+    },
+  })
+}
+
+export function useDiscardJob() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.delete<void>(`/api/jobs/${id}`),
+    onSuccess: (_data, id) => {
+      client.removeQueries({ queryKey: keys.job(id) })
+      void client.invalidateQueries({ queryKey: keys.jobs })
+    },
+  })
+}
+
+export function useConfirmImport() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, recipes }: { id: UUID; recipes: RecipePayload[] }) =>
+      api.post<Job>(`/api/jobs/${id}/confirm`, { recipes }),
+    onSuccess: (job) => {
+      client.setQueryData(keys.job(job.id), job)
+      void client.invalidateQueries({ queryKey: keys.jobs })
+      void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
+      void client.invalidateQueries({ queryKey: keys.tags })
+    },
   })
 }

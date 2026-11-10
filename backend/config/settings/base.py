@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.profiles",
     "apps.recipes",
+    "apps.ai",
+    "apps.jobs",
 ]
 
 MIDDLEWARE = [
@@ -202,6 +204,9 @@ CELERY_TASK_IGNORE_RESULT = True
 CELERY_TASK_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
+# Tutto cio' che chiama Gemini va sulla coda "ai", con un worker suo a
+# concorrenza bassa: un import lungo non blocca le mail e non si sfora la quota.
+CELERY_TASK_ROUTES = {"apps.jobs.tasks.run_job": {"queue": "ai"}}
 CELERY_TASK_ALWAYS_EAGER = False
 
 # Sincronizzato nel DB da django-celery-beat all'avvio dello scheduler.
@@ -209,6 +214,11 @@ CELERY_BEAT_SCHEDULE = {
     "flush-expired-tokens": {
         "task": "apps.users.tasks.flush_expired_tokens",
         "schedule": crontab(hour=4, minute=0),
+    },
+    # File degli import vecchi e lavori rimasti appesi.
+    "clean-jobs": {
+        "task": "apps.jobs.tasks.clean_jobs",
+        "schedule": crontab(hour=4, minute=30),
     },
 }
 
@@ -232,17 +242,30 @@ EMAIL_TIMEOUT = 15
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Languorino <no-reply@languorino.local>")
 
 # --- Upload ---
-UPLOAD_MAX_BYTES = int(env("UPLOAD_MAX_BYTES", str(10 * 1024 * 1024)))
+UPLOAD_MAX_BYTES = int(env("UPLOAD_MAX_BYTES", str(20 * 1024 * 1024)))
 FILE_UPLOAD_MAX_MEMORY_SIZE = UPLOAD_MAX_BYTES
 DATA_UPLOAD_MAX_MEMORY_SIZE = UPLOAD_MAX_BYTES + 1024 * 1024
 
-# --- LLM (Gemini, Google AI Studio) ---
+# --- LLM (Gemini, Google AI Studio; ADR 0005) ---
 # Vuota: le funzioni che usano l'LLM restano spente.
 GEMINI_API_KEY = env("GEMINI_API_KEY", "")
-# flash-lite: risponde in 1-2 s; i flash piu' grandi davano spesso 503 o 6-20 s.
-GEMINI_MODEL = env("GEMINI_MODEL", "gemini-3.5-flash-lite")
-# Col piano gratuito a tratti ci mette 20 secondi.
-GEMINI_TIMEOUT = float(env("GEMINI_TIMEOUT", "30"))
+# Leggere foto e PDF di ricette vuole un modello "flash" pieno; se e'
+# sovraccarico si passa alle riserve (apps/ai/client.py, come in soldino).
+GEMINI_MODEL = env("GEMINI_MODEL", "gemini-flash-latest")
+GEMINI_FALLBACK_MODELS = env_list("GEMINI_FALLBACK_MODELS", "gemini-flash-lite-latest")
+# Quanto resta "giu'" un modello che ha risposto sovraccarico.
+GEMINI_MODEL_COOLDOWN = int(env("GEMINI_MODEL_COOLDOWN", "300"))
+
+# --- Lavori lunghi (apps/jobs) ---
+# Gemini accetta al massimo ~20 MB per richiesta: i limiti stanno sotto.
+JOB_MAX_FILES = int(env("JOB_MAX_FILES", "8"))
+JOB_MAX_IMAGE_BYTES = int(env("JOB_MAX_IMAGE_BYTES", str(10 * 1024 * 1024)))
+JOB_MAX_PDF_BYTES = int(env("JOB_MAX_PDF_BYTES", str(18 * 1024 * 1024)))
+JOB_MAX_TOTAL_BYTES = int(env("JOB_MAX_TOTAL_BYTES", str(18 * 1024 * 1024)))
+# Lato lungo delle foto dopo la riduzione: basta per leggere una pagina scritta.
+JOB_IMAGE_MAX_SIDE = int(env("JOB_IMAGE_MAX_SIDE", "2400"))
+# Dopo quanti giorni si cancellano i file caricati per un import.
+JOB_FILES_KEEP_DAYS = int(env("JOB_FILES_KEEP_DAYS", "30"))
 
 # Il link di reset vale 2 ore (il default di Django sono 3 giorni).
 PASSWORD_RESET_TIMEOUT = int(env("PASSWORD_RESET_TIMEOUT", str(2 * 60 * 60)))

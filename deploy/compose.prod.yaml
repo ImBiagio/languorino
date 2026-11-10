@@ -69,6 +69,14 @@ services:
       backend:
         condition: service_healthy
 
+  # Coda "ai" (ADR 0005): le chiamate a Gemini, due alla volta.
+  worker-ai:
+    <<: *backend
+    command: celery -A config worker -l info -Q ai -c 2 -n ai@%h
+    depends_on:
+      backend:
+        condition: service_healthy
+
   beat:
     <<: *backend
     command: >

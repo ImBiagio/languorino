@@ -29,6 +29,16 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.dev
     command: watchfiles --filter python "celery -A config worker -l info" .
 
+  worker-ai:
+    build:
+      context: ./backend
+      target: dev
+    volumes:
+      - ./backend:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+    command: watchfiles --filter python "celery -A config worker -l info -Q ai -c 2 -n ai@%h" .
+
   beat:
     build:
       context: ./backend
