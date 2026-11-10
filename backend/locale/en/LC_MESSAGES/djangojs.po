@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:19+0100\n"
+"POT-Creation-Date: 2026-11-10 16:25+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -473,7 +473,9 @@ msgid ""
 "Le sue opzioni, frequenze e alimenti da evitare prendono il posto "
 "dell’obiettivo; le ricette che non trovo le scrivo seguendo le sue "
 "grammature."
-msgstr "Their options, frequencies and foods to avoid replace the goal; recipes I can't find I'll write following their portions."
+msgstr ""
+"Their options, frequencies and foods to avoid replace the goal; recipes I "
+"can't find I'll write following their portions."
 
 msgid "Da dove prendo le ricette"
 msgstr "Where I take recipes from"
@@ -535,7 +537,9 @@ msgstr "From %s"
 msgid ""
 "Carica il piano che ti ha dato il nutrizionista: leggo le opzioni di ogni "
 "pasto con le grammature, tu controlli e poi compongo le settimane seguendolo."
-msgstr "Upload the plan your nutritionist gave you: I'll read each meal's options with portions, you check them, then I'll build the weeks following it."
+msgstr ""
+"Upload the plan your nutritionist gave you: I'll read each meal's options "
+"with portions, you check them, then I'll build the weeks following it."
 
 msgid "Da rivedere"
 msgstr "To review"
@@ -546,7 +550,6 @@ msgstr "Confirmed"
 #, javascript-format
 msgid "%s pasto"
 msgid_plural "%s pasti"
-msgstr[1] "pasta"
 msgstr[0] "%s meal"
 msgstr[1] "%s meals"
 
@@ -572,7 +575,9 @@ msgstr "Read the plan"
 msgid ""
 "Languorino non sostituisce il nutrizionista: segue le sue indicazioni, ma "
 "per dubbi su dosi e salute chiedi a lui."
-msgstr "Languorino doesn't replace your nutritionist: it follows their advice, but ask them about portions and health."
+msgstr ""
+"Languorino doesn't replace your nutritionist: it follows their advice, but "
+"ask them about portions and health."
 
 msgid "Elimina"
 msgstr "Delete"
@@ -586,7 +591,9 @@ msgstr "The uploaded files go too. Plans already generated stay."
 msgid ""
 "Letto automaticamente: controlla opzioni e grammature con il piano "
 "originale, correggi e conferma."
-msgstr "Read automatically: check options and portions against the original plan, fix and confirm."
+msgstr ""
+"Read automatically: check options and portions against the original plan, "
+"fix and confirm."
 
 msgid "Confermato: puoi generare piani che lo seguono."
 msgstr "Confirmed: you can generate plans that follow it."
@@ -611,7 +618,8 @@ msgstr "Every meal is one of the nutritionist's options."
 
 msgid ""
 "Anche piatti equivalenti, con le stesse grammature e frequenze: più varietà."
-msgstr "Equivalent dishes too, with the same portions and frequencies: more variety."
+msgstr ""
+"Equivalent dishes too, with the same portions and frequencies: more variety."
 
 msgid "Pasti"
 msgstr "Meals"
@@ -1611,6 +1619,36 @@ msgstr "New recipe"
 
 msgid "Salva la ricetta"
 msgstr "Save the recipe"
+
+msgid "Disegno il piatto…"
+msgstr "Drawing the dish…"
+
+msgid "Immagine della ricetta"
+msgstr "Recipe image"
+
+msgid "Cambia con una foto"
+msgstr "Replace with a photo"
+
+msgid "Carica una foto"
+msgstr "Upload a photo"
+
+msgid "Il piatto vero, scattato o dalla galleria: vince sempre"
+msgstr "The real dish, taken now or from the gallery: it always wins"
+
+msgid "Fallo ridisegnare"
+msgstr "Have it redrawn"
+
+msgid "Fallo disegnare all’AI"
+msgstr "Have the AI draw it"
+
+msgid "Un’immagine del piatto creata da Gemini, in meno di un minuto"
+msgstr "An image of the dish made by Gemini, in under a minute"
+
+msgid "Togli l’immagine"
+msgstr "Remove the image"
+
+msgid "Torna il disegno della categoria"
+msgstr "Back to the category drawing"
 
 #, javascript-format
 msgid "%s ricetta nel ricettario"

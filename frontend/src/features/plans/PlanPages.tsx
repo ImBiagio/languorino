@@ -19,7 +19,7 @@ import {
   CookbookIllustration,
   EmptyPlateIllustration,
   FoodPattern,
-  RecipeArt,
+  RecipeCover,
 } from '../../components/illustrations'
 import {
   Chip,
@@ -419,7 +419,7 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
     <li className="flex items-center gap-3 rounded-row bg-surface p-2">
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px]">
         {recipe ? (
-          <RecipeArt category={recipe.main_category} size={28} />
+          <RecipeCover recipe={recipe} size={28} />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-surface-container-high">
             <Icon name={slot?.icon ?? 'restaurant'} size={22} className="text-on-surface-variant" />
@@ -525,7 +525,7 @@ function CookView({ plan, days, today }: { plan: MealPlanDetail; days: string[];
                   className="flex items-center gap-3 rounded-row bg-surface p-2"
                 >
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px]">
-                    <RecipeArt category={item.meal.recipe!.main_category} size={28} />
+                    <RecipeCover recipe={item.meal.recipe!} size={28} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <Link
@@ -631,7 +631,7 @@ function ChangeMealDialog({
                 onClick={() => save({ recipe_id: recipe.id })}
               >
                 <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px]">
-                  <RecipeArt category={recipe.main_category} size={20} />
+                  <RecipeCover recipe={recipe} size={20} />
                 </span>
                 <span className="min-w-0 flex-1 truncate text-body-large">{recipe.title}</span>
                 {recipe.warnings.some((item) => item.kind !== 'dislike') && (

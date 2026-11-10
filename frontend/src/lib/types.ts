@@ -144,6 +144,9 @@ export interface RecipeWarning {
 export interface RecipeSummary {
   id: UUID
   title: string
+  /** `/media/...`: foto vera o disegnata dall'AI; vuota = disegno per categoria. */
+  image: string | null
+  image_source: '' | 'photo' | 'ai'
   servings: number
   total_minutes: number
   difficulty: Difficulty
@@ -253,7 +256,7 @@ export interface ImportedRecipeDraft {
 
 export interface Job {
   id: UUID
-  kind: 'import_recipes' | 'fridge_scan' | 'cook_ideas' | 'nutritionist_plan'
+  kind: 'import_recipes' | 'fridge_scan' | 'cook_ideas' | 'nutritionist_plan' | 'recipe_image'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]

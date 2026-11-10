@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { useJobs, useRecipes, useTags } from '../../api/hooks'
 import { Page, PageHeader } from '../../components/Layout'
-import { CookbookIllustration, RecipeArt } from '../../components/illustrations'
+import { CookbookIllustration, RecipeCover } from '../../components/illustrations'
 import { Chip, EmptyState, ErrorBanner, Fab, Icon, Modal, Skeleton } from '../../components/ui'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Job, RecipeFilters, RecipeSummary } from '../../lib/types'
@@ -167,7 +167,7 @@ export function RecipeCard({ recipe, showSaved }: { recipe: RecipeSummary; showS
       className="state card-elevated flex flex-col overflow-hidden bg-surface-container-low"
     >
       <div className="relative h-28 sm:h-32">
-        <RecipeArt category={recipe.main_category} size={56} />
+        <RecipeCover recipe={recipe} size={56} />
         {restrictions.length > 0 && (
           <span
             className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-pill bg-error px-2.5 py-1 text-label-small text-white"

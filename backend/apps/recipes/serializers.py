@@ -97,12 +97,15 @@ class RecipeListSerializer(serializers.ModelSerializer):
     main_category = serializers.SerializerMethodField()
     ingredient_count = serializers.SerializerMethodField()
     book = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
         fields = [
             "id",
             "title",
+            "image",
+            "image_source",
             "servings",
             "total_minutes",
             "difficulty",
@@ -124,6 +127,10 @@ class RecipeListSerializer(serializers.ModelSerializer):
         if recipe.book_id is None or recipe.book is None:
             return None
         return {"id": str(recipe.book_id), "title": recipe.book.title}
+
+    def get_image(self, recipe: Recipe) -> str | None:
+        """URL relativo (``/media/...``): il frontend lo mette sotto l'API."""
+        return recipe.image.url if recipe.image else None
 
     def get_tags(self, recipe: Recipe) -> list[str]:
         return sorted((tag.name for tag in recipe.tags.all()), key=str.lower)
@@ -186,6 +193,8 @@ class RecipeSerializer(RecipeListSerializer):
         ]
         read_only_fields = [
             "id",
+            "image",
+            "image_source",
             "total_minutes",
             "allergens",
             "warnings",

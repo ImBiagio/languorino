@@ -276,6 +276,11 @@ GEMINI_MODEL = env("GEMINI_MODEL", "gemini-flash-latest")
 GEMINI_FALLBACK_MODELS = env_list("GEMINI_FALLBACK_MODELS", "gemini-flash-lite-latest")
 # Quanto resta "giu'" un modello che ha risposto sovraccarico.
 GEMINI_MODEL_COOLDOWN = int(env("GEMINI_MODEL_COOLDOWN", "300"))
+# Immagini delle ricette (ADR 0011): modello a parte, un tetto al giorno per utente.
+# Il piano gratuito di Gemini non ha quota per le immagini: serve la fatturazione.
+GEMINI_MODEL_IMAGE = env("GEMINI_MODEL_IMAGE", "gemini-2.5-flash-image")
+AI_IMAGES_PER_DAY = int(env("AI_IMAGES_PER_DAY", "20"))
+RECIPE_IMAGE_MAX_SIDE = 1600
 
 # --- Lavori lunghi (apps/jobs) ---
 # Gemini accetta al massimo ~20 MB per richiesta: i limiti stanno sotto.

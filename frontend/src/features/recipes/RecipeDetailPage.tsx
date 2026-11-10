@@ -4,12 +4,12 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useDeleteRecipe, useRecipe, useSaveToCookbook } from '../../api/hooks'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
-import { RecipeArt } from '../../components/illustrations'
 import { Chip, ErrorBanner, Icon, IconButton, Skeleton, Stepper } from '../../components/ui'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Recipe } from '../../lib/types'
 import { MEAL_OPTIONS, preferenceLabel } from '../profile/options'
 import { difficultyLabel, formatMinutes, formatQuantity } from './options'
+import { RecipeHeroImage } from './RecipeImage'
 
 export function RecipeDetailPage() {
   const { recipeId } = useParams()
@@ -56,8 +56,12 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
 
   return (
     <Page className="pb-8">
-      <div className="relative h-44 overflow-hidden md:mx-8 md:mt-8 md:h-56 md:rounded-panel">
-        <RecipeArt category={recipe.main_category} size={96} />
+      <div
+        className={`relative overflow-hidden md:mx-8 md:mt-8 md:rounded-panel ${
+          recipe.image ? 'h-64 md:h-80' : 'h-44 md:h-56'
+        }`}
+      >
+        <RecipeHeroImage recipe={recipe} />
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3">
           <IconButton
             icon="arrow_back"
