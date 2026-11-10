@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 12:50+0100\n"
+"POT-Creation-Date: 2026-11-10 13:15+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,6 +26,9 @@ msgstr "Confirm"
 
 msgid "Oggi"
 msgstr "Today"
+
+msgid "Ricette"
+msgstr "Recipes"
 
 msgid "Profilo"
 msgstr "Profile"
@@ -632,6 +635,301 @@ msgstr "Meals and nutritionist"
 
 msgid "L’ultima cosa: come vuoi organizzare la giornata."
 msgstr "One last thing: how you want to organise your day."
+
+msgid "Elimina"
+msgstr "Delete"
+
+msgid "Eliminare la ricetta?"
+msgstr "Delete the recipe?"
+
+#, javascript-format
+msgid "“%s” sparirà dal ricettario."
+msgstr "“%s” will disappear from your cookbook."
+
+#, javascript-format
+msgid "%s di cottura"
+msgstr "%s cooking"
+
+msgid "Da mangiare subito"
+msgstr "Eat right away"
+
+#, javascript-format
+msgid "In frigo %s giorno"
+msgid_plural "In frigo %s giorni"
+msgstr[0] "Keeps %s day in the fridge"
+msgstr[1] "Keeps %s days in the fridge"
+
+msgid "Si congela"
+msgstr "Freezes well"
+
+msgid "Attenzione: contiene cose che non puoi mangiare"
+msgstr "Careful: it contains things you can't eat"
+
+#, javascript-format
+msgid "Contiene cose che non ti piacciono: %s"
+msgstr "It contains things you don't like: %s"
+
+msgid "Ingredienti"
+msgstr "Ingredients"
+
+msgid "Porzioni"
+msgstr "Servings"
+
+#, javascript-format
+msgid "%s porzione"
+msgid_plural "%s porzioni"
+msgstr[0] "%s serving"
+msgstr[1] "%s servings"
+
+msgid "Nessun ingrediente scritto."
+msgstr "No ingredients written."
+
+msgid "facoltativo"
+msgstr "optional"
+
+msgid "Preparazione"
+msgstr "Method"
+
+msgid "Nessun passo scritto."
+msgstr "No steps written."
+
+msgid "Modifica la ricetta"
+msgstr "Edit the recipe"
+
+msgid "Modifica ricetta"
+msgstr "Edit recipe"
+
+msgid "Nuova ricetta"
+msgstr "New recipe"
+
+msgid "Nome della ricetta"
+msgstr "Recipe name"
+
+msgid "Descrizione"
+msgstr "Description"
+
+msgid "Facoltativa: due righe su com’è o da dove viene."
+msgstr ""
+"Optional: a couple of lines on what it's like or where it comes from."
+
+msgid "Porzioni e tempi"
+msgstr "Servings and times"
+
+msgid "Preparazione (min)"
+msgstr "Prep (min)"
+
+msgid "Cottura (min)"
+msgstr "Cooking (min)"
+
+msgid "Difficoltà"
+msgstr "Difficulty"
+
+#, javascript-format
+msgid ""
+"Quantità per %s porzione. Scegli dai suggerimenti per avere allergeni e "
+"reparto giusti."
+msgid_plural ""
+"Quantità per %s porzioni. Scegli dai suggerimenti per avere allergeni e "
+"reparto giusti."
+msgstr[0] "Quantities for %s serving. Pick from the suggestions to get allergens and aisle right."
+msgstr[1] "Quantities for %s servings. Pick from the suggestions to get allergens and aisle right."
+
+msgid "Aggiungi ingrediente"
+msgstr "Add ingredient"
+
+#, javascript-format
+msgid "Passo %s"
+msgstr "Step %s"
+
+msgid "Sposta su"
+msgstr "Move up"
+
+msgid "Sposta giù"
+msgstr "Move down"
+
+msgid "Togli il passo"
+msgstr "Remove step"
+
+msgid "Aggiungi un passo"
+msgstr "Add a step"
+
+msgid "Per il piano e il meal prep"
+msgstr "For the plan and meal prep"
+
+msgid "Va bene per"
+msgstr "Good for"
+
+msgid "Quanto dura in frigo, una volta cucinata?"
+msgstr "How long does it keep in the fridge once cooked?"
+
+msgid "Serve per prepararla in anticipo."
+msgstr "It helps to cook it ahead."
+
+msgid "Non lo so"
+msgstr "Not sure"
+
+#, javascript-format
+msgid "%s giorno"
+msgid_plural "%s giorni"
+msgstr[0] "%s day"
+msgstr[1] "%s days"
+
+msgid "Si può congelare"
+msgstr "Can be frozen"
+
+msgid "Tag"
+msgstr "Tags"
+
+msgid ""
+"Per ritrovarla e per includerla o escluderla dal piano (es. “del cuore”, "
+"“veloce”)."
+msgstr ""
+"To find it again and to include or exclude it from the plan (e.g. "
+"“favourite”, “quick”)."
+
+msgid "Aggiungi un tag"
+msgstr "Add a tag"
+
+msgid "Salva la ricetta"
+msgstr "Save the recipe"
+
+#, javascript-format
+msgid "Ingrediente %s"
+msgstr "Ingredient %s"
+
+msgid "Nuovo ingrediente: lo aggiungo al tuo catalogo"
+msgstr "New ingredient: I'll add it to your catalogue"
+
+msgid "Togli l’ingrediente"
+msgstr "Remove ingredient"
+
+msgid "Quantità"
+msgstr "Quantity"
+
+msgid "Unità"
+msgstr "Unit"
+
+msgid "Nota (es. tritata)"
+msgstr "Note (e.g. chopped)"
+
+msgid "Facoltativo"
+msgstr "Optional"
+
+#, javascript-format
+msgid "%s ricetta nel ricettario"
+msgid_plural "%s ricette nel ricettario"
+msgstr[0] "%s recipe in your cookbook"
+msgstr[1] "%s recipes in your cookbook"
+
+msgid "Il tuo ricettario"
+msgstr "Your cookbook"
+
+msgid "Cerca per nome, ingrediente o tag"
+msgstr "Search by name, ingredient or tag"
+
+#, javascript-format
+msgid "Pronte in %s min"
+msgstr "Ready in %s min"
+
+msgid "Il ricettario è vuoto"
+msgstr "Your cookbook is empty"
+
+msgid ""
+"Scrivi le ricette che fai di solito: il piano alimentare partirà da queste."
+msgstr ""
+"Write down the recipes you usually make: your meal plan will start from "
+"these."
+
+msgid "Scrivi la prima ricetta"
+msgstr "Write your first recipe"
+
+msgid "Nessuna ricetta trovata"
+msgstr "No recipes found"
+
+msgid "Prova a togliere un filtro o a cercare un’altra parola."
+msgstr "Try removing a filter or searching for another word."
+
+msgid "Facile"
+msgstr "Easy"
+
+msgid "Media"
+msgstr "Medium"
+
+msgid "Difficile"
+msgstr "Hard"
+
+msgid "Frutta e verdura"
+msgstr "Fruit and vegetables"
+
+msgid "Carne e salumi"
+msgstr "Meat and cold cuts"
+
+msgid "Latticini e uova"
+msgstr "Dairy and eggs"
+
+msgid "Pane e forno"
+msgstr "Bread and bakery"
+
+msgid "Dispensa"
+msgstr "Pantry"
+
+msgid "Spezie e condimenti"
+msgstr "Spices and condiments"
+
+msgid "Surgelati"
+msgstr "Frozen"
+
+msgid "Bevande"
+msgstr "Drinks"
+
+msgid "Altro"
+msgstr "Other"
+
+msgid "pz"
+msgstr "pcs"
+
+msgid "cucchiaio"
+msgid_plural "cucchiai"
+msgstr[0] "tbsp"
+msgstr[1] "tbsp"
+
+msgid "cucchiaino"
+msgid_plural "cucchiaini"
+msgstr[0] "tsp"
+msgstr[1] "tsp"
+
+msgid "tazza"
+msgid_plural "tazze"
+msgstr[0] "cup"
+msgstr[1] "cups"
+
+msgid "pizzico"
+msgid_plural "pizzichi"
+msgstr[0] "pinch"
+msgstr[1] "pinches"
+
+msgid "spicchio"
+msgid_plural "spicchi"
+msgstr[0] "clove"
+msgstr[1] "cloves"
+
+msgid "fetta"
+msgid_plural "fette"
+msgstr[0] "slice"
+msgstr[1] "slices"
+
+msgid "mazzetto"
+msgid_plural "mazzetti"
+msgstr[0] "bunch"
+msgstr[1] "bunches"
+
+msgid "scatola"
+msgid_plural "scatole"
+msgstr[0] "can"
+msgstr[1] "cans"
+
+msgid "q.b."
+msgstr "to taste"
 
 #, javascript-format
 msgid "Errore %s"

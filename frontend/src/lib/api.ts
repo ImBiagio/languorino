@@ -64,7 +64,8 @@ function extractMessage(data: unknown): string | null {
 interface RequestOptions {
   method?: string
   body?: unknown
-  params?: Record<string, string | number | undefined | null>
+  /** Un array diventa il parametro ripetuto (`tag=a&tag=b`). */
+  params?: Record<string, string | number | string[] | undefined | null>
   skipRefresh?: boolean
   /** Risposta binaria (es. un file protetto) invece di JSON. */
   blob?: boolean
@@ -74,7 +75,9 @@ function buildUrl(path: string, params?: RequestOptions['params']) {
   const url = new URL(path.startsWith('http') ? path : `${BASE_URL}${path}`)
   if (params) {
     for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== null && value !== '') {
+      if (Array.isArray(value)) {
+        for (const item of value) url.searchParams.append(key, item)
+      } else if (value !== undefined && value !== null && value !== '') {
         url.searchParams.set(key, String(value))
       }
     }
