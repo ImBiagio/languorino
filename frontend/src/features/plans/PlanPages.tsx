@@ -81,7 +81,31 @@ export function PlanHomePage() {
           </Link>
         }
       />
+      <NutritionistLink />
     </Page>
+  )
+}
+
+/** Ingresso al piano del nutrizionista, sotto il piano. */
+function NutritionistLink() {
+  return (
+    <Link
+      to="/piano/nutrizionista"
+      className="state mt-4 flex items-center gap-4 rounded-card bg-surface-container-low p-4"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-primary-container text-on-primary-container">
+        <Icon name="clinical_notes" size={24} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-body-large font-medium">
+          {gettext('Piano del nutrizionista')}
+        </span>
+        <span className="block text-body-small text-on-surface-variant">
+          {gettext('Caricalo in PDF o foto e genero le settimane seguendolo')}
+        </span>
+      </span>
+      <Icon name="chevron_right" size={22} />
+    </Link>
   )
 }
 
@@ -147,6 +171,15 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
                 <Icon name={prep?.icon ?? 'kitchen'} size={16} />
                 {prep?.label}
               </span>
+              {plan.nutritionist && (
+                <Link
+                  to={`/piano/nutrizionista/${plan.nutritionist.id}`}
+                  className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
+                >
+                  <Icon name="clinical_notes" size={16} />
+                  {plan.nutritionist.title}
+                </Link>
+              )}
               <span className="inline-flex items-center gap-1">
                 <Icon name="group" size={16} />
                 {interpolate(ngettext('%s porzione', '%s porzioni', plan.settings.servings), [
@@ -294,6 +327,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
           )}
         </>
       )}
+      <NutritionistLink />
     </Page>
   )
 }

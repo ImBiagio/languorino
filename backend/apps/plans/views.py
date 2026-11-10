@@ -9,17 +9,23 @@ from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.ai.client import is_enabled
+from apps.jobs.files import FileRejected, prepare
+from apps.jobs.models import Job
+from apps.jobs.serializers import JobSerializer
+from apps.jobs.views import enqueue_job, save_job_files
 from apps.recipes.models import Recipe, RecipeIngredient
 
-from .models import MealPlan, PlannedMeal
+from .models import MealPlan, NutritionistPlan, PlannedMeal
 from .serializers import (
     MealPlanDetailSerializer,
     MealPlanSerializer,
+    NutritionistPlanSerializer,
     PlannedMealSerializer,
     PlanSettingsSerializer,
 )
@@ -223,3 +229,115 @@ class PlannedMealView(APIView):
         meal.save()
         meal = with_meals(plans_of(request.user)).get(pk=pk).meals.get(pk=meal.pk)
         return Response(PlannedMealSerializer(meal, context={"request": request}).data)
+
+
+# --- piano del nutrizionista (ADR 0010) ---------------------------------------------------
+
+
+def nutritionist_plans_of(user):
+    return (
+        NutritionistPlan.objects.filter(owner=user)
+        .select_related("job")
+        .prefetch_related("job__files")
+    )
+
+
+class NutritionistPlanListView(APIView):
+    """I piani del nutrizionista; POST con PDF o foto avvia la lettura (job)."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def get_throttles(self):
+        self.throttle_scope = "ai" if self.request.method == "POST" else None
+        return super().get_throttles()
+
+    @extend_schema(responses={200: NutritionistPlanSerializer(many=True)})
+    def get(self, request):
+        plans = nutritionist_plans_of(request.user)[:20]
+        return Response(NutritionistPlanSerializer(plans, many=True).data)
+
+    @extend_schema(
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "files": {"type": "array", "items": {"type": "string", "format": "binary"}}
+                },
+            }
+        },
+        responses={202: JobSerializer},
+    )
+    def post(self, request):
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            prepared = prepare(request.FILES.getlist("files"))
+        except FileRejected as exc:
+            raise serializers.ValidationError({"files": str(exc)}) from exc
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.NUTRITIONIST_PLAN,
+                input={"language": (get_language() or "it")[:2]},
+            )
+            save_job_files(job, prepared)
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
+class NutritionistPlanDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def _get(self, request, pk) -> NutritionistPlan:
+        return get_object_or_404(nutritionist_plans_of(request.user), pk=pk)
+
+    @extend_schema(responses={200: NutritionistPlanSerializer})
+    def get(self, request, pk):
+        return Response(NutritionistPlanSerializer(self._get(request, pk)).data)
+
+    @extend_schema(request=NutritionistPlanSerializer, responses={200: NutritionistPlanSerializer})
+    def patch(self, request, pk):
+        plan = self._get(request, pk)
+        data = NutritionistPlanSerializer(plan, data=request.data, partial=True)
+        data.is_valid(raise_exception=True)
+        data.save()
+        return Response(data.data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, pk):
+        """Via il piano e i file da cui e' stato letto; i piani generati restano."""
+        plan = self._get(request, pk)
+        with transaction.atomic():
+            job = plan.job
+            plan.delete(hard=True)
+            if job is not None:
+                for item in job.files.all():
+                    item.file.delete(save=False)
+                job.delete(hard=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class NutritionistPlanConfirmView(APIView):
+    """La bozza riletta diventa il piano da seguire."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={200: NutritionistPlanSerializer})
+    def post(self, request, pk):
+        plan = get_object_or_404(nutritionist_plans_of(request.user), pk=pk)
+        if not plan.rules.get("meals"):
+            raise serializers.ValidationError(
+                {"rules": _("Serve almeno un pasto con le sue opzioni.")}
+            )
+        plan.status = NutritionistPlan.Status.CONFIRMED
+        plan.save(update_fields=["status", "updated_at"])
+        if plan.job is not None and plan.job.status == Job.Status.READY:
+            plan.job.status = Job.Status.CONFIRMED
+            plan.job.save(update_fields=["status", "updated_at"])
+        return Response(NutritionistPlanSerializer(plan).data)

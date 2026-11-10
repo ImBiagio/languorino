@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils.translation import get_language
 from django.utils.translation import gettext as _
@@ -13,9 +12,9 @@ from rest_framework.views import APIView
 
 from apps.ai.client import is_enabled
 from apps.jobs.files import PDF, FileRejected, prepare
-from apps.jobs.models import Job, JobFile
+from apps.jobs.models import Job
 from apps.jobs.serializers import JobSerializer
-from apps.jobs.views import enqueue_job
+from apps.jobs.views import enqueue_job, save_job_files
 from apps.profiles.models import MealSlot
 from apps.recipes.serializers import RecipeListSerializer
 
@@ -86,16 +85,7 @@ class FridgeScanView(APIView):
                 kind=Job.Kind.FRIDGE_SCAN,
                 input={"language": (get_language() or "it")[:2]},
             )
-            for position, (data, content_type, name) in enumerate(prepared):
-                item = JobFile(
-                    job=job,
-                    content_type=content_type,
-                    original_name=name,
-                    size=len(data),
-                    position=position,
-                )
-                item.file.save("upload", ContentFile(data), save=False)
-                item.save()
+            save_job_files(job, prepared)
             enqueue_job(job)
         job.refresh_from_db()
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)

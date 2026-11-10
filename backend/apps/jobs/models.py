@@ -20,6 +20,7 @@ class Job(BaseModel):
         IMPORT_RECIPES = "import_recipes", _("Importa ricette")
         FRIDGE_SCAN = "fridge_scan", _("Leggi il frigo")
         COOK_IDEAS = "cook_ideas", _("Idee per cucinare")
+        NUTRITIONIST_PLAN = "nutritionist_plan", _("Leggi il piano del nutrizionista")
 
     class Status(models.TextChoices):
         QUEUED = "queued", _("In coda")

@@ -253,7 +253,7 @@ export interface ImportedRecipeDraft {
 
 export interface Job {
   id: UUID
-  kind: 'import_recipes' | 'fridge_scan' | 'cook_ideas'
+  kind: 'import_recipes' | 'fridge_scan' | 'cook_ideas' | 'nutritionist_plan'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]
@@ -265,6 +265,8 @@ export interface Job {
     ingredients?: string[]
     /** Cosa cucino oggi: le ricette nuove scritte dall'LLM. */
     ideas?: RecipeSummary[]
+    /** Piano del nutrizionista: la bozza creata dalla lettura. */
+    nutritionist_plan?: UUID
   }
   error: string
   files: { id: UUID; content_type: string; original_name: string; size: number }[]
@@ -314,6 +316,7 @@ export interface PlanPayload {
   include_tags: string[]
   exclude_tags: string[]
   goal_note: string
+  nutritionist_plan: UUID | null
 }
 
 export interface PlannedMeal {
@@ -345,7 +348,10 @@ export interface MealPlan {
     include_tags: string[]
     exclude_tags: string[]
     goal_note: string
+    nutritionist_plan?: UUID | null
   }
+  /** Il piano del nutrizionista seguito, se c'e'. */
+  nutritionist: { id: UUID; title: string } | null
   weeks_done: number
   weeks_total: number
   error: string
@@ -406,4 +412,28 @@ export interface CookSuggestions {
   matches: CookMatch[]
   /** Il lavoro che scrive le idee nuove; `null` se non chieste o LLM spento. */
   job: Job | null
+}
+
+/* ---------------------------------------------- piano del nutrizionista -- */
+
+export interface NutritionistRules {
+  meals: { slot: MealSlot; options: string[] }[]
+  weekly: { food: string; times: number }[]
+  free_foods: string[]
+  avoid_foods: string[]
+  notes: string
+}
+
+export interface NutritionistPlan {
+  id: UUID
+  title: string
+  status: 'draft' | 'confirmed'
+  /** Alla lettera: solo le opzioni del nutrizionista. */
+  strict: boolean
+  valid_from: string | null
+  valid_to: string | null
+  rules: NutritionistRules
+  files: { original_name: string; content_type: string }[]
+  created_at: string
+  updated_at: string
 }

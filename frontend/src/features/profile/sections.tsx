@@ -473,7 +473,7 @@ function MealsSection({ draft, set, errors }: SectionProps) {
           <OptionCard
             icon="stethoscope"
             label={gettext('Sì')}
-            hint={gettext('Più avanti potrai caricare il suo piano.')}
+            hint={gettext('Potrai caricare il suo piano dalla sezione Piano.')}
             selected={draft.followed_by_nutritionist === true}
             onClick={() => set({ followed_by_nutritionist: true })}
           />

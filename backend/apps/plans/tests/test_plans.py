@@ -463,3 +463,216 @@ def test_piani_fermi_ripresi(user, cookbook, gemini, django_capture_on_commit_ca
         assert resume_stalled_plans() == 1
     plan.refresh_from_db()
     assert plan.status == "draft"
+
+
+# --- piano del nutrizionista (ADR 0010) ----------------------------------------------------
+
+
+NUTRITIONIST = "/api/nutritionist-plans"
+
+
+def _photo():
+    import io
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (400, 300), "white").save(buffer, "JPEG")
+    return SimpleUploadedFile("piano.jpg", buffer.getvalue(), content_type="image/jpeg")
+
+
+@pytest.fixture
+def reading(monkeypatch, settings, tmp_path):
+    from apps.plans.nutritionist import NutritionistMeal, NutritionistReading, WeeklyFrequency
+
+    settings.MEDIA_ROOT = tmp_path
+    state = {"result": None, "prompts": []}
+
+    def fake_generate(contents, schema, **kwargs):
+        class Types:
+            class Part:
+                @staticmethod
+                def from_bytes(data, mime_type):
+                    return mime_type
+
+        state["prompts"].append(contents(Types)[-1])
+        return state["result"] or NutritionistReading(
+            title="Piano di novembre",
+            valid_from="2026-11-01",
+            valid_to="non so",
+            meals=[
+                NutritionistMeal(slot="dinner", options=["150 g pesce + verdure"]),
+                NutritionistMeal(
+                    slot="lunch",
+                    options=["80 g pasta integrale + verdure", " 80 g  pasta integrale + verdure"],
+                ),
+                NutritionistMeal(slot="breakfast", options=[]),
+            ],
+            weekly=[
+                WeeklyFrequency(food="legumi", times=3),
+                WeeklyFrequency(food="Legumi", times=2),
+                WeeklyFrequency(food="dolci", times=0),
+            ],
+            avoid_foods=["salumi", "salumi", "zucchero"],
+        ), "finto"
+
+    monkeypatch.setattr("apps.plans.nutritionist.generate", fake_generate)
+    return state
+
+
+def _upload(api, user, capture):
+    with override_settings(GEMINI_API_KEY="k"), capture(execute=True):
+        return api(user).post(NUTRITIONIST, {"files": [_photo()]}, format="multipart")
+
+
+def test_piano_del_nutrizionista_letto(user, api, reading, django_capture_on_commit_callbacks):
+    from apps.jobs.models import Job
+    from apps.plans.models import NutritionistPlan
+
+    response = _upload(api, user, django_capture_on_commit_callbacks)
+    assert response.status_code == 202, response.data
+    job = Job.objects.get(id=response.data["id"])
+    assert job.status == Job.Status.READY
+    plan = NutritionistPlan.objects.get()
+    assert job.result == {"nutritionist_plan": str(plan.id), "problem": ""}
+    assert (plan.title, plan.status, plan.strict) == ("Piano di novembre", "draft", True)
+    assert (plan.valid_from, plan.valid_to) == (date(2026, 11, 1), None)
+    # Pasti nell'ordine della giornata, niente doppioni ne' pasti vuoti.
+    assert plan.rules["meals"] == [
+        {"slot": "lunch", "options": ["80 g pasta integrale + verdure"]},
+        {"slot": "dinner", "options": ["150 g pesce + verdure"]},
+    ]
+    assert plan.rules["weekly"] == [{"food": "legumi", "times": 3}]
+    assert plan.rules["avoid_foods"] == ["salumi", "zucchero"]
+    detail = api(user).get(f"{NUTRITIONIST}/{plan.id}").data
+    assert detail["files"] == [{"original_name": "piano.jpg", "content_type": "image/jpeg"}]
+
+
+def test_file_senza_piano(user, api, reading, django_capture_on_commit_callbacks):
+    from apps.jobs.models import Job
+    from apps.plans.models import NutritionistPlan
+    from apps.plans.nutritionist import NutritionistReading
+
+    reading["result"] = NutritionistReading(problem="È una ricetta, non un piano.")
+    response = _upload(api, user, django_capture_on_commit_callbacks)
+    job = Job.objects.get(id=response.data["id"])
+    assert job.result == {"problem": "È una ricetta, non un piano."}
+    assert not NutritionistPlan.objects.exists()
+
+
+def test_rivedere_e_confermare(user, other_user, api, reading, django_capture_on_commit_callbacks):
+    from apps.jobs.models import Job
+
+    _upload(api, user, django_capture_on_commit_callbacks)
+    plan_id = api(user).get(NUTRITIONIST).data[0]["id"]
+    url = f"{NUTRITIONIST}/{plan_id}"
+    assert api(other_user).get(url).status_code == 404
+    bad = api(user).patch(url, {"rules": {"meals": [{"slot": "brunch"}]}}, format="json")
+    assert bad.status_code == 400
+    empty = api(user).patch(url, {"rules": {"meals": []}}, format="json")
+    assert empty.status_code == 200
+    assert api(user).post(f"{url}/confirm").status_code == 400
+    rules = {
+        "meals": [{"slot": "lunch", "options": ["70 g riso + legumi"]}],
+        "avoid_foods": ["salmone"],
+    }
+    changed = api(user).patch(url, {"rules": rules, "strict": False}, format="json")
+    assert changed.data["rules"]["avoid_foods"] == ["salmone"]
+    assert changed.data["strict"] is False
+    confirmed = api(user).post(f"{url}/confirm")
+    assert confirmed.data["status"] == "confirmed"
+    assert Job.objects.get().status == Job.Status.CONFIRMED
+
+
+def test_generare_dal_piano_del_nutrizionista(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    from apps.plans.models import NutritionistPlan
+
+    nutritionist = NutritionistPlan.objects.create(
+        owner=user,
+        title="Piano della dottoressa",
+        rules={
+            "meals": [{"slot": "lunch", "options": ["80 g pasta + verdure"]}],
+            "weekly": [{"food": "legumi", "times": 3}],
+            "avoid_foods": ["salmone", "uova"],
+        },
+    )
+    # Ancora bozza: non si puo' usare.
+    draft = _create(
+        api, user, django_capture_on_commit_callbacks, nutritionist_plan=str(nutritionist.id)
+    )
+    assert draft.status_code == 400
+    nutritionist.status = NutritionistPlan.Status.CONFIRMED
+    nutritionist.save()
+
+    def pick(candidates, slot, day, wait):
+        assert "Salmone al forno" not in candidates and "Frittata" not in candidates
+        return "Frittatona di uova" if day.weekday() == 0 else candidates["Zuppa di ceci"]
+
+    gemini["pick"] = pick
+    response = _create(
+        api, user, django_capture_on_commit_callbacks, nutritionist_plan=str(nutritionist.id)
+    )
+    assert response.status_code == 202, response.data
+    assert response.data["nutritionist"] == {
+        "id": str(nutritionist.id),
+        "title": "Piano della dottoressa",
+    }
+    week = gemini["prompts"][0]
+    assert "Piano del nutrizionista" in week and "80 g pasta + verdure" in week
+    assert "ALLA LETTERA" in week and "legumi 3 volte" in week
+    # La ricetta nuova con le uova (da evitare) e' scartata: il pasto lo riempie il codice.
+    assert not Recipe.objects.filter(title="Frittatona di uova").exists()
+    written = gemini["prompts"][1]
+    assert "80 g pasta + verdure" in written and "evitare: salmone, uova" in written
+    plan = MealPlan.objects.get(id=response.data["id"])
+    titles = {meal.recipe.title for meal in plan.meals.select_related("recipe") if meal.recipe}
+    assert titles and not titles & {"Salmone al forno", "Frittata", "Frittatona di uova"}
+
+
+def test_file_del_piano_del_nutrizionista_tenuti(
+    user, api, reading, django_capture_on_commit_callbacks
+):
+    from django.utils import timezone
+
+    from apps.jobs.models import JobFile
+    from apps.jobs.tasks import clean_jobs
+
+    _upload(api, user, django_capture_on_commit_callbacks)
+    JobFile.objects.update(created_at=timezone.now() - timedelta(days=90))
+    clean_jobs()
+    assert JobFile.objects.count() == 1
+    plan_id = api(user).get(NUTRITIONIST).data[0]["id"]
+    assert api(user).delete(f"{NUTRITIONIST}/{plan_id}").status_code == 204
+    assert not JobFile.objects.exists()
+
+
+def test_alla_lettera_i_buchi_solo_con_le_scelte_dell_llm(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    from apps.plans.models import NutritionistPlan
+
+    nutritionist = NutritionistPlan.objects.create(
+        owner=user,
+        title="Piano",
+        status=NutritionistPlan.Status.CONFIRMED,
+        rules={"meals": [{"slot": "lunch", "options": ["legumi"]}]},
+    )
+
+    def pick(candidates, slot, day, wait):
+        # Sceglie solo il lunedi'; gli altri giorni li salta.
+        return candidates["Zuppa di ceci"] if day.weekday() == 0 else None
+
+    gemini["pick"] = pick
+    response = _create(
+        api,
+        user,
+        django_capture_on_commit_callbacks,
+        slots=["lunch"],
+        nutritionist_plan=str(nutritionist.id),
+    )
+    plan = MealPlan.objects.get(id=response.data["id"])
+    titles = {meal.recipe.title for meal in plan.meals.select_related("recipe")}
+    assert titles == {"Zuppa di ceci"}
