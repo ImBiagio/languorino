@@ -3,7 +3,8 @@
 Cosa mangio questa settimana? Languorino parte dal profilo (gusti, allergie,
 obiettivi, stile di vita), genera il piano alimentare con il meal prep, tiene
 il ricettario di casa (anche dalle foto delle ricette scritte a mano) e
-calcola la spesa. Specifica completa in [docs/specifica.md](docs/specifica.md).
+calcola la spesa. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
+progettata in [docs/progettazione.md](docs/progettazione.md).
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
 Tailwind con token Material 3, tutto in Docker Compose

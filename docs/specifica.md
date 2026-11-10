@@ -1,7 +1,8 @@
 # Languorino — specifica
 
 Prima stesura dalla chiacchierata del 2026-11-10. Descrive cosa deve fare
-l'app, non come: le scelte tecniche vanno negli ADR in `docs/decisions/`.
+l'app, non come: il come sta in [progettazione.md](progettazione.md) e le
+scelte confermate negli ADR in `docs/decisions/`.
 
 Languorino aiuta a decidere cosa mangiare e a organizzarsi: un profilo con
 gusti e vincoli, un piano alimentare generato (o caricato dal nutrizionista),
