@@ -41,7 +41,6 @@
     --scrim: rgba(31, 27, 26, 0.36);
     --ease-m3: cubic-bezier(0.2, 0, 0, 1);
 
-
     /* Il design non definisce una variante scura: la palette e' solo chiara. */
     color-scheme: light;
   }

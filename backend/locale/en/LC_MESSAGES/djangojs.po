@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 12:19+0100\n"
+"POT-Creation-Date: 2026-11-10 12:50+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,11 +24,11 @@ msgstr "Cancel"
 msgid "Conferma"
 msgstr "Confirm"
 
-msgid "Home"
-msgstr "Home"
+msgid "Oggi"
+msgstr "Today"
 
-msgid "Account"
-msgstr "Account"
+msgid "Profilo"
+msgstr "Profile"
 
 msgid "Sezioni"
 msgstr "Sections"
@@ -42,11 +42,23 @@ msgstr "Show password"
 msgid "Chiudi"
 msgstr "Close"
 
+msgid "Meno"
+msgstr "Less"
+
+msgid "Più"
+msgstr "More"
+
+msgid "Aggiungi"
+msgstr "Add"
+
+msgid "Account"
+msgstr "Account"
+
 msgid "Esci"
 msgstr "Sign out"
 
-msgid "Profilo"
-msgstr "Profile"
+msgid "Nome visibile"
+msgstr "Display name"
 
 msgid "Il nome che vedono gli altri."
 msgstr "The name other people see."
@@ -114,8 +126,8 @@ msgstr "Language"
 msgid "Vale per l'app e per le mail che ti mandiamo."
 msgstr "Applies to the app and to the emails we send you."
 
-msgid "Il tagline della tua app."
-msgstr "Your app's tagline."
+msgid "Cosa mangiamo oggi? Ci pensiamo insieme."
+msgstr "What are we eating today? Let's work it out together."
 
 msgid "Prima di entrare conferma l'indirizzo dal link che ti abbiamo mandato."
 msgstr "Before signing in, confirm your address using the link we sent you."
@@ -210,14 +222,416 @@ msgstr "Link not working? Request a new one"
 msgid "Ciao %s"
 msgstr "Hi %s"
 
-msgid "Da qui parte la tua app."
-msgstr "Your app starts here."
+msgid "Cosa mangiamo oggi?"
+msgstr "What are we eating today?"
 
-msgid "Ancora niente qui"
-msgstr "Nothing here yet"
+msgid "Ancora nessun piano"
+msgstr "No plan yet"
 
-msgid "Aggiungi le sezioni in components/Layout.tsx e le rotte in App.tsx."
-msgstr "Add sections in components/Layout.tsx and routes in App.tsx."
+msgid ""
+"Quando avrai un piano alimentare, qui troverai i pasti di oggi e di domani e "
+"cosa preparare."
+msgstr ""
+"Once you have a meal plan, you'll find today's and tomorrow's meals here, "
+"and what to prep."
+
+msgid "Cosa so di te"
+msgstr "What I know about you"
+
+msgid "Modifica"
+msgstr "Edit"
+
+msgid "Obiettivi"
+msgstr "Goals"
+
+msgid "Da evitare per forza"
+msgstr "Must avoid"
+
+msgid "Niente"
+msgstr "Nothing"
+
+#, javascript-format
+msgid "Passo %s di %s"
+msgstr "Step %s of %s"
+
+msgid "Avanzamento del profilo"
+msgstr "Profile progress"
+
+msgid "Indietro"
+msgstr "Back"
+
+msgid "Inizia"
+msgstr "Get started"
+
+msgid "Avanti"
+msgstr "Next"
+
+msgid "Quello che Languorino sa di te per proporti cosa mangiare."
+msgstr "What Languorino knows about you to suggest what to eat."
+
+msgid "Email, password, lingua"
+msgstr "Email, password, language"
+
+msgid "Donna"
+msgstr "Woman"
+
+msgid "Uomo"
+msgstr "Man"
+
+msgid "Preferisco non dirlo"
+msgstr "I'd rather not say"
+
+msgid "Perdere peso"
+msgstr "Lose weight"
+
+msgid "Aumentare la massa muscolare"
+msgstr "Build muscle"
+
+msgid "Mantenere il peso"
+msgstr "Keep my weight"
+
+msgid "Mangiare più proteine"
+msgstr "Eat more protein"
+
+msgid "Mangiare più sano"
+msgstr "Eat healthier"
+
+msgid "Mangiare più vario"
+msgstr "Eat more varied meals"
+
+msgid "Perdere meno tempo in cucina"
+msgstr "Spend less time cooking"
+
+msgid "Spendere meno"
+msgstr "Spend less"
+
+msgid "Sedentario"
+msgstr "Sedentary"
+
+msgid "Lavoro seduto, poco movimento"
+msgstr "Desk job, little movement"
+
+msgid "Leggero"
+msgstr "Light"
+
+msgid "Cammino un po’ ogni giorno"
+msgstr "I walk a bit every day"
+
+msgid "Moderato"
+msgstr "Moderate"
+
+msgid "In piedi tanto, o sport qualche volta"
+msgstr "On my feet a lot, or some sport"
+
+msgid "Intenso"
+msgstr "Intense"
+
+msgid "Lavoro fisico o sport quasi ogni giorno"
+msgstr "Physical job or sport almost every day"
+
+msgid "Colazione"
+msgstr "Breakfast"
+
+msgid "Spuntino di metà mattina"
+msgstr "Mid-morning snack"
+
+msgid "Pranzo"
+msgstr "Lunch"
+
+msgid "Merenda"
+msgstr "Afternoon snack"
+
+msgid "Cena"
+msgstr "Dinner"
+
+msgid "Glutine"
+msgstr "Gluten"
+
+msgid "Latte e lattosio"
+msgstr "Milk and lactose"
+
+msgid "Uova"
+msgstr "Eggs"
+
+msgid "Frutta a guscio"
+msgstr "Tree nuts"
+
+msgid "Arachidi"
+msgstr "Peanuts"
+
+msgid "Pesce"
+msgstr "Fish"
+
+msgid "Crostacei"
+msgstr "Crustaceans"
+
+msgid "Molluschi"
+msgstr "Molluscs"
+
+msgid "Soia"
+msgstr "Soy"
+
+msgid "Sesamo"
+msgstr "Sesame"
+
+msgid "Sedano"
+msgstr "Celery"
+
+msgid "Senape"
+msgstr "Mustard"
+
+msgid "Solfiti"
+msgstr "Sulphites"
+
+msgid "Lupini"
+msgstr "Lupin"
+
+msgid "Lattosio"
+msgstr "Lactose"
+
+msgid "Nichel"
+msgstr "Nickel"
+
+msgid "Fruttosio"
+msgstr "Fructose"
+
+msgid "Istamina"
+msgstr "Histamine"
+
+msgid "Diabete"
+msgstr "Diabetes"
+
+msgid "Ipertensione"
+msgstr "High blood pressure"
+
+msgid "Colesterolo alto"
+msgstr "High cholesterol"
+
+msgid "Reflusso"
+msgstr "Acid reflux"
+
+msgid "Colon irritabile"
+msgstr "Irritable bowel"
+
+msgid "Ipotiroidismo"
+msgstr "Hypothyroidism"
+
+msgid "Funghi"
+msgstr "Mushrooms"
+
+msgid "Peperoni"
+msgstr "Peppers"
+
+msgid "Cipolla"
+msgstr "Onion"
+
+msgid "Aglio"
+msgstr "Garlic"
+
+msgid "Coriandolo"
+msgstr "Coriander"
+
+msgid "Legumi"
+msgstr "Legumes"
+
+msgid "Melanzane"
+msgstr "Aubergines"
+
+msgid "Olive"
+msgstr "Olives"
+
+msgid "Piccante"
+msgstr "Spicy food"
+
+msgid "Pasta"
+msgstr "Pasta"
+
+msgid "Riso"
+msgstr "Rice"
+
+msgid "Pollo"
+msgstr "Chicken"
+
+msgid "Verdure al forno"
+msgstr "Roasted vegetables"
+
+msgid "Zuppe"
+msgstr "Soups"
+
+msgid "Formaggi"
+msgstr "Cheese"
+
+msgid "Dolci"
+msgstr "Desserts"
+
+msgid "Cognome"
+msgstr "Surname"
+
+msgid "Data di nascita"
+msgstr "Date of birth"
+
+msgid "Serve a calcolare quanto ti serve: l’età cambia il fabbisogno."
+msgstr "It helps work out how much you need: age changes your requirements."
+
+msgid "Sesso"
+msgstr "Sex"
+
+msgid "Altezza (cm)"
+msgstr "Height (cm)"
+
+msgid "Peso (kg)"
+msgstr "Weight (kg)"
+
+msgid ""
+"Altezza e peso servono solo a calibrare le porzioni del piano. Restano tuoi "
+"e non si condividono."
+msgstr ""
+"Height and weight are only used to size the portions in your plan. They stay "
+"yours and are never shared."
+
+msgid "Altro da dire?"
+msgstr "Anything else?"
+
+msgid "Es. “Voglio arrivare in forma alla maratona di aprile”."
+msgstr "E.g. “I want to be fit for the marathon in April”."
+
+msgid "Quanto ti muovi durante il giorno?"
+msgstr "How active are you during the day?"
+
+msgid "Sport a settimana"
+msgstr "Workouts per week"
+
+msgid "Allenamenti, corse, partite: quante volte di solito."
+msgstr "Training, runs, matches: how often, usually."
+
+msgid "Mai"
+msgstr "Never"
+
+#, javascript-format
+msgid "%s volta"
+msgid_plural "%s volte"
+msgstr[0] "%s time"
+msgstr[1] "%s times"
+
+msgid "Per quante persone cucini?"
+msgstr "How many people do you cook for?"
+
+msgid "Di solito, te compreso. Cambia porzioni e spesa."
+msgstr "Usually, including you. It changes portions and shopping."
+
+msgid "Allergie"
+msgstr "Allergies"
+
+msgid "Le ricette con questi ingredienti non entreranno mai nel tuo piano."
+msgstr "Recipes with these ingredients will never make it into your plan."
+
+msgid "Altra allergia (es. kiwi, pesche)"
+msgstr "Other allergy (e.g. kiwi, peaches)"
+
+msgid "Intolleranze"
+msgstr "Intolerances"
+
+msgid "Aggiungi un’intolleranza"
+msgstr "Add an intolerance"
+
+msgid "Patologie"
+msgstr "Health conditions"
+
+msgid "Condizioni di cui il piano deve tenere conto."
+msgstr "Conditions your plan should take into account."
+
+msgid "Aggiungi una patologia"
+msgstr "Add a condition"
+
+msgid ""
+"Languorino ti aiuta a organizzarti ma non sostituisce medico o "
+"nutrizionista: con una patologia segui sempre le loro indicazioni."
+msgstr ""
+"Languorino helps you get organised but doesn't replace a doctor or "
+"nutritionist: with a health condition, always follow their advice."
+
+msgid "Cosa ti piace"
+msgstr "What you like"
+
+msgid "Piatti, ingredienti, cucine: il piano li proporrà più spesso."
+msgstr "Dishes, ingredients, cuisines: your plan will suggest them more often."
+
+msgid "Aggiungi qualcosa che ti piace"
+msgstr "Add something you like"
+
+msgid "Cosa non ti piace"
+msgstr "What you don't like"
+
+msgid "Non è un’allergia: il piano li eviterà quando può."
+msgstr "Not an allergy: your plan will avoid them when it can."
+
+msgid "Aggiungi qualcosa che non ti piace"
+msgstr "Add something you don't like"
+
+msgid "Ti segue un nutrizionista?"
+msgstr "Do you see a nutritionist?"
+
+msgid "Sì"
+msgstr "Yes"
+
+msgid "Più avanti potrai caricare il suo piano."
+msgstr "Later on you'll be able to upload their plan."
+
+msgid "No"
+msgstr "No"
+
+msgid "Il piano lo costruiamo insieme dai tuoi obiettivi."
+msgstr "We'll build the plan together from your goals."
+
+msgid "Quali pasti vuoi nel piano?"
+msgstr "Which meals do you want in your plan?"
+
+msgid "Puoi cambiarli per ogni piano."
+msgstr "You can change them for each plan."
+
+msgid "Chi sei"
+msgstr "About you"
+
+msgid ""
+"Due minuti per conoscerti: puoi lasciare vuoto quello che non vuoi dire."
+msgstr ""
+"Two minutes to get to know you: leave blank anything you'd rather not say."
+
+msgid "Altezza e peso"
+msgstr "Height and weight"
+
+msgid "Per porzioni giuste, né troppo né poco."
+msgstr "For the right portions, not too much and not too little."
+
+msgid "I tuoi obiettivi"
+msgstr "Your goals"
+
+msgid "Cosa vuoi ottenere mangiando meglio? Scegli tutto quello che vale."
+msgstr "What do you want from eating better? Pick everything that applies."
+
+msgid "Stile di vita"
+msgstr "Lifestyle"
+
+msgid "Quanto ti muovi e per quanti cucini."
+msgstr "How active you are and how many you cook for."
+
+msgid "Allergie e salute"
+msgstr "Allergies and health"
+
+msgid "Quello che non puoi mangiare, e di cosa tenere conto."
+msgstr "What you can't eat, and what to keep in mind."
+
+msgid "I tuoi gusti"
+msgstr "Your tastes"
+
+msgid "Cosa ami e cosa preferisci evitare."
+msgstr "What you love and what you'd rather avoid."
+
+msgid "Pasti e nutrizionista"
+msgstr "Meals and nutritionist"
+
+msgid "L’ultima cosa: come vuoi organizzare la giornata."
+msgstr "One last thing: how you want to organise your day."
 
 #, javascript-format
 msgid "Errore %s"

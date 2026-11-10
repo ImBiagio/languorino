@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 12:19+0100\n"
+"POT-Creation-Date: 2026-11-10 12:43+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,179 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/profiles/allergens.py:22
+msgid "Glutine"
+msgstr "Gluten"
+
+#: apps/profiles/allergens.py:23
+msgid "Crostacei"
+msgstr "Crustaceans"
+
+#: apps/profiles/allergens.py:24
+msgid "Uova"
+msgstr "Eggs"
+
+#: apps/profiles/allergens.py:25
+msgid "Pesce"
+msgstr "Fish"
+
+#: apps/profiles/allergens.py:26
+msgid "Arachidi"
+msgstr "Peanuts"
+
+#: apps/profiles/allergens.py:27
+msgid "Soia"
+msgstr "Soy"
+
+#: apps/profiles/allergens.py:28
+msgid "Latte e lattosio"
+msgstr "Milk and lactose"
+
+#: apps/profiles/allergens.py:29
+msgid "Frutta a guscio"
+msgstr "Tree nuts"
+
+#: apps/profiles/allergens.py:30
+msgid "Sedano"
+msgstr "Celery"
+
+#: apps/profiles/allergens.py:31
+msgid "Senape"
+msgstr "Mustard"
+
+#: apps/profiles/allergens.py:32
+msgid "Sesamo"
+msgstr "Sesame"
+
+#: apps/profiles/allergens.py:33
+msgid "Solfiti"
+msgstr "Sulphites"
+
+#: apps/profiles/allergens.py:34
+msgid "Lupini"
+msgstr "Lupin"
+
+#: apps/profiles/allergens.py:35
+msgid "Molluschi"
+msgstr "Molluscs"
+
+#: apps/profiles/models.py:25
+msgid "Donna"
+msgstr "Woman"
+
+#: apps/profiles/models.py:26
+msgid "Uomo"
+msgstr "Man"
+
+#: apps/profiles/models.py:27
+msgid "Preferisco non dirlo"
+msgstr "I'd rather not say"
+
+#: apps/profiles/models.py:31
+msgid "Perdere peso"
+msgstr "Lose weight"
+
+#: apps/profiles/models.py:32
+msgid "Aumentare la massa muscolare"
+msgstr "Build muscle"
+
+#: apps/profiles/models.py:33
+msgid "Mantenere il peso"
+msgstr "Keep my weight"
+
+#: apps/profiles/models.py:34
+msgid "Mangiare più proteine"
+msgstr "Eat more protein"
+
+#: apps/profiles/models.py:35
+msgid "Mangiare più sano"
+msgstr "Eat healthier"
+
+#: apps/profiles/models.py:36
+msgid "Mangiare più vario"
+msgstr "Eat more varied meals"
+
+#: apps/profiles/models.py:37
+msgid "Perdere meno tempo in cucina"
+msgstr "Spend less time cooking"
+
+#: apps/profiles/models.py:38
+msgid "Spendere meno"
+msgstr "Spend less"
+
+#: apps/profiles/models.py:42
+msgid "Sedentario"
+msgstr "Sedentary"
+
+#: apps/profiles/models.py:43
+msgid "Leggero"
+msgstr "Light"
+
+#: apps/profiles/models.py:44
+msgid "Moderato"
+msgstr "Moderate"
+
+#: apps/profiles/models.py:45
+msgid "Intenso"
+msgstr "Intense"
+
+#: apps/profiles/models.py:49
+msgid "Colazione"
+msgstr "Breakfast"
+
+#: apps/profiles/models.py:50
+msgid "Spuntino di metà mattina"
+msgstr "Mid-morning snack"
+
+#: apps/profiles/models.py:51
+msgid "Pranzo"
+msgstr "Lunch"
+
+#: apps/profiles/models.py:52
+msgid "Merenda"
+msgstr "Afternoon snack"
+
+#: apps/profiles/models.py:53
+msgid "Cena"
+msgstr "Dinner"
+
+#: apps/profiles/models.py:123
+msgid "Mi piace"
+msgstr "I like it"
+
+#: apps/profiles/models.py:124
+msgid "Non mi piace"
+msgstr "I don't like it"
+
+#: apps/profiles/models.py:125
+msgid "Allergia"
+msgstr "Allergy"
+
+#: apps/profiles/models.py:126
+msgid "Intolleranza"
+msgstr "Intolerance"
+
+#: apps/profiles/serializers.py:38
+msgid "Scrivi qualcosa."
+msgstr "Write something."
+
+#: apps/profiles/serializers.py:97
+msgid "La data di nascita non può essere nel futuro."
+msgstr "The date of birth can't be in the future."
+
+#: apps/profiles/serializers.py:99
+msgid "Controlla l'anno di nascita."
+msgstr "Check the year of birth."
+
+#: apps/profiles/serializers.py:108
+#, python-format
+msgid "Al massimo %(n)d voci."
+msgstr "At most %(n)d items."
+
+#: apps/profiles/serializers.py:113
+msgid "Scegli almeno un pasto."
+msgstr "Choose at least one meal."
 
 #: apps/users/emails.py:22
 msgid "Conferma il tuo indirizzo email"

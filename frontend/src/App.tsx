@@ -11,6 +11,9 @@ import {
   VerifyEmailPage,
 } from './features/auth/AuthPages'
 import { HomePage } from './features/home/HomePage'
+import { OnboardingPage } from './features/onboarding/OnboardingPage'
+import { ProfilePage } from './features/profile/ProfilePage'
+import { useProfile } from './api/hooks'
 import { useAuth } from './lib/auth'
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -26,6 +29,15 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   return children
 }
 
+/** Finche' il profilo non e' completo l'app apre il wizard al posto della home. */
+function RequireOnboarding({ children }: { children: JSX.Element }) {
+  const { data: profile, isPending, isError } = useProfile()
+  if (isPending) return <Skeleton className="m-6 h-24" />
+  // Se il profilo non si carica non si blocca l'app: le pagine mostrano l'errore.
+  if (!isError && !profile.onboarding_completed) return <Navigate to="/benvenuto" replace />
+  return children
+}
+
 export default function App() {
   return (
     <Routes>
@@ -35,14 +47,25 @@ export default function App() {
       <Route path="/password-dimenticata" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
       <Route
+        path="/benvenuto"
         element={
           <RequireAuth>
-            <AppLayout />
+            <OnboardingPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        element={
+          <RequireAuth>
+            <RequireOnboarding>
+              <AppLayout />
+            </RequireOnboarding>
           </RequireAuth>
         }
       >
         <Route index element={<HomePage />} />
-        <Route path="account" element={<AccountPage />} />
+        <Route path="profilo" element={<ProfilePage />} />
+        <Route path="profilo/account" element={<AccountPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

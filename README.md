@@ -66,12 +66,13 @@ backend/
 ├── templates/emails/    layout unico delle mail
 └── apps/
     ├── core/            BaseModel, methods (token, hash, mail), i18n, task mail
-    └── users/           User custom + auth JWT + mail dell'account
+    ├── users/           User custom + auth JWT + mail dell'account
+    └── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE)
 frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
 ├── lib/                 client HTTP, auth, i18n, format, tipi
 ├── components/          UI M3, layout, dialog di conferma
-└── features/            auth · account · home
+└── features/            auth · account · home · onboarding · profile
 deploy/                  compose di produzione, Caddy interno, edge condiviso
 docs/decisions/          ADR (modello in 0000-modello.md)
 ```
@@ -83,7 +84,9 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/auth/register` · `login` · `refresh` · `logout` | account e sessione (refresh nel cookie) |
 | `POST /api/auth/verify-email/{token}` · `verify-email/resend` | conferma dell'indirizzo |
 | `POST /api/auth/password` · `password-reset` · `password-reset/confirm` | cambio e reset della password |
-| `GET/PATCH /api/me` | profilo (nome, lingua) |
+| `GET/PATCH /api/me` | account (nome visibile, lingua) |
+| `GET/PATCH /api/profile` · `POST /api/profile/complete` | profilo alimentare e fine del wizard |
+| `GET/POST /api/profile/preferences` · `DELETE …/{id}` | gusti, antipatie, allergie, intolleranze |
 | `GET /api/i18n/catalog` · `POST /api/i18n/language` | traduzioni del frontend e lingua scelta |
 | `GET /api/health` | healthcheck del container |
 

@@ -73,7 +73,7 @@ def test_catalogo_inglese_traduce_il_frontend():
     client = APIClient()
     client.cookies[COOKIE] = "en"
     catalog = client.get("/api/i18n/catalog").json()["catalog"]
-    assert catalog["Ancora niente qui"] == "Nothing here yet"
+    assert catalog["Ancora nessun piano"] == "No plan yet"
     assert catalog["Esci"] == "Sign out"
 
 
