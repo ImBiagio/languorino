@@ -1,7 +1,8 @@
 # Languorino
 
 Cosa mangio questa settimana? Languorino parte dal profilo (gusti, allergie,
-obiettivi, stile di vita), genera il piano alimentare con il meal prep, tiene
+obiettivi, stile di vita), genera il piano alimentare con il meal prep (anche seguendo quello del
+nutrizionista), tiene
 il ricettario di casa (anche dalle foto delle ricette scritte a mano),
 calcola la spesa e, dalla foto del frigo, dice cosa cucinare oggi. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
 progettata in [docs/progettazione.md](docs/progettazione.md).
@@ -74,7 +75,8 @@ backend/
     │                    import da foto (importing.py), ricettari PDF letti a pezzi (books.py, tasks.py)
     ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
     ├── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
-    ├── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py)
+    ├── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py),
+    │                    piano del nutrizionista letto da PDF/foto (nutritionist.py)
     ├── shopping/        lista della spesa: somme e conversioni dal piano (aggregate.py), ricalcolo
     └── kitchen/         cosa cucino oggi: foto del frigo, ricette che si possono fare, idee nuove (cook_today.py), pulizia delle idee mai salvate
 frontend/src/
@@ -105,6 +107,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
 | `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto |
+| `GET/POST /api/nutritionist-plans` (multipart `files`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/confirm` | piano del nutrizionista: lettura in un job, revisione, conferma ([ADR 0010](docs/decisions/0010-piano-del-nutrizionista.md)); si usa con `nutritionist_plan` in `POST /api/plans` |
 | `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)) |
 | `POST /api/shopping/{id}/items` · `PATCH/DELETE …/items/{item_id}` | voci a mano, spunta, "ce l'ho già", modifica |
 | `POST /api/cook-today/scan` (multipart `files`) | foto del frigo → job con gli alimenti riconosciuti ([ADR 0009](docs/decisions/0009-cosa-cucino-oggi.md)) |

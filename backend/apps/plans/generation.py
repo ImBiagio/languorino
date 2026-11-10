@@ -12,6 +12,10 @@ Il codice fa quello che deve essere sicuro, l'LLM quello che deve essere vario:
    salvate fuori dal ricettario.
 4. **Controlli (codice)**: allergeni ricontrollati sugli ingredienti veri,
    giorni in frigo rispettati (altrimenti si cucina al momento).
+
+Con il piano del nutrizionista (ADR 0010) le sue regole prendono il posto di
+"cosa vuoi ottenere" e i suoi alimenti da evitare sono controllati come le
+allergie.
 """
 
 from __future__ import annotations
@@ -32,7 +36,7 @@ from apps.recipes.matching import normalize
 from apps.recipes.models import Recipe, RecipeIngredient
 from apps.recipes.services import PreferenceIndex, recipe_allergens
 
-from .models import MealPlan, PlannedMeal
+from .models import MealPlan, NutritionistPlan, PlannedMeal
 from .schedule import plan_dates, schedule
 
 logger = logging.getLogger(__name__)
@@ -69,6 +73,15 @@ GOAL_NAMES = {
 # --- 1. candidati -----------------------------------------------------------------
 
 
+def nutritionist_of(plan: MealPlan) -> NutritionistPlan | None:
+    """Il piano del nutrizionista scelto per questo piano, se confermato."""
+    if not (chosen := plan.settings.get("nutritionist_plan")):
+        return None
+    return NutritionistPlan.objects.filter(
+        owner=plan.owner, id=chosen, status=NutritionistPlan.Status.CONFIRMED
+    ).first()
+
+
 def candidate_recipes(plan: MealPlan) -> list[Recipe]:
     """Le ricette che il piano puo' usare, gia' ripulite dai vincoli di sicurezza."""
     options = plan.settings
@@ -93,11 +106,17 @@ def candidate_recipes(plan: MealPlan) -> list[Recipe]:
     exclude = {tag.lower() for tag in options.get("exclude_tags", [])}
     include = {tag.lower() for tag in options.get("include_tags", [])}
     index = PreferenceIndex(plan.owner)
+    from .nutritionist import avoided
+
+    nutritionist = nutritionist_of(plan)
+    avoid = nutritionist.rules.get("avoid_foods", []) if nutritionist else []
     out = []
     for recipe in recipes:
         tags = {tag.name.lower() for tag in recipe.tags.all()}
         if tags & exclude or (include and not tags & include):
             continue
+        if avoid and avoided(recipe, avoid):
+            continue  # il nutrizionista dice di evitarlo
         warnings = index.warnings(recipe, recipe_allergens(recipe))
         if any(warning["kind"] != FoodPreference.Kind.DISLIKE for warning in warnings):
             continue  # allergia o intolleranza: mai nel piano
@@ -269,7 +288,7 @@ difficoltà al massimo {difficulty}. Deve reggere in frigo almeno {wait} giorni.
 Persona:
 {profile}
 
-NON deve contenere in nessun modo: {forbidden}.
+NON deve contenere in nessun modo: {forbidden}.{nutritionist}
 Ingredienti comuni da supermercato italiano, quantità in grammi o ml quando ha senso.
 Rispondi solo col JSON della ricetta; "inferred" vuoto; tag in italiano (1-3)."""
 
@@ -277,10 +296,32 @@ DIFFICULTY_NAMES = {"easy": "facile", "medium": "media", "hard": "difficile"}
 
 
 def write_recipe(
-    plan: MealPlan, title: str, idea: str, uses: list[dict], profile: str, forbidden: list[str]
+    plan: MealPlan,
+    title: str,
+    idea: str,
+    uses: list[dict],
+    profile: str,
+    forbidden: list[str],
+    nutritionist: NutritionistPlan | None = None,
 ) -> Recipe | None:
     """Scrive e salva una ricetta nuova per il piano; None se tocca un divieto."""
+    from .nutritionist import avoided, slot_options
+
     options = plan.settings
+    extra = ""
+    avoid = []
+    if nutritionist is not None:
+        avoid = nutritionist.rules.get("avoid_foods", [])
+        choices = sorted(
+            {option for row in uses for option in slot_options(nutritionist.rules, row["slot"])}
+        )
+        if choices:
+            extra += (
+                "\nRispetta le grammature del nutrizionista per questo pasto (porzione di "
+                "una persona, da moltiplicare per le porzioni): " + " | ".join(choices[:8]) + "."
+            )
+        if avoid:
+            extra += "\nIl nutrizionista dice di evitare: " + ", ".join(avoid) + "."
     slots = sorted({SLOT_NAMES[row["slot"]] for row in uses})
     prompt = NEW_RECIPE_PROMPT.format(
         title=title,
@@ -292,6 +333,7 @@ def write_recipe(
         wait=max(row["wait"] for row in uses),
         profile=profile,
         forbidden=", ".join(forbidden) or "nessun divieto",
+        nutritionist=extra,
     )
     written, _model = generate(
         lambda types: [prompt],
@@ -301,9 +343,13 @@ def write_recipe(
         timeout_ms=60_000,
         temperature=0.6,
     )
-    return save_generated(
+    recipe = save_generated(
         plan.owner, written, source=Recipe.Source.PLAN, servings=options.get("servings")
     )
+    if recipe is not None and avoid and avoided(recipe, avoid):
+        recipe.delete(hard=True)
+        return None
+    return recipe
 
 
 # --- 4. una settimana dall'inizio alla fine -----------------------------------------------
@@ -348,14 +394,27 @@ def _keeps(recipe: Recipe) -> int:
 
 def generate_week(plan: MealPlan, week: int) -> None:
     """Sceglie e salva i pasti della settimana ``week`` (0 = la prima)."""
+    from .nutritionist import rules_prompt
+
     options = plan.settings
     rows = week_rows(plan, week)
     candidates = candidate_recipes(plan)
+    nutritionist = nutritionist_of(plan)
     numbered = dict(enumerate(candidates, start=1))
     profile, forbidden = profile_summary(plan)
     needs = variety_needs(rows, candidates)
     new_needed = sum(needs.values())
     max_new = min(MAX_NEW_RECIPES_PER_WEEK, max(NEW_RECIPES_PER_WEEK, new_needed))
+    if nutritionist is not None and nutritionist.strict:
+        # Alla lettera le candidate corrispondono di rado: servono piu' ricette nuove.
+        max_new = MAX_NEW_RECIPES_PER_WEEK
+    goal = options.get("goal_note") or "un piano equilibrato secondo il profilo"
+    if nutritionist is not None:
+        goal = "seguire il piano del nutrizionista.\n" + rules_prompt(
+            nutritionist.rules, nutritionist.strict
+        )
+        if note := options.get("goal_note"):
+            goal += f"\nIn piu', in parole sue: {note}"
     variety = []
     if needs.get("main"):
         variety.append(
@@ -372,7 +431,7 @@ def generate_week(plan: MealPlan, week: int) -> None:
     )
     prompt = WEEK_PROMPT.format(
         profile=profile,
-        goal=options.get("goal_note") or "un piano equilibrato secondo il profilo",
+        goal=goal,
         servings=options.get("servings", 1),
         slots=_slot_lines(rows),
         candidates="\n".join(describe_candidate(n, r) for n, r in numbered.items())
@@ -425,7 +484,9 @@ def generate_week(plan: MealPlan, week: int) -> None:
     written: dict[str, Recipe | None] = {}
     for key in list(new_uses)[:limit]:
         title, idea = new_ideas[key]
-        written[key] = write_recipe(plan, title, idea, new_uses[key], profile, forbidden)
+        written[key] = write_recipe(
+            plan, title, idea, new_uses[key], profile, forbidden, nutritionist
+        )
 
     # Pasti rimasti vuoti (l'LLM li ha saltati o la sua ricetta e' stata scartata):
     # li riempie il codice con ricette gia' sicure, le meno usate, che reggono l'attesa.
@@ -442,6 +503,10 @@ def generate_week(plan: MealPlan, week: int) -> None:
         if recipe is not None:
             chosen[key] = recipe
             usage[recipe.id] = usage.get(recipe.id, 0) + 1
+    if nutritionist is not None and nutritionist.strict:
+        # Alla lettera: i buchi si riempiono solo con le ricette che l'LLM ha
+        # scelto questa settimana seguendo le opzioni, mai con altre del ricettario.
+        pool = list({recipe.id: recipe for recipe in chosen.values()}.values())
     for key, row in wanted.items():
         if key in chosen:
             continue

@@ -3,13 +3,15 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from django.utils.translation import gettext as _
+from pydantic import ValidationError as PydanticError
 from rest_framework import serializers
 
 from apps.profiles.models import MEAL_SLOT_ORDER, MealSlot
 from apps.recipes.models import Difficulty, RecipeBook
 from apps.recipes.serializers import RecipeListSerializer
 
-from .models import MealPlan, PlannedMeal, PrepMode
+from .models import MealPlan, NutritionistPlan, PlannedMeal, PrepMode
+from .nutritionist import NutritionistRules, clean_rules
 
 ALLOWED_DAYS = (7, 14, 21, 28)
 
@@ -33,6 +35,17 @@ class PlanSettingsSerializer(serializers.Serializer):
         child=serializers.CharField(max_length=40), required=False, default=list, max_length=12
     )
     goal_note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    nutritionist_plan = serializers.UUIDField(required=False, allow_null=True, default=None)
+
+    def validate_nutritionist_plan(self, value):
+        if value is None:
+            return None
+        user = self.context["request"].user
+        if not NutritionistPlan.objects.filter(
+            owner=user, id=value, status=NutritionistPlan.Status.CONFIRMED
+        ).exists():
+            raise serializers.ValidationError(_("Piano del nutrizionista non trovato."))
+        return str(value)
 
     def validate_start_date(self, value: date) -> date:
         today = date.today()
@@ -77,6 +90,7 @@ class PlanSettingsSerializer(serializers.Serializer):
             "include_tags": data["include_tags"],
             "exclude_tags": data["exclude_tags"],
             "goal_note": data["goal_note"].strip(),
+            "nutritionist_plan": data["nutritionist_plan"],
         }
 
 
@@ -116,6 +130,7 @@ class PlannedMealSerializer(serializers.ModelSerializer):
 class MealPlanSerializer(serializers.ModelSerializer):
     weeks_total = serializers.IntegerField(read_only=True)
     end_date = serializers.SerializerMethodField()
+    nutritionist = serializers.SerializerMethodField()
 
     class Meta:
         model = MealPlan
@@ -129,10 +144,18 @@ class MealPlanSerializer(serializers.ModelSerializer):
             "weeks_done",
             "weeks_total",
             "error",
+            "nutritionist",
             "created_at",
             "finished_at",
         ]
         read_only_fields = fields
+
+    def get_nutritionist(self, plan: MealPlan) -> dict | None:
+        chosen = plan.settings.get("nutritionist_plan")
+        if not chosen:
+            return None
+        found = NutritionistPlan.objects.filter(owner=plan.owner, id=chosen).first()
+        return {"id": str(found.id), "title": found.title} if found else None
 
     def get_end_date(self, plan: MealPlan) -> date:
         return plan.start_date + timedelta(days=plan.days - 1)
@@ -144,3 +167,51 @@ class MealPlanDetailSerializer(MealPlanSerializer):
     class Meta(MealPlanSerializer.Meta):
         fields = [*MealPlanSerializer.Meta.fields, "meals"]
         read_only_fields = fields
+
+
+class NutritionistPlanSerializer(serializers.ModelSerializer):
+    files = serializers.SerializerMethodField()
+
+    class Meta:
+        model = NutritionistPlan
+        fields = [
+            "id",
+            "title",
+            "status",
+            "strict",
+            "valid_from",
+            "valid_to",
+            "rules",
+            "files",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "status", "files", "created_at", "updated_at"]
+
+    def get_files(self, plan: NutritionistPlan) -> list[dict]:
+        if plan.job is None:
+            return []
+        return [
+            {"original_name": item.original_name, "content_type": item.content_type}
+            for item in plan.job.files.all()
+        ]
+
+    def validate_title(self, value: str) -> str:
+        value = " ".join(value.split())
+        if not value:
+            raise serializers.ValidationError(_("Dai un nome al piano."))
+        return value
+
+    def validate_rules(self, value):
+        try:
+            rules = NutritionistRules.model_validate(value)
+        except PydanticError as exc:
+            raise serializers.ValidationError(_("Regole non valide.")) from exc
+        return clean_rules(rules)
+
+    def validate(self, attrs):
+        start = attrs.get("valid_from", getattr(self.instance, "valid_from", None))
+        end = attrs.get("valid_to", getattr(self.instance, "valid_to", None))
+        if start and end and end < start:
+            raise serializers.ValidationError({"valid_to": _("La fine viene prima dell'inizio.")})
+        return attrs

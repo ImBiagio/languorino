@@ -1,8 +1,15 @@
 import clsx from 'clsx'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
-import { useBooks, useCreatePlan, useProfile, useRecipes, useTags } from '../../api/hooks'
+import {
+  useBooks,
+  useCreatePlan,
+  useNutritionistPlans,
+  useProfile,
+  useRecipes,
+  useTags,
+} from '../../api/hooks'
 import { Page } from '../../components/Layout'
 import { FoodPattern } from '../../components/illustrations'
 import {
@@ -18,7 +25,7 @@ import {
 } from '../../components/ui'
 import { ApiError } from '../../lib/api'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
-import type { PlanPayload, Profile } from '../../lib/types'
+import type { NutritionistPlan, PlanPayload, Profile } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
 import { DIFFICULTY_OPTIONS } from '../recipes/options'
 import { formatDayLong, nextMondayIso, todayIso } from './dates'
@@ -37,6 +44,9 @@ function NewPlanForm({ profile }: { profile: Profile }) {
   const { data: books } = useBooks()
   const { data: tags } = useTags()
   const { data: cookbook } = useRecipes({})
+  const { data: nutritionistPlans } = useNutritionistPlans()
+  const [params] = useSearchParams()
+  const confirmed = (nutritionistPlans ?? []).filter((item) => item.status === 'confirmed')
   const [plan, setPlan] = useState<PlanPayload>(() => ({
     start_date: nextMondayIso(),
     days: 7,
@@ -50,8 +60,26 @@ function NewPlanForm({ profile }: { profile: Profile }) {
     include_tags: [],
     exclude_tags: [],
     goal_note: profile.goals_note,
+    nutritionist_plan: null,
   }))
   const set = (changes: Partial<PlanPayload>) => setPlan((current) => ({ ...current, ...changes }))
+  // Seguire il piano del nutrizionista: i pasti diventano i suoi.
+  const follow = (chosen: NutritionistPlan | null) =>
+    set({
+      nutritionist_plan: chosen?.id ?? null,
+      ...(chosen && chosen.rules.meals.length
+        ? { slots: chosen.rules.meals.map((meal) => meal.slot) }
+        : {}),
+    })
+  // Arrivati da "Crea un piano da qui": il piano del nutrizionista gia' scelto.
+  const preset = useRef(params.get('nutrizionista'))
+  useEffect(() => {
+    const chosen = confirmed.find((item) => item.id === preset.current)
+    if (chosen) {
+      preset.current = null
+      follow(chosen)
+    }
+  })
   const errors = create.error instanceof ApiError ? create.error.fieldErrors() : {}
   const readyBooks = (books ?? []).filter((book) => book.recipe_count > 0)
   const recipeCount = cookbook?.count ?? 0
@@ -205,6 +233,30 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           </div>
         </Card>
 
+        {confirmed.length > 0 && (
+          <Card title={gettext('Piano del nutrizionista')} icon="clinical_notes">
+            {confirmed.map((item) => (
+              <SourceToggle
+                key={item.id}
+                icon="clinical_notes"
+                label={item.title}
+                hint={
+                  item.strict
+                    ? gettext('Alla lettera: ogni pasto è una delle sue opzioni')
+                    : gettext('Con piatti equivalenti, stesse grammature')
+                }
+                checked={plan.nutritionist_plan === item.id}
+                onChange={(checked) => follow(checked ? item : null)}
+              />
+            ))}
+            <p className="text-body-small text-on-surface-variant">
+              {gettext(
+                'Le sue opzioni, frequenze e alimenti da evitare prendono il posto dell’obiettivo; le ricette che non trovo le scrivo seguendo le sue grammature.',
+              )}
+            </p>
+          </Card>
+        )}
+
         <Card title={gettext('Da dove prendo le ricette')} icon="menu_book">
           <SourceToggle
             icon="menu_book"
@@ -266,7 +318,14 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           </div>
         </Card>
 
-        <Card title={gettext('Cosa vuoi ottenere?')} icon="flag">
+        <Card
+          title={
+            plan.nutritionist_plan
+              ? gettext('Qualcosa da aggiungere?')
+              : gettext('Cosa vuoi ottenere?')
+          }
+          icon="flag"
+        >
           <Field
             label={gettext('In parole tue')}
             hint={gettext('Es. “più proteine e pranzi leggeri da portare in ufficio”.')}

@@ -1,6 +1,9 @@
 from django.urls import path
 
 from .views import (
+    NutritionistPlanConfirmView,
+    NutritionistPlanDetailView,
+    NutritionistPlanListView,
     PlanActivateView,
     PlanCurrentView,
     PlanDetailView,
@@ -18,4 +21,15 @@ urlpatterns = [
     path("plans/<uuid:pk>/regenerate", PlanRegenerateView.as_view(), name="plan-regenerate"),
     path("plans/<uuid:pk>/retry", PlanRetryView.as_view(), name="plan-retry"),
     path("plans/<uuid:pk>/meals/<int:meal_id>", PlannedMealView.as_view(), name="plan-meal"),
+    path("nutritionist-plans", NutritionistPlanListView.as_view(), name="nutritionist-plans"),
+    path(
+        "nutritionist-plans/<uuid:pk>",
+        NutritionistPlanDetailView.as_view(),
+        name="nutritionist-plan-detail",
+    ),
+    path(
+        "nutritionist-plans/<uuid:pk>/confirm",
+        NutritionistPlanConfirmView.as_view(),
+        name="nutritionist-plan-confirm",
+    ),
 ]

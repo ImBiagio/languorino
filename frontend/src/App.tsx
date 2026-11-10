@@ -14,6 +14,7 @@ import { HomePage } from './features/home/HomePage'
 import { CookTodayPage } from './features/kitchen/CookTodayPage'
 import { OnboardingPage } from './features/onboarding/OnboardingPage'
 import { NewPlanPage } from './features/plans/NewPlanPage'
+import { NutritionistHomePage, NutritionistPlanPage } from './features/plans/NutritionistPages'
 import { PlanHomePage, PlanPage } from './features/plans/PlanPages'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { BookPage, BooksPage } from './features/recipes/BooksPages'
@@ -76,6 +77,8 @@ export default function App() {
         <Route path="cosa-cucino" element={<CookTodayPage />} />
         <Route path="piano" element={<PlanHomePage />} />
         <Route path="piano/nuovo" element={<NewPlanPage />} />
+        <Route path="piano/nutrizionista" element={<NutritionistHomePage />} />
+        <Route path="piano/nutrizionista/:planId" element={<NutritionistPlanPage />} />
         <Route path="piano/:planId" element={<PlanPage />} />
         <Route path="spesa" element={<ShoppingHomePage />} />
         <Route path="spesa/:listId" element={<ShoppingPage />} />

@@ -83,3 +83,42 @@ class PlannedMeal(models.Model):
 
     def __str__(self) -> str:
         return f"{self.date} {self.slot}: {self.recipe or '—'}"
+
+
+class NutritionistPlan(BaseModel):
+    """Il piano del nutrizionista letto da PDF o foto (progettazione 4.3, ADR 0010).
+
+    Nasce bozza dalla lettura dell'LLM e vale solo dopo la conferma. ``rules``
+    ha la forma di ``nutritionist.NutritionistRules``: per ogni pasto le
+    opzioni con le grammature, le frequenze a settimana, gli alimenti liberi e
+    quelli da evitare. I file originali restano col job che li ha letti.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", _("Da rivedere")
+        CONFIRMED = "confirmed", _("Confermato")
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="nutritionist_plans"
+    )
+    job = models.OneToOneField(
+        "jobs.Job",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="nutritionist_plan",
+    )
+    title = models.CharField(max_length=120)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    # Alla lettera: il piano usa solo le opzioni del nutrizionista. Altrimenti
+    # ricette equivalenti con le stesse grammature e frequenze.
+    strict = models.BooleanField(default=True)
+    valid_from = models.DateField(null=True, blank=True)
+    valid_to = models.DateField(null=True, blank=True)
+    rules = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title

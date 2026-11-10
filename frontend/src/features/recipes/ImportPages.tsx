@@ -170,7 +170,7 @@ export function ImportPage() {
   )
 }
 
-function FileThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
+export function FileThumb({ file, onRemove }: { file: File; onRemove: () => void }) {
   const isImage = file.type.startsWith('image/') && !/hei[cf]/.test(file.type)
   // L'URL si crea e si revoca nello stesso effetto: con StrictMode l'effetto
   // gira due volte e un URL creato fuori sarebbe gia' revocato alla seconda.

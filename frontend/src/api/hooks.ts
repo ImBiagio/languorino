@@ -12,6 +12,7 @@ import type {
   JobStatus,
   MealPlan,
   MealPlanDetail,
+  NutritionistPlan,
   Paginated,
   PlanPayload,
   PlannedMeal,
@@ -47,6 +48,8 @@ export const keys = {
   currentPlan: ['plans', 'current'] as const,
   shoppingLists: ['shopping'] as const,
   shoppingList: (id: UUID) => ['shopping', 'detail', id] as const,
+  nutritionistPlans: ['nutritionist-plans'] as const,
+  nutritionistPlan: (id: UUID) => ['nutritionist-plans', 'detail', id] as const,
 }
 
 /* ------------------------------------------------------ profilo alimentare -- */
@@ -580,5 +583,66 @@ export function useCookSuggestions() {
     onSuccess: (result) => {
       if (result.job) client.setQueryData(keys.job(result.job.id), result.job)
     },
+  })
+}
+
+/* ------------------------------------------- piano del nutrizionista -- */
+
+export function useNutritionistPlans() {
+  return useQuery({
+    queryKey: keys.nutritionistPlans,
+    queryFn: () => api.get<NutritionistPlan[]>('/api/nutritionist-plans'),
+  })
+}
+
+export function useNutritionistPlan(id: UUID | undefined) {
+  return useQuery({
+    queryKey: keys.nutritionistPlan(id!),
+    queryFn: () => api.get<NutritionistPlan>(`/api/nutritionist-plans/${id}`),
+    enabled: Boolean(id),
+  })
+}
+
+/** PDF o foto del piano: parte la lettura, la bozza arriva col job. */
+export function useReadNutritionistPlan() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (files: File[]) => {
+      const form = new FormData()
+      for (const file of files) form.append('files', file)
+      return api.post<Job>('/api/nutritionist-plans', form)
+    },
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
+function useNutritionistMutation<T>(fn: (input: T) => Promise<NutritionistPlan>) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (plan) => {
+      client.setQueryData(keys.nutritionistPlan(plan.id), plan)
+      void client.invalidateQueries({ queryKey: keys.nutritionistPlans, exact: true })
+    },
+  })
+}
+
+export function useUpdateNutritionistPlan() {
+  return useNutritionistMutation(({ id, ...changes }: Partial<NutritionistPlan> & { id: UUID }) =>
+    api.patch<NutritionistPlan>(`/api/nutritionist-plans/${id}`, changes),
+  )
+}
+
+export function useConfirmNutritionistPlan() {
+  return useNutritionistMutation((id: UUID) =>
+    api.post<NutritionistPlan>(`/api/nutritionist-plans/${id}/confirm`),
+  )
+}
+
+export function useDeleteNutritionistPlan() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.delete<void>(`/api/nutritionist-plans/${id}`),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.nutritionistPlans }),
   })
 }

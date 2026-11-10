@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:01+0100\n"
+"POT-Creation-Date: 2026-11-10 16:19+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -377,7 +377,9 @@ msgstr "No matching recipes"
 msgid ""
 "Aggiungi altri ingredienti, allunga il tempo o cambia pasto. Intanto guarda "
 "le idee nuove qui sotto."
-msgstr "Add more ingredients, allow more time or change meal. Meanwhile, look at the new ideas below."
+msgstr ""
+"Add more ingredients, allow more time or change meal. Meanwhile, look at the "
+"new ideas below."
 
 msgid "Hai tutto"
 msgstr "You have everything"
@@ -458,6 +460,21 @@ msgstr "Time to cook, each time"
 msgid "Difficoltà massima"
 msgstr "Maximum difficulty"
 
+msgid "Piano del nutrizionista"
+msgstr "Nutritionist's plan"
+
+msgid "Alla lettera: ogni pasto è una delle sue opzioni"
+msgstr "To the letter: every meal is one of their options"
+
+msgid "Con piatti equivalenti, stesse grammature"
+msgstr "With equivalent dishes, same portions"
+
+msgid ""
+"Le sue opzioni, frequenze e alimenti da evitare prendono il posto "
+"dell’obiettivo; le ricette che non trovo le scrivo seguendo le sue "
+"grammature."
+msgstr "Their options, frequencies and foods to avoid replace the goal; recipes I can't find I'll write following their portions."
+
 msgid "Da dove prendo le ricette"
 msgstr "Where I take recipes from"
 
@@ -495,6 +512,9 @@ msgstr "Never recipes with these tags"
 msgid "Tag da escludere (es. “del cuore”)"
 msgstr "Tags to exclude (e.g. “favourite”)"
 
+msgid "Qualcosa da aggiungere?"
+msgstr "Anything to add?"
+
 msgid "Cosa vuoi ottenere?"
 msgstr "What do you want to achieve?"
 
@@ -504,12 +524,160 @@ msgstr "In your own words"
 msgid "Es. “più proteine e pranzi leggeri da portare in ufficio”."
 msgstr "E.g. “more protein and light lunches to take to the office”."
 
+#, javascript-format
+msgid "Dal %s al %s"
+msgstr "From %s to %s"
+
+#, javascript-format
+msgid "Dal %s"
+msgstr "From %s"
+
+msgid ""
+"Carica il piano che ti ha dato il nutrizionista: leggo le opzioni di ogni "
+"pasto con le grammature, tu controlli e poi compongo le settimane seguendolo."
+msgstr "Upload the plan your nutritionist gave you: I'll read each meal's options with portions, you check them, then I'll build the weeks following it."
+
+msgid "Da rivedere"
+msgstr "To review"
+
+msgid "Confermato"
+msgstr "Confirmed"
+
+#, javascript-format
+msgid "%s pasto"
+msgid_plural "%s pasti"
+msgstr[1] "pasta"
+msgstr[0] "%s meal"
+msgstr[1] "%s meals"
+
+msgid "Carica un piano nuovo"
+msgstr "Upload a new plan"
+
+msgid "Carica il piano"
+msgstr "Upload the plan"
+
+msgid "Scegli il PDF o le foto"
+msgstr "Choose the PDF or photos"
+
+#, javascript-format
+msgid "Fino a %s file: tutte le pagine del piano."
+msgstr "Up to %s files: all the pages of the plan."
+
+msgid "Leggo il piano: può volerci un minuto…"
+msgstr "Reading the plan: it may take a minute…"
+
+msgid "Leggi il piano"
+msgstr "Read the plan"
+
+msgid ""
+"Languorino non sostituisce il nutrizionista: segue le sue indicazioni, ma "
+"per dubbi su dosi e salute chiedi a lui."
+msgstr "Languorino doesn't replace your nutritionist: it follows their advice, but ask them about portions and health."
+
+msgid "Elimina"
+msgstr "Delete"
+
+msgid "Eliminare il piano del nutrizionista?"
+msgstr "Delete the nutritionist's plan?"
+
+msgid "Spariscono anche i file caricati. I piani già generati restano."
+msgstr "The uploaded files go too. Plans already generated stay."
+
+msgid ""
+"Letto automaticamente: controlla opzioni e grammature con il piano "
+"originale, correggi e conferma."
+msgstr "Read automatically: check options and portions against the original plan, fix and confirm."
+
+msgid "Confermato: puoi generare piani che lo seguono."
+msgstr "Confirmed: you can generate plans that follow it."
+
+msgid "Crea un piano da qui"
+msgstr "Create a plan from this"
+
+msgid "In generale"
+msgstr "General"
+
+msgid "Valido dal"
+msgstr "Valid from"
+
+msgid "Fino al"
+msgstr "Until"
+
+msgid "Seguilo alla lettera"
+msgstr "Follow it to the letter"
+
+msgid "Ogni pasto è una delle opzioni del nutrizionista."
+msgstr "Every meal is one of the nutritionist's options."
+
+msgid ""
+"Anche piatti equivalenti, con le stesse grammature e frequenze: più varietà."
+msgstr "Equivalent dishes too, with the same portions and frequencies: more variety."
+
+msgid "Pasti"
+msgstr "Meals"
+
+#, javascript-format
+msgid "Togli %s"
+msgstr "Remove %s"
+
+#, javascript-format
+msgid "Opzione %s"
+msgstr "Option %s"
+
+msgid "Togli l’opzione"
+msgstr "Remove option"
+
+msgid "Aggiungi un’opzione"
+msgstr "Add an option"
+
+msgid "Quante volte a settimana"
+msgstr "How many times a week"
+
+msgid "Alimento"
+msgstr "Food"
+
+msgid "Volte a settimana"
+msgstr "Times a week"
+
+msgid "Togli"
+msgstr "Remove"
+
+msgid "Aggiungi una frequenza"
+msgstr "Add a frequency"
+
+msgid "Alimenti"
+msgstr "Foods"
+
+msgid "Liberi"
+msgstr "Unlimited"
+
+msgid "Alimento libero"
+msgstr "Unlimited food"
+
+msgid "Da evitare"
+msgstr "To avoid"
+
+msgid "Non entrano mai nel piano, come le allergie."
+msgstr "They never go into the plan, like allergies."
+
+msgid "Alimento da evitare"
+msgstr "Food to avoid"
+
+msgid "Altre indicazioni"
+msgstr "Other advice"
+
+msgid "Conferma il piano"
+msgstr "Confirm the plan"
+
 msgid ""
 "Componi la settimana dalle tue ricette e dai ricettari PDF, con il meal prep "
 "che preferisci."
 msgstr ""
 "Put the week together from your recipes and PDF cookbooks, with the meal "
 "prep you prefer."
+
+msgid "Caricalo in PDF o foto e genero le settimane seguendolo"
+msgstr "Upload it as PDF or photos and I'll build the weeks following it"
 
 msgid "Il tuo piano"
 msgstr "Your plan"
@@ -543,9 +711,6 @@ msgid ""
 msgstr ""
 "The meals and the recipes written for the plan that you haven't saved will "
 "disappear."
-
-msgid "Elimina"
-msgstr "Delete"
 
 msgid "La preparazione si è interrotta."
 msgstr "Preparation stopped."
@@ -971,8 +1136,8 @@ msgstr "Do you see a nutritionist?"
 msgid "Sì"
 msgstr "Yes"
 
-msgid "Più avanti potrai caricare il suo piano."
-msgstr "Later on you'll be able to upload their plan."
+msgid "Potrai caricare il suo piano dalla sezione Piano."
+msgstr "You can upload their plan from the Plan section."
 
 msgid "No"
 msgstr "No"
@@ -1679,9 +1844,6 @@ msgstr[1] "Needed for %s meals in the plan."
 
 msgid "Se la cambi, ricalcolando dal piano resta com’è."
 msgstr "If you change it, recalculating from the plan leaves it as it is."
-
-msgid "Togli"
-msgstr "Remove"
 
 #, javascript-format
 msgid "Errore %s"

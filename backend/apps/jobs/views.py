@@ -21,6 +21,20 @@ from .serializers import ImportConfirmSerializer, JobSerializer
 from .tasks import run_job
 
 
+def save_job_files(job: Job, prepared: list[tuple[bytes, str, str]]) -> None:
+    """I file gia' controllati da ``prepare``, nell'ordine in cui sono arrivati."""
+    for position, (data, content_type, name) in enumerate(prepared):
+        item = JobFile(
+            job=job,
+            content_type=content_type,
+            original_name=name,
+            size=len(data),
+            position=position,
+        )
+        item.file.save("upload", ContentFile(data), save=False)
+        item.save()
+
+
 def enqueue_job(job: Job) -> None:
     # Dopo il commit: il worker deve trovare job e file gia' salvati.
     transaction.on_commit(lambda: run_job.delay(str(job.id)))
@@ -80,16 +94,7 @@ class JobListView(APIView):
                 kind=kind,
                 input={"language": (get_language() or "it")[:2]},
             )
-            for position, (data, content_type, name) in enumerate(prepared):
-                item = JobFile(
-                    job=job,
-                    content_type=content_type,
-                    original_name=name,
-                    size=len(data),
-                    position=position,
-                )
-                item.file.save("upload", ContentFile(data), save=False)
-                item.save()
+            save_job_files(job, prepared)
             enqueue_job(job)
         job.refresh_from_db()
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)

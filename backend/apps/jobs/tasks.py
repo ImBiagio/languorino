@@ -58,10 +58,37 @@ def _cook_ideas(job: Job) -> None:
     job.result = {"ideas": RecipeListSerializer(ideas, many=True, context={}).data}
 
 
+def _nutritionist_plan(job: Job) -> None:
+    from apps.plans.models import NutritionistPlan
+    from apps.plans.nutritionist import read_plan
+
+    files = []
+    for item in job.files.all():
+        with item.file.open("rb") as handle:
+            files.append((handle.read(), item.content_type))
+    result = read_plan(files, user=job.owner, language=job.input.get("language", "it"))
+    job.model = result.pop("model", "")
+    if not result["rules"]["meals"]:
+        job.result = {
+            "problem": result["problem"] or _("Non ho trovato un piano alimentare in questi file.")
+        }
+        return
+    plan = NutritionistPlan.objects.create(
+        owner=job.owner,
+        job=job,
+        title=result["title"] or _("Piano del nutrizionista"),
+        valid_from=result["valid_from"],
+        valid_to=result["valid_to"],
+        rules=result["rules"],
+    )
+    job.result = {"nutritionist_plan": str(plan.id), "problem": ""}
+
+
 RUNNERS = {
     Job.Kind.IMPORT_RECIPES: _import_recipes,
     Job.Kind.FRIDGE_SCAN: _fridge_scan,
     Job.Kind.COOK_IDEAS: _cook_ideas,
+    Job.Kind.NUTRITIONIST_PLAN: _nutritionist_plan,
 }
 
 
@@ -96,9 +123,13 @@ def run_job(job_id: str) -> None:
 
 @shared_task
 def clean_jobs() -> None:
-    """File degli import vecchi via dal disco; lavori appesi chiusi come non riusciti."""
+    """File degli import vecchi via dal disco; lavori appesi chiusi come non riusciti.
+
+    I file di un piano del nutrizionista restano finche' resta il piano.
+    """
     old = timezone.now() - timedelta(days=settings.JOB_FILES_KEEP_DAYS)
-    for item in JobFile.objects.filter(created_at__lt=old):
+    stale = JobFile.objects.filter(created_at__lt=old, job__nutritionist_plan__isnull=True)
+    for item in stale:
         item.file.delete(save=False)
         item.delete(hard=True)
     stuck = timezone.now() - timedelta(hours=1)
