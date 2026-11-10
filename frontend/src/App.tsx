@@ -11,6 +11,7 @@ import {
   VerifyEmailPage,
 } from './features/auth/AuthPages'
 import { HomePage } from './features/home/HomePage'
+import { InterviewPage } from './features/interview/InterviewPage'
 import { CookTodayPage } from './features/kitchen/CookTodayPage'
 import { OnboardingPage } from './features/onboarding/OnboardingPage'
 import { NewPlanPage } from './features/plans/NewPlanPage'
@@ -64,6 +65,14 @@ export default function App() {
         element={
           <RequireAuth>
             <OnboardingPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/intervista"
+        element={
+          <RequireAuth>
+            <InterviewPage />
           </RequireAuth>
         }
       />

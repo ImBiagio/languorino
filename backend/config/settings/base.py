@@ -289,6 +289,8 @@ RECIPE_IMAGE_MAX_SIDE = 1600
 JOB_MAX_FILES = int(env("JOB_MAX_FILES", "8"))
 JOB_MAX_IMAGE_BYTES = int(env("JOB_MAX_IMAGE_BYTES", str(10 * 1024 * 1024)))
 JOB_MAX_PDF_BYTES = int(env("JOB_MAX_PDF_BYTES", str(18 * 1024 * 1024)))
+# Registrazioni a voce (intervista, ricette raccontate): circa 5 minuti.
+JOB_MAX_AUDIO_BYTES = int(env("JOB_MAX_AUDIO_BYTES", str(10 * 1024 * 1024)))
 JOB_MAX_TOTAL_BYTES = int(env("JOB_MAX_TOTAL_BYTES", str(18 * 1024 * 1024)))
 # Lato lungo delle foto dopo la riduzione: basta per leggere una pagina scritta.
 JOB_IMAGE_MAX_SIDE = int(env("JOB_IMAGE_MAX_SIDE", "2400"))

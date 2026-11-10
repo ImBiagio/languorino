@@ -1,7 +1,7 @@
 # Languorino
 
 Cosa mangio questa settimana? Languorino parte dal profilo (gusti, allergie,
-obiettivi, stile di vita), genera il piano alimentare con il meal prep (anche seguendo quello del
+obiettivi, stile di vita, anche raccontati a voce in un'intervista), genera il piano alimentare con il meal prep (anche seguendo quello del
 nutrizionista), tiene
 il ricettario di casa (anche dalle foto delle ricette scritte a mano),
 calcola la spesa e, dalla foto del frigo, dice cosa cucinare oggi. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
@@ -70,7 +70,7 @@ backend/
 └── apps/
     ├── core/            BaseModel, methods (token, hash, mail), i18n, task mail
     ├── users/           User custom + auth JWT + mail dell'account
-    ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE)
+    ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE), intervista (interview.py)
     ├── recipes/         ricette, tag, catalogo ingredienti (catalog.py), riconoscimento dei nomi, immagini (images.py),
     │                    import da foto (importing.py), ricettari PDF letti a pezzi (books.py, tasks.py), condivisione (sharing.py)
     ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
@@ -83,7 +83,7 @@ frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
 ├── lib/                 client HTTP, auth, i18n, format, tipi
 ├── components/          UI M3, layout, dialog di conferma
-└── features/            auth · account · home · onboarding · profile · recipes · plans · shopping · kitchen
+└── features/            auth · account · home · onboarding · profile · interview · recipes · plans · shopping · kitchen
 deploy/                  compose di produzione, Caddy interno, edge condiviso
 docs/decisions/          ADR (modello in 0000-modello.md)
 ```
@@ -98,6 +98,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET/PATCH /api/me` | account (nome visibile, lingua) |
 | `GET/PATCH /api/profile` · `POST /api/profile/complete` | profilo alimentare e fine del wizard |
 | `GET/POST /api/profile/preferences` · `DELETE …/{id}` | gusti, antipatie, allergie, intolleranze |
+| `POST /api/profile/interview` (JSON o multipart `messages`, `audio`) | un turno dell'intervista, anche a voce: job con risposta e proposte da confermare ([ADR 0013](docs/decisions/0013-intervista-e-voce.md)) |
 | `GET /api/ingredients?q=` | suggerimenti dal catalogo (e dagli ingredienti propri) |
 | `GET/POST /api/recipes` (`?q=`, `?tag=`, `?slot=`, `?max_minutes=`, `?difficulty=`, `?in_cookbook=`) · `GET/PATCH/DELETE …/{id}` | ricettario, con allergeni e avvisi dal profilo |
 | `GET /api/tags` · `DELETE /api/tags/{id}` | tag con il numero di ricette |

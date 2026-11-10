@@ -17,8 +17,43 @@ IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/hei
 PDF = "application/pdf"
 
 
+AUDIO_TYPES = {"audio/webm", "audio/ogg", "audio/wav", "audio/mp3", "audio/mp4"}
+# Marche "ftyp" dei contenitori MP4 audio (Safari registra in audio/mp4).
+MP4_AUDIO_BRANDS = {b"M4A ", b"mp41", b"mp42", b"isom", b"iso5", b"iso6", b"dash"}
+
+
 class FileRejected(ValueError):
     pass
+
+
+def sniff_audio(head: bytes) -> str | None:
+    """Il tipo di una registrazione dai primi byte (quelle di MediaRecorder e i file comuni)."""
+    if head.startswith(b"\x1aE\xdf\xa3"):
+        return "audio/webm"
+    if head.startswith(b"OggS"):
+        return "audio/ogg"
+    if head[:4] == b"RIFF" and head[8:12] == b"WAVE":
+        return "audio/wav"
+    if head.startswith(b"ID3") or (len(head) > 1 and head[0] == 0xFF and head[1] & 0xE0 == 0xE0):
+        return "audio/mp3"
+    if head[4:8] == b"ftyp" and head[8:12] in MP4_AUDIO_BRANDS:
+        return "audio/mp4"
+    return None
+
+
+def prepare_audio(upload) -> tuple[bytes, str, str]:
+    """``(contenuto, tipo, nome)`` di una registrazione, o ``FileRejected``."""
+    data = upload.read()
+    name = (getattr(upload, "name", "") or "")[:200]
+    kind = sniff_audio(data[:16])
+    if kind is None:
+        raise FileRejected(_("Questa registrazione non si riconosce come audio."))
+    if len(data) > settings.JOB_MAX_AUDIO_BYTES:
+        raise FileRejected(
+            _("Registrazione troppo lunga (massimo %(mb)d MB, circa 5 minuti).")
+            % {"mb": settings.JOB_MAX_AUDIO_BYTES // (1024 * 1024)}
+        )
+    return data, kind, name
 
 
 def sniff(head: bytes) -> str | None:

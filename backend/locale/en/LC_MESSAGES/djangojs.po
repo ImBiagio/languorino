@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:30+0100\n"
+"POT-Creation-Date: 2026-11-10 16:40+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -291,6 +291,108 @@ msgstr "Must avoid"
 msgid "Niente"
 msgstr "Nothing"
 
+msgid "Allergia"
+msgstr "Allergy"
+
+msgid "Intolleranza"
+msgstr "Intolerance"
+
+msgid "Mi piace"
+msgstr "I like"
+
+msgid "Non mi piace"
+msgstr "I don't like"
+
+#, javascript-format
+msgid "Altezza %s cm"
+msgstr "Height %s cm"
+
+#, javascript-format
+msgid "Peso %s kg"
+msgstr "Weight %s kg"
+
+#, javascript-format
+msgid "Obiettivo: “%s”"
+msgstr "Goal: “%s”"
+
+#, javascript-format
+msgid "Attività: %s"
+msgstr "Activity: %s"
+
+#, javascript-format
+msgid "Sport %s volte a settimana"
+msgstr "Sport %s times a week"
+
+#, javascript-format
+msgid "Da considerare: %s"
+msgstr "To consider: %s"
+
+msgid "Ti segue un nutrizionista"
+msgstr "You see a nutritionist"
+
+msgid "Nessun nutrizionista"
+msgstr "No nutritionist"
+
+#, javascript-format
+msgid "Pasti: %s"
+msgstr "Meals: %s"
+
+#, javascript-format
+msgid "Cucini per %s"
+msgstr "You cook for %s"
+
+msgid ""
+"Ciao! Ti faccio qualche domanda per conoscerti e proporti cosa mangiare. "
+"Puoi scrivere o parlare. Per cominciare: hai allergie o intolleranze "
+"alimentari?"
+msgstr "Hi! I'll ask you a few questions to get to know you and suggest what to eat. You can type or talk. To start: do you have any food allergies or intolerances?"
+
+msgid "Indietro"
+msgstr "Back"
+
+msgid "Due chiacchiere"
+msgstr "A quick chat"
+
+msgid "Rispondi a voce o per iscritto: alla fine controlli tutto"
+msgstr "Answer by voice or in writing: you check everything at the end"
+
+msgid "Leggi le risposte ad alta voce"
+msgstr "Read answers aloud"
+
+msgid "Ecco cosa ho capito: controlla e salva"
+msgstr "Here's what I understood: check and save"
+
+msgid "Ho capito"
+msgstr "Got it"
+
+msgid "Niente di nuovo da salvare."
+msgstr "Nothing new to save."
+
+msgid "Basta così"
+msgstr "That's enough"
+
+msgid "Salva e inizia"
+msgstr "Save and start"
+
+msgid "Salva nel profilo"
+msgstr "Save to profile"
+
+#, javascript-format
+msgid "Ti ascolto… %s"
+msgstr "Listening… %s"
+
+msgid "Scrivi la tua risposta"
+msgstr "Write your answer"
+
+msgid "Ferma e invia"
+msgstr "Stop and send"
+
+msgid "Rispondi a voce"
+msgstr "Answer by voice"
+
+msgid "Invia"
+msgstr "Send"
+
 msgid "uova"
 msgstr "eggs"
 
@@ -407,8 +509,11 @@ msgstr "Step %s of %s"
 msgid "Avanzamento del profilo"
 msgstr "Profile progress"
 
-msgid "Indietro"
-msgstr "Back"
+msgid "Preferisci raccontarmelo?"
+msgstr "Rather tell me about it?"
+
+msgid "Due chiacchiere, anche a voce, al posto delle domande"
+msgstr "A quick chat, voice too, instead of the questions"
 
 msgid "Inizia"
 msgstr "Get started"
@@ -838,6 +943,12 @@ msgstr "Two big sessions for the whole week"
 
 msgid "Quello che Languorino sa di te per proporti cosa mangiare."
 msgstr "What Languorino knows about you to suggest what to eat."
+
+msgid "Aggiorna il profilo chiacchierando"
+msgstr "Update your profile by chatting"
+
+msgid "Raccontami cosa è cambiato, anche a voce: poi controlli e salvi"
+msgstr "Tell me what changed, by voice too: then you check and save"
 
 msgid "Email, password, lingua"
 msgstr "Email, password, language"
@@ -1317,6 +1428,15 @@ msgstr "PDF"
 msgid "Un ricettario intero: lo leggo pagina per pagina"
 msgstr "A whole cookbook: I read it page by page"
 
+msgid "A voce"
+msgstr "By voice"
+
+msgid "Tocca per finire: la leggo subito"
+msgstr "Tap to finish: I'll read it right away"
+
+msgid "Raccontala come la spiegheresti a un amico"
+msgstr "Tell it as you'd explain it to a friend"
+
 #, javascript-format
 msgid "%s file da leggere"
 msgid_plural "%s file da leggere"
@@ -1720,7 +1840,9 @@ msgstr "Share the recipe"
 msgid ""
 "Chi ha il link vede la ricetta anche senza account; con un account la copia "
 "nel suo ricettario."
-msgstr "Anyone with the link sees the recipe, even without an account; with an account they copy it into their cookbook."
+msgstr ""
+"Anyone with the link sees the recipe, even without an account; with an "
+"account they copy it into their cookbook."
 
 msgid "Link della ricetta"
 msgstr "Recipe link"
@@ -1743,7 +1865,9 @@ msgstr "Turn off the link"
 msgid ""
 "Crea un link da mandare a chi vuoi: vede la ricetta anche senza account e "
 "può copiarla nel suo ricettario. Puoi spegnerlo quando vuoi."
-msgstr "Create a link to send to anyone: they see the recipe even without an account and can copy it into their cookbook. You can turn it off any time."
+msgstr ""
+"Create a link to send to anyone: they see the recipe even without an account "
+"and can copy it into their cookbook. You can turn it off any time."
 
 msgid "Crea il link"
 msgstr "Create the link"
@@ -1774,7 +1898,9 @@ msgstr "Copy to my cookbook"
 msgid ""
 "Con Languorino la copi nel tuo ricettario, ci componi il piano della "
 "settimana e fai la spesa."
-msgstr "With Languorino you copy it into your cookbook, build your weekly plan with it and do the shopping."
+msgstr ""
+"With Languorino you copy it into your cookbook, build your weekly plan with "
+"it and do the shopping."
 
 msgid "Facile"
 msgstr "Easy"
@@ -1954,3 +2080,6 @@ msgstr "Error %s"
 
 msgid "e"
 msgstr "and"
+
+msgid "Non riesco a usare il microfono: controlla i permessi del browser."
+msgstr "I can't use the microphone: check the browser permissions."

@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from apps.ai.client import is_enabled
 from apps.recipes.models import Recipe
 
-from .files import PDF, FileRejected, prepare
+from .files import AUDIO_TYPES, PDF, FileRejected, prepare, prepare_audio, sniff_audio
 from .models import Job, JobFile
 from .serializers import ImportConfirmSerializer, JobSerializer
 from .tasks import run_job
@@ -83,8 +83,16 @@ class JobListView(APIView):
                 {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
+        uploads = request.FILES.getlist("files")
         try:
-            prepared = prepare(request.FILES.getlist("files"))
+            # Una registrazione sola: una ricetta raccontata a voce.
+            if len(uploads) == 1 and sniff_audio(uploads[0].read(16)):
+                uploads[0].seek(0)
+                prepared = [prepare_audio(uploads[0])]
+            else:
+                for upload in uploads:
+                    upload.seek(0)
+                prepared = prepare(uploads)
         except FileRejected as exc:
             raise serializers.ValidationError({"files": str(exc)}) from exc
 
@@ -152,11 +160,12 @@ class JobConfirmView(APIView):
             raise serializers.ValidationError({"detail": _("Non c'è niente da confermare.")})
         serializer = ImportConfirmSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        source = (
-            Recipe.Source.PDF
-            if job.files.exists() and not job.files.exclude(content_type=PDF).exists()
-            else Recipe.Source.PHOTO
-        )
+        if job.files.filter(content_type__in=AUDIO_TYPES).exists():
+            source = Recipe.Source.VOICE
+        elif job.files.exists() and not job.files.exclude(content_type=PDF).exists():
+            source = Recipe.Source.PDF
+        else:
+            source = Recipe.Source.PHOTO
         with transaction.atomic():
             created = [
                 serializer.fields["recipes"].child.create(

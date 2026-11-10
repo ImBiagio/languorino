@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:30+0100\n"
+"POT-Creation-Date: 2026-11-10 16:40+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -72,31 +72,40 @@ msgstr "Gemini isn't answering. Try again in a few minutes."
 msgid "Gemini non ha disegnato niente questa volta. Riprova."
 msgstr "Gemini didn't draw anything this time. Try again."
 
-#: apps/jobs/files.py:58
+#: apps/jobs/files.py:50
+msgid "Questa registrazione non si riconosce come audio."
+msgstr "This recording isn't recognised as audio."
+
+#: apps/jobs/files.py:53
+#, python-format
+msgid "Registrazione troppo lunga (massimo %(mb)d MB, circa 5 minuti)."
+msgstr "Recording too long (max %(mb)d MB, about 5 minutes)."
+
+#: apps/jobs/files.py:93
 msgid "Carica almeno una foto o un PDF."
 msgstr "Upload at least one photo or PDF."
 
-#: apps/jobs/files.py:60
+#: apps/jobs/files.py:95
 #, python-format
 msgid "Al massimo %(n)d file alla volta."
 msgstr "At most %(n)d files at a time."
 
-#: apps/jobs/files.py:69
+#: apps/jobs/files.py:104
 #, python-format
 msgid "“%(name)s” non è una foto (JPEG, PNG, WebP, HEIC) né un PDF."
 msgstr "“%(name)s” is neither a photo (JPEG, PNG, WebP, HEIC) nor a PDF."
 
-#: apps/jobs/files.py:74
+#: apps/jobs/files.py:109
 #, python-format
 msgid "“%(name)s” è troppo grande (massimo %(mb)d MB)."
 msgstr "“%(name)s” is too big (max %(mb)d MB)."
 
-#: apps/jobs/files.py:83
+#: apps/jobs/files.py:118
 #, python-format
 msgid "“%(name)s” non si apre come immagine."
 msgstr "“%(name)s” can't be opened as an image."
 
-#: apps/jobs/files.py:89
+#: apps/jobs/files.py:124
 #, python-format
 msgid "I file insieme sono troppo grandi (massimo %(mb)d MB)."
 msgstr "The files together are too big (max %(mb)d MB)."
@@ -121,23 +130,27 @@ msgstr "Read the nutritionist's plan"
 msgid "Disegna la ricetta"
 msgstr "Draw the recipe"
 
-#: apps/jobs/models.py:27 apps/recipes/models.py:155
+#: apps/jobs/models.py:25
+msgid "Intervista per il profilo"
+msgstr "Profile interview"
+
+#: apps/jobs/models.py:28 apps/recipes/models.py:155
 msgid "In coda"
 msgstr "Queued"
 
-#: apps/jobs/models.py:28
+#: apps/jobs/models.py:29
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:29 apps/plans/models.py:98
+#: apps/jobs/models.py:30 apps/plans/models.py:98
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:30 apps/plans/models.py:99
+#: apps/jobs/models.py:31 apps/plans/models.py:99
 msgid "Confermato"
 msgstr "Confirmed"
 
-#: apps/jobs/models.py:31
+#: apps/jobs/models.py:32
 msgid "Non riuscito"
 msgstr "Failed"
 
@@ -149,15 +162,15 @@ msgstr "I couldn't find a meal plan in these files."
 msgid "Piano del nutrizionista"
 msgstr "Nutritionist's plan"
 
-#: apps/jobs/tasks.py:125
+#: apps/jobs/tasks.py:146
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:129 apps/plans/tasks.py:76 apps/recipes/tasks.py:131
+#: apps/jobs/tasks.py:150 apps/plans/tasks.py:76 apps/recipes/tasks.py:131
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
-#: apps/jobs/tasks.py:148
+#: apps/jobs/tasks.py:169
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
@@ -166,15 +179,16 @@ msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:75
-#: apps/plans/views.py:274 apps/recipes/views.py:232 apps/recipes/views.py:394
+#: apps/plans/views.py:274 apps/profiles/views.py:130 apps/recipes/views.py:232
+#: apps/recipes/views.py:394
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
-#: apps/jobs/views.py:133
+#: apps/jobs/views.py:141
 msgid "Si può riprovare solo un lavoro non riuscito."
 msgstr "Only a failed job can be retried."
 
-#: apps/jobs/views.py:152
+#: apps/jobs/views.py:160
 msgid "Non c'è niente da confermare."
 msgstr "There's nothing to confirm."
 
@@ -441,11 +455,11 @@ msgstr "Dinner"
 
 #: apps/profiles/models.py:123
 msgid "Mi piace"
-msgstr "I like it"
+msgstr "I like"
 
 #: apps/profiles/models.py:124
 msgid "Non mi piace"
-msgstr "I don't like it"
+msgstr "I don't like"
 
 #: apps/profiles/models.py:125
 msgid "Allergia"
@@ -471,6 +485,14 @@ msgstr "Check the year of birth."
 #, python-format
 msgid "Al massimo %(n)d voci."
 msgstr "At most %(n)d items."
+
+#: apps/profiles/views.py:139
+msgid "Conversazione non valida."
+msgstr "Invalid conversation."
+
+#: apps/profiles/views.py:148
+msgid "Scrivi o registra una risposta."
+msgstr "Write or record an answer."
 
 #: apps/recipes/books.py:27
 msgid "Il PDF è protetto da password."
@@ -594,7 +616,7 @@ msgstr "From a PDF"
 
 #: apps/recipes/models.py:195
 msgid "A voce"
-msgstr "Dictated"
+msgstr "By voice"
 
 #: apps/recipes/models.py:196
 msgid "Dal piano"

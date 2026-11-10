@@ -90,7 +90,12 @@ class ImportedRecipes(BaseModel):
 
 PROMPT = """Sei l'aiuto di un'app di ricette. I file allegati contengono una o piu'
 ricette: foto di un quaderno scritto a mano, pagine stampate, un PDF (anche il
-ricettario di un nutrizionista). Trascrivi OGNI ricetta che trovi.
+ricettario di un nutrizionista) o la registrazione di qualcuno che racconta una
+ricetta a voce. Trascrivi OGNI ricetta che trovi.
+
+Un racconto a voce e' disordinato ("poi metti la cipolla, ah prima l'olio"):
+metti i passi nell'ordine giusto, togli esitazioni e ripetizioni; una quantita'
+non detta resta vuota (quantity null), senza inventarla.
 
 Regole:
 - Un elemento di "recipes" per ricetta. Una ricetta che continua su piu' file

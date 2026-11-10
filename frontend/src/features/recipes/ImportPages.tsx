@@ -19,6 +19,7 @@ import { CookbookIllustration, FoodPattern } from '../../components/illustration
 import { EmptyState, ErrorBanner, Icon, IconButton, Skeleton, Switch } from '../../components/ui'
 import { ApiError } from '../../lib/api'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
+import { formatSeconds, useRecorder } from '../../lib/recorder'
 import type { Job } from '../../lib/types'
 import { useBookUploader } from './BooksPages'
 import { RecipeEditor, draftFromImport, payloadFrom } from './RecipeEditor'
@@ -35,6 +36,15 @@ export function ImportPage() {
   const photos = useRef<HTMLInputElement>(null)
   // Un PDF diventa un ricettario da sfogliare (ADR 0006), non una revisione.
   const uploader = useBookUploader()
+  // A voce: la registrazione parte da sola come lavoro di lettura.
+  const recorder = useRecorder(async (file) => {
+    try {
+      const job = await start.mutateAsync([file])
+      navigate(`/ricette/importa/${job.id}`, { replace: true })
+    } catch {
+      // Errore sotto.
+    }
+  })
 
   const add = (list: FileList | null) => {
     if (!list) return
@@ -69,7 +79,9 @@ export function ImportPage() {
           </div>
         </section>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div
+          className={clsx('grid gap-3', recorder.supported ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}
+        >
           <button
             type="button"
             className="state flex items-center gap-4 rounded-card bg-surface-container-low p-5 text-left"
@@ -103,7 +115,42 @@ export function ImportPage() {
               </span>
             </span>
           </button>
+          {recorder.supported && (
+            <button
+              type="button"
+              className={clsx(
+                'state flex items-center gap-4 rounded-card p-5 text-left',
+                recorder.recording
+                  ? 'bg-error-container text-on-error-container'
+                  : 'bg-surface-container-low',
+              )}
+              onClick={() => (recorder.recording ? recorder.stop() : recorder.start())}
+              disabled={start.isPending}
+            >
+              <span
+                className={clsx(
+                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px]',
+                  recorder.recording ? 'bg-error text-white' : 'bg-tertiary text-white',
+                )}
+              >
+                <Icon name={recorder.recording ? 'stop' : 'mic'} size={26} />
+              </span>
+              <span>
+                <span className="block text-body-large font-medium">
+                  {recorder.recording
+                    ? interpolate(gettext('Ti ascolto… %s'), [formatSeconds(recorder.seconds)])
+                    : gettext('A voce')}
+                </span>
+                <span className="block text-body-small opacity-80">
+                  {recorder.recording
+                    ? gettext('Tocca per finire: la leggo subito')
+                    : gettext('Raccontala come la spiegheresti a un amico')}
+                </span>
+              </span>
+            </button>
+          )}
         </div>
+        {recorder.error && <p className="text-body-small text-error">{recorder.error}</p>}
         <input
           ref={photos}
           type="file"

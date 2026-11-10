@@ -93,12 +93,33 @@ def _recipe_image(job: Job) -> None:
     job.result = {"recipe": str(recipe.id), "image": recipe.image.url}
 
 
+def _interview(job: Job) -> None:
+    from apps.profiles.interview import interview_turn
+
+    audio = []
+    for item in job.files.all():
+        with item.file.open("rb") as handle:
+            audio.append((handle.read(), item.content_type))
+        # La voce serve solo per questo turno: non resta sul disco.
+        item.file.delete(save=False)
+        item.delete(hard=True)
+    result = interview_turn(
+        job.owner,
+        job.input.get("messages", []),
+        audio=audio,
+        language=job.input.get("language", "it"),
+    )
+    job.model = result.pop("model", "")
+    job.result = result
+
+
 RUNNERS = {
     Job.Kind.IMPORT_RECIPES: _import_recipes,
     Job.Kind.FRIDGE_SCAN: _fridge_scan,
     Job.Kind.COOK_IDEAS: _cook_ideas,
     Job.Kind.NUTRITIONIST_PLAN: _nutritionist_plan,
     Job.Kind.RECIPE_IMAGE: _recipe_image,
+    Job.Kind.INTERVIEW: _interview,
 }
 
 

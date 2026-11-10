@@ -1,13 +1,26 @@
 from __future__ import annotations
 
+import json
+
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.translation import get_language
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework import serializers, status
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.ai.client import is_enabled
+from apps.jobs.files import FileRejected, prepare_audio
+from apps.jobs.models import Job
+from apps.jobs.serializers import JobSerializer
+from apps.jobs.views import enqueue_job, save_job_files
+
+from .interview import MAX_MESSAGE_CHARS, MAX_MESSAGES
 from .models import FoodPreference, Profile
 from .serializers import FoodPreferenceSerializer, ProfileSerializer
 
@@ -84,3 +97,71 @@ class PreferenceDetailView(APIView):
         # Cancellata davvero: una preferenza tolta non e' storia da tenere.
         preference.delete(hard=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class InterviewMessageSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=["assistant", "user"])
+    text = serializers.CharField(max_length=MAX_MESSAGE_CHARS, allow_blank=True)
+
+
+class InterviewView(APIView):
+    """Un turno dell'intervista (ADR 0013): la conversazione finora e, se si
+    parla, la registrazione dell'ultima risposta. Risponde con un job."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser]
+    throttle_scope = "ai"
+
+    @extend_schema(
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "messages": {"type": "string", "description": "JSON [{role, text}]"},
+                    "audio": {"type": "string", "format": "binary"},
+                },
+            }
+        },
+        responses={202: JobSerializer},
+    )
+    def post(self, request):
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        raw = request.data.get("messages", [])
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except ValueError as exc:
+                raise serializers.ValidationError(
+                    {"messages": _("Conversazione non valida.")}
+                ) from exc
+        messages = InterviewMessageSerializer(data=raw, many=True)
+        messages.is_valid(raise_exception=True)
+        history = list(messages.validated_data)[-MAX_MESSAGES:]
+        audio = request.FILES.get("audio")
+        if audio is None and not (
+            history and history[-1]["role"] == "user" and history[-1]["text"].strip()
+        ):
+            raise serializers.ValidationError({"messages": _("Scrivi o registra una risposta.")})
+        prepared = []
+        if audio is not None:
+            try:
+                prepared = [prepare_audio(audio)]
+            except FileRejected as exc:
+                raise serializers.ValidationError({"audio": str(exc)}) from exc
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.INTERVIEW,
+                input={
+                    "messages": [dict(message) for message in history],
+                    "language": (get_language() or "it")[:2],
+                },
+            )
+            save_job_files(job, prepared)
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
