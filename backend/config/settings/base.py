@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "apps.recipes",
     "apps.ai",
     "apps.jobs",
+    "apps.plans",
 ]
 
 MIDDLEWARE = [
@@ -209,6 +210,7 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ROUTES = {
     "apps.jobs.tasks.run_job": {"queue": "ai"},
     "apps.recipes.tasks.read_book_chunk": {"queue": "ai"},
+    "apps.plans.tasks.plan_week": {"queue": "ai"},
 }
 CELERY_TASK_ALWAYS_EAGER = False
 
@@ -221,6 +223,10 @@ CELERY_BEAT_SCHEDULE = {
     # Letture di ricettari PDF interrotte (worker riavviato): si riprendono.
     "resume-stalled-books": {
         "task": "apps.recipes.tasks.resume_stalled_books",
+        "schedule": crontab(minute="*/10"),
+    },
+    "resume-stalled-plans": {
+        "task": "apps.plans.tasks.resume_stalled_plans",
         "schedule": crontab(minute="*/10"),
     },
     # File degli import vecchi e lavori rimasti appesi.

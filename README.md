@@ -73,12 +73,13 @@ backend/
     ├── recipes/         ricette, tag, catalogo ingredienti (catalog.py), riconoscimento dei nomi,
     │                    import da foto (importing.py), ricettari PDF letti a pezzi (books.py, tasks.py)
     ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
-    └── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
+    ├── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
+    └── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py)
 frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
 ├── lib/                 client HTTP, auth, i18n, format, tipi
 ├── components/          UI M3, layout, dialog di conferma
-└── features/            auth · account · home · onboarding · profile · recipes
+└── features/            auth · account · home · onboarding · profile · recipes · plans
 deploy/                  compose di produzione, Caddy interno, edge condiviso
 docs/decisions/          ADR (modello in 0000-modello.md)
 ```
@@ -99,7 +100,9 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET/POST /api/jobs` (multipart `kind`, `files`) · `GET/DELETE /api/jobs/{id}` | lavori lunghi: import di ricette da foto e PDF |
 | `POST /api/jobs/{id}/retry` · `POST /api/jobs/{id}/confirm` `{recipes}` | riprova un lavoro non riuscito · le bozze riviste diventano ricette |
 | `GET/POST /api/recipe-books` (multipart `file`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/retry` | ricettari PDF letti a pezzi ([ADR 0006](docs/decisions/0006-ricettari-pdf.md)); le ricette con `GET /api/recipes?book={id}` |
-| `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF entra nel proprio ricettario |
+| `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF o del piano entra nel proprio ricettario |
+| `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
+| `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto |
 | `GET /api/i18n/catalog` · `POST /api/i18n/language` | traduzioni del frontend e lingua scelta |
 | `GET /api/health` | healthcheck del container |
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 14:59+0100\n"
+"POT-Creation-Date: 2026-11-10 15:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,6 +26,9 @@ msgstr "Confirm"
 
 msgid "Oggi"
 msgstr "Today"
+
+msgid "Piano"
+msgstr "Plan"
 
 msgid "Ricette"
 msgstr "Recipes"
@@ -228,6 +231,29 @@ msgstr "Hi %s"
 msgid "Cosa mangiamo oggi?"
 msgstr "What are we eating today?"
 
+msgid "Oggi mangi"
+msgstr "Today you eat"
+
+msgid "Domani"
+msgstr "Tomorrow"
+
+msgid "Tutto il piano"
+msgstr "Whole plan"
+
+#, javascript-format
+msgid "Il tuo piano parte %s"
+msgstr "Your plan starts %s"
+
+msgid "Guarda cosa preparare per iniziare"
+msgstr "See what to prep to get started"
+
+msgid "Oggi prepari anche"
+msgstr "Today you also prep"
+
+#, javascript-format
+msgid "per %s"
+msgstr "for %s"
+
 msgid "Ancora nessun piano"
 msgstr "No plan yet"
 
@@ -237,6 +263,9 @@ msgid ""
 msgstr ""
 "Once you have a meal plan, you'll find today's and tomorrow's meals here, "
 "and what to prep."
+
+msgid "Crea il piano"
+msgstr "Create the plan"
 
 msgid "Cosa so di te"
 msgstr "What I know about you"
@@ -268,6 +297,252 @@ msgstr "Get started"
 
 msgid "Avanti"
 msgstr "Next"
+
+msgid "Nuovo piano"
+msgstr "New plan"
+
+msgid ""
+"Scegli come vuoi organizzarti: compongo io le settimane dalle tue ricette, "
+"tenendo conto del profilo, di allergie e gusti."
+msgstr ""
+"Choose how you want to get organised: I'll put the weeks together from your "
+"recipes, taking your profile, allergies and tastes into account."
+
+msgid "Quando e per quanto"
+msgstr "When and for how long"
+
+#, javascript-format
+msgid "Da lunedì %s"
+msgstr "From Monday %s"
+
+msgid "Da oggi"
+msgstr "From today"
+
+msgid "Primo giorno"
+msgstr "First day"
+
+#, javascript-format
+msgid "%s settimana"
+msgid_plural "%s settimane"
+msgstr[0] "%s week"
+msgstr[1] "%s weeks"
+
+msgid "Pasti e porzioni"
+msgstr "Meals and servings"
+
+msgid "Porzioni per pasto"
+msgstr "Servings per meal"
+
+msgid "Meal prep"
+msgstr "Meal prep"
+
+msgid "Tempo per cucinare, ogni volta"
+msgstr "Time to cook, each time"
+
+msgid "Difficoltà massima"
+msgstr "Maximum difficulty"
+
+msgid "Da dove prendo le ricette"
+msgstr "Where I take recipes from"
+
+msgid "Il mio ricettario"
+msgstr "My cookbook"
+
+#, javascript-format
+msgid "%s ricetta"
+msgid_plural "%s ricette"
+msgstr[0] "%s recipe"
+msgstr[1] "%s recipes"
+
+msgid ""
+"Se non trovo una ricetta adatta a un pasto ne scrivo io una nuova: la trovi "
+"nel piano e puoi salvarla."
+msgstr ""
+"If I can't find a suitable recipe for a meal I'll write a new one: you'll "
+"find it in the plan and can save it."
+
+msgid "Scegli almeno una fonte."
+msgstr "Choose at least one source."
+
+msgid "Tag"
+msgstr "Tags"
+
+msgid "Solo ricette con questi tag"
+msgstr "Only recipes with these tags"
+
+msgid "Tag da includere (vuoto = tutte)"
+msgstr "Tags to include (empty = all)"
+
+msgid "Mai ricette con questi tag"
+msgstr "Never recipes with these tags"
+
+msgid "Tag da escludere (es. “del cuore”)"
+msgstr "Tags to exclude (e.g. “favourite”)"
+
+msgid "Cosa vuoi ottenere?"
+msgstr "What do you want to achieve?"
+
+msgid "In parole tue"
+msgstr "In your own words"
+
+msgid "Es. “più proteine e pranzi leggeri da portare in ufficio”."
+msgstr "E.g. “more protein and light lunches to take to the office”."
+
+msgid ""
+"Componi la settimana dalle tue ricette e dai ricettari PDF, con il meal prep "
+"che preferisci."
+msgstr ""
+"Put the week together from your recipes and PDF cookbooks, with the meal "
+"prep you prefer."
+
+msgid "Il tuo piano"
+msgstr "Your plan"
+
+msgid "Bozza da attivare"
+msgstr "Draft to activate"
+
+msgid "Piano archiviato"
+msgstr "Archived plan"
+
+msgid "Piano in preparazione"
+msgstr "Plan being prepared"
+
+#, javascript-format
+msgid "%s porzione"
+msgid_plural "%s porzioni"
+msgstr[0] "%s serving"
+msgstr[1] "%s servings"
+
+msgid "Elimina il piano"
+msgstr "Delete the plan"
+
+msgid "Eliminare il piano?"
+msgstr "Delete the plan?"
+
+msgid ""
+"Spariscono i pasti e le ricette scritte per il piano che non hai salvato."
+msgstr ""
+"The meals and the recipes written for the plan that you haven't saved will "
+"disappear."
+
+msgid "Elimina"
+msgstr "Delete"
+
+msgid "La preparazione si è interrotta."
+msgstr "Preparation stopped."
+
+msgid "Riprendi"
+msgstr "Resume"
+
+msgid "Rifai da capo"
+msgstr "Start over"
+
+msgid ""
+"Controlla i pasti e cambia quelli che non ti convincono, poi attiva il "
+"piano: comparirà in “Oggi”."
+msgstr ""
+"Check the meals and change the ones you don't like, then activate the plan: "
+"it will show up in “Today”."
+
+msgid "Rifare il piano?"
+msgstr "Redo the plan?"
+
+msgid "Ricompongo tutte le settimane con le stesse scelte."
+msgstr "I'll put all the weeks together again with the same choices."
+
+msgid "Rifai"
+msgstr "Redo"
+
+msgid "Attiva il piano"
+msgstr "Activate the plan"
+
+msgid "Cosa mangi"
+msgstr "What you eat"
+
+msgid "Cosa cucini"
+msgstr "What you cook"
+
+#, javascript-format
+msgid "Settimana %s"
+msgstr "Week %s"
+
+msgid "Sto componendo il piano…"
+msgstr "Putting the plan together…"
+
+msgid "In pausa: Gemini è sovraccarico, riprovo da solo tra qualche minuto."
+msgstr ""
+"Paused: Gemini is overloaded, I'll try again on my own in a few minutes."
+
+#, javascript-format
+msgid "Settimana %s di %s. Puoi uscire: continuo io."
+msgstr "Week %s of %s. You can leave: I'll carry on."
+
+msgid "Settimane"
+msgstr "Weeks"
+
+msgid "Pasto libero"
+msgstr "Free meal"
+
+#, javascript-format
+msgid "cucinato %s"
+msgstr "cooked %s"
+
+msgid "dal PDF"
+msgstr "from PDF"
+
+msgid "nuova"
+msgstr "new"
+
+msgid "da controllare"
+msgstr "check it"
+
+msgid "Cambia il pasto"
+msgstr "Change the meal"
+
+msgid "Niente da cucinare in questa settimana"
+msgstr "Nothing to cook this week"
+
+msgid "Porzioni"
+msgstr "Servings"
+
+msgid "Salva le porzioni"
+msgstr "Save servings"
+
+msgid "Scegli un’altra ricetta del ricettario"
+msgstr "Pick another recipe from your cookbook"
+
+msgid "Tocca un’allergia o un’intolleranza del profilo"
+msgstr "It clashes with an allergy or intolerance in your profile"
+
+msgid "Cucino al momento"
+msgstr "I cook on the day"
+
+msgid "Ogni pasto si prepara il giorno stesso"
+msgstr "Each meal is made the same day"
+
+msgid "La sera cucino anche per il pranzo dopo"
+msgstr "In the evening I also cook tomorrow's lunch"
+
+msgid "La cena e la schiscetta di domani insieme"
+msgstr "Dinner and tomorrow's packed lunch together"
+
+msgid "Cucino ogni 2 giorni"
+msgstr "I cook every 2 days"
+
+msgid "Una sessione per pranzi e cene di due giorni"
+msgstr "One session for two days of lunches and dinners"
+
+msgid "Cucino ogni 3 giorni"
+msgstr "I cook every 3 days"
+
+msgid "Meno sessioni, ricette che reggono in frigo"
+msgstr "Fewer sessions, recipes that keep in the fridge"
+
+msgid "Domenica e mercoledì"
+msgstr "Sunday and Wednesday"
+
+msgid "Due sessioni grandi per tutta la settimana"
+msgstr "Two big sessions for the whole week"
 
 msgid "Quello che Languorino sa di te per proporti cosa mangiare."
 msgstr "What Languorino knows about you to suggest what to eat."
@@ -636,9 +911,6 @@ msgstr "Meals and nutritionist"
 msgid "L’ultima cosa: come vuoi organizzare la giornata."
 msgstr "One last thing: how you want to organise your day."
 
-msgid "Il mio ricettario"
-msgstr "My cookbook"
-
 msgid "Ricettari PDF"
 msgstr "PDF cookbooks"
 
@@ -670,16 +942,6 @@ msgstr "Up to 200 pages and 50 MB per PDF."
 #, javascript-format
 msgid "Leggo… pagina %s di %s"
 msgstr "Reading… page %s of %s"
-
-#, javascript-format
-msgid "%s ricetta"
-msgid_plural "%s ricette"
-msgstr[0] "%s recipe"
-msgstr[1] "%s recipes"
-
-msgid "In pausa: Gemini è sovraccarico, riprovo da solo tra qualche minuto."
-msgstr ""
-"Paused: Gemini is overloaded, I'll try again on my own in a few minutes."
 
 msgid "Lettura"
 msgstr "Reading"
@@ -715,9 +977,6 @@ msgid ""
 msgstr ""
 "The PDF and its recipes will disappear. The ones you saved to your cookbook "
 "stay."
-
-msgid "Elimina"
-msgstr "Delete"
 
 msgid "La lettura si è interrotta."
 msgstr "Reading stopped."
@@ -908,6 +1167,9 @@ msgstr "From the cookbook “%s”, read automatically and not reviewed yet."
 msgid "Salva nel mio ricettario"
 msgstr "Save to my cookbook"
 
+msgid "Scritta per il tuo piano: non è ancora nel tuo ricettario."
+msgstr "Written for your plan: it isn't in your cookbook yet."
+
 #, javascript-format
 msgid "Dal ricettario “%s”"
 msgstr "From the cookbook “%s”"
@@ -921,15 +1183,6 @@ msgstr "It contains things you don't like: %s"
 
 msgid "Ingredienti"
 msgstr "Ingredients"
-
-msgid "Porzioni"
-msgstr "Servings"
-
-#, javascript-format
-msgid "%s porzione"
-msgid_plural "%s porzioni"
-msgstr[0] "%s serving"
-msgstr[1] "%s servings"
 
 msgid "Nessun ingrediente scritto."
 msgstr "No ingredients written."
@@ -1019,9 +1272,6 @@ msgstr[1] "%s days"
 
 msgid "Si può congelare"
 msgstr "Can be frozen"
-
-msgid "Tag"
-msgstr "Tags"
 
 msgid ""
 "Per ritrovarla e per includerla o escluderla dal piano (es. “del cuore”, "

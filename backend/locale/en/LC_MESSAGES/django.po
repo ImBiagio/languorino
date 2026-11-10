@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 14:55+0100\n"
+"POT-Creation-Date: 2026-11-10 15:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,32 +18,32 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/ai/client.py:81
+#: apps/ai/client.py:86
 msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
 msgstr "The AI's answer wasn't in the expected format."
 
-#: apps/ai/client.py:104
+#: apps/ai/client.py:109
 msgid ""
 "Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
 "riavvia."
 msgstr ""
 "Gemini key not configured: set GEMINI_API_KEY in the .env file and restart."
 
-#: apps/ai/client.py:139
+#: apps/ai/client.py:144
 msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
 msgstr "Gemini rejected the key: check GEMINI_API_KEY."
 
-#: apps/ai/client.py:143
+#: apps/ai/client.py:148
 #, python-format
 msgid "Gemini ha risposto con un errore (%(code)s)."
 msgstr "Gemini answered with an error (%(code)s)."
 
-#: apps/ai/client.py:146
+#: apps/ai/client.py:151
 #, python-format
 msgid "errore %(code)s"
 msgstr "error %(code)s"
 
-#: apps/ai/client.py:164
+#: apps/ai/client.py:169
 #, python-format
 msgid ""
 "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
@@ -109,7 +109,7 @@ msgstr "Failed"
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:60 apps/recipes/tasks.py:107
+#: apps/jobs/tasks.py:60 apps/plans/tasks.py:76 apps/recipes/tasks.py:131
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
@@ -121,7 +121,7 @@ msgstr "The job stopped. Try again."
 msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
-#: apps/jobs/views.py:68 apps/recipes/views.py:226
+#: apps/jobs/views.py:68 apps/plans/views.py:69 apps/recipes/views.py:226
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -132,6 +132,98 @@ msgstr "Only a failed job can be retried."
 #: apps/jobs/views.py:146
 msgid "Non c'è niente da confermare."
 msgstr "There's nothing to confirm."
+
+#: apps/plans/generation.py:472
+msgid "Nessuna ricetta adatta: scegline una tu."
+msgstr "No suitable recipe: pick one yourself."
+
+#: apps/plans/generation.py:477
+msgid "Non regge in frigo: meglio cucinarla il giorno stesso."
+msgstr "It doesn't keep in the fridge: better to cook it the same day."
+
+#: apps/plans/models.py:21
+msgid "Cucino al momento"
+msgstr "I cook on the day"
+
+#: apps/plans/models.py:22
+msgid "La sera cucino anche il pranzo del giorno dopo"
+msgstr "In the evening I also cook the next day's lunch"
+
+#: apps/plans/models.py:23
+msgid "Cucino ogni 2 giorni"
+msgstr "I cook every 2 days"
+
+#: apps/plans/models.py:24
+msgid "Cucino ogni 3 giorni"
+msgstr "I cook every 3 days"
+
+#: apps/plans/models.py:25
+msgid "Domenica e mercoledì per tutta la settimana"
+msgstr "Sunday and Wednesday for the whole week"
+
+#: apps/plans/models.py:30
+msgid "In preparazione"
+msgstr "Being prepared"
+
+#: apps/plans/models.py:31
+msgid "Da attivare"
+msgstr "To activate"
+
+#: apps/plans/models.py:32
+msgid "Attivo"
+msgstr "Active"
+
+#: apps/plans/models.py:33
+msgid "Archiviato"
+msgstr "Archived"
+
+#: apps/plans/models.py:34 apps/recipes/models.py:156
+msgid "Interrotto"
+msgstr "Stopped"
+
+#: apps/plans/serializers.py:40
+msgid "Scegli un giorno tra oggi e i prossimi due mesi."
+msgstr "Pick a day between today and the next two months."
+
+#: apps/plans/serializers.py:45 apps/profiles/serializers.py:113
+msgid "Scegli almeno un pasto."
+msgstr "Choose at least one meal."
+
+#: apps/plans/serializers.py:54
+msgid "Ricettario non trovato."
+msgstr "Cookbook not found."
+
+#: apps/plans/serializers.py:60
+msgid "Scegli almeno una fonte: il tuo ricettario o un ricettario PDF."
+msgstr "Choose at least one source: your cookbook or a PDF cookbook."
+
+#: apps/plans/serializers.py:104
+msgid "Da 1 a 50 porzioni."
+msgstr "From 1 to 50 servings."
+
+#: apps/plans/serializers.py:111
+msgid "Non si può cucinare dopo averlo mangiato."
+msgstr "You can't cook it after eating it."
+
+#: apps/plans/tasks.py:73
+msgid "Questa settimana ci sta mettendo troppo. Riprova."
+msgstr "This week is taking too long. Try again."
+
+#: apps/plans/views.py:145
+msgid "Il piano non è pronto."
+msgstr "The plan isn't ready."
+
+#: apps/plans/views.py:166
+msgid "Si rifà solo una bozza o un piano interrotto."
+msgstr "Only a draft or a stopped plan can be redone."
+
+#: apps/plans/views.py:189
+msgid "Si può riprendere solo un piano interrotto."
+msgstr "Only a stopped plan can be resumed."
+
+#: apps/plans/views.py:220
+msgid "Pasto libero."
+msgstr "Free meal."
 
 #: apps/profiles/allergens.py:22
 msgid "Glutine"
@@ -302,10 +394,6 @@ msgstr "Check the year of birth."
 msgid "Al massimo %(n)d voci."
 msgstr "At most %(n)d items."
 
-#: apps/profiles/serializers.py:113
-msgid "Scegli almeno un pasto."
-msgstr "Choose at least one meal."
-
 #: apps/recipes/books.py:27
 msgid "Il PDF è protetto da password."
 msgstr "The PDF is password-protected."
@@ -410,10 +498,6 @@ msgstr "Reading"
 msgid "Letto"
 msgstr "Read"
 
-#: apps/recipes/models.py:156
-msgid "Interrotto"
-msgstr "Stopped"
-
 #: apps/recipes/models.py:183
 msgid "Scritta a mano"
 msgstr "Written by hand"
@@ -466,7 +550,7 @@ msgstr "Ingredient not found."
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
-#: apps/recipes/tasks.py:104
+#: apps/recipes/tasks.py:128
 msgid "Questa parte del ricettario ci sta mettendo troppo. Riprova."
 msgstr "This part of the cookbook is taking too long. Try again."
 

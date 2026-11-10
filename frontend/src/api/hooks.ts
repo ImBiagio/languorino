@@ -9,7 +9,11 @@ import type {
   Ingredient,
   Job,
   JobStatus,
+  MealPlan,
+  MealPlanDetail,
   Paginated,
+  PlanPayload,
+  PlannedMeal,
   PreferenceKind,
   Profile,
   ProfileDraft,
@@ -34,6 +38,9 @@ export const keys = {
   job: (id: UUID) => ['jobs', 'detail', id] as const,
   books: ['books'] as const,
   book: (id: UUID) => ['books', id] as const,
+  plans: ['plans'] as const,
+  plan: (id: UUID) => ['plans', 'detail', id] as const,
+  currentPlan: ['plans', 'current'] as const,
 }
 
 /* ------------------------------------------------------ profilo alimentare -- */
@@ -321,6 +328,95 @@ export function useDeleteBook() {
       client.removeQueries({ queryKey: keys.book(id) })
       void client.invalidateQueries({ queryKey: keys.books })
       void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
+    },
+  })
+}
+
+/* ------------------------------------------------------- piano alimentare -- */
+
+export function usePlans() {
+  return useQuery({
+    queryKey: keys.plans,
+    queryFn: () => api.get<MealPlan[]>('/api/plans'),
+    refetchInterval: (query) =>
+      query.state.data?.some((plan) => plan.status === 'generating') ? 4000 : false,
+  })
+}
+
+export function usePlan(id: UUID | undefined) {
+  return useQuery({
+    queryKey: keys.plan(id!),
+    queryFn: () => api.get<MealPlanDetail>(`/api/plans/${id}`),
+    enabled: Boolean(id),
+    refetchInterval: (query) => (query.state.data?.status === 'generating' ? 3000 : false),
+  })
+}
+
+/** Il piano attivo per oggi (o il prossimo); `undefined` se non ce n'e' (204). */
+export function useCurrentPlan() {
+  return useQuery({
+    queryKey: keys.currentPlan,
+    queryFn: () =>
+      api.get<MealPlanDetail | undefined>('/api/plans/current').then((plan) => plan ?? null),
+  })
+}
+
+function usePlanMutation<T>(fn: (arg: T) => Promise<MealPlanDetail>) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (plan) => {
+      client.setQueryData(keys.plan(plan.id), plan)
+      void client.invalidateQueries({ queryKey: keys.plans })
+    },
+  })
+}
+
+export function useCreatePlan() {
+  return usePlanMutation((body: PlanPayload) => api.post<MealPlanDetail>('/api/plans', body))
+}
+
+export function useActivatePlan() {
+  return usePlanMutation((id: UUID) => api.post<MealPlanDetail>(`/api/plans/${id}/activate`))
+}
+
+export function useRegeneratePlan() {
+  return usePlanMutation((id: UUID) => api.post<MealPlanDetail>(`/api/plans/${id}/regenerate`))
+}
+
+export function useRetryPlan() {
+  return usePlanMutation((id: UUID) => api.post<MealPlanDetail>(`/api/plans/${id}/retry`))
+}
+
+export function useDeletePlan() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.delete<void>(`/api/plans/${id}`),
+    onSuccess: (_data, id) => {
+      client.removeQueries({ queryKey: keys.plan(id) })
+      void client.invalidateQueries({ queryKey: keys.plans })
+    },
+  })
+}
+
+export function useUpdateMeal(planId: UUID) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: number
+      recipe_id?: UUID | null
+      servings?: number
+      cooked_on?: string
+      eaten?: boolean
+    }) => api.patch<PlannedMeal>(`/api/plans/${planId}/meals/${id}`, body),
+    onSuccess: (meal) => {
+      client.setQueryData<MealPlanDetail>(keys.plan(planId), (plan) =>
+        plan ? { ...plan, meals: plan.meals.map((m) => (m.id === meal.id ? meal : m)) } : plan,
+      )
+      void client.invalidateQueries({ queryKey: keys.currentPlan })
     },
   })
 }
