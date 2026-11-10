@@ -139,6 +139,45 @@ class Tag(BaseModel):
         return self.name
 
 
+def book_upload_path(instance: RecipeBook, filename: str) -> str:
+    # Nome casuale: il nome originale resta in original_name, non in un URL.
+    return f"books/{instance.id}.pdf"
+
+
+class RecipeBook(BaseModel):
+    """Un ricettario in PDF (ADR 0006): si legge a pezzi e diventa una
+    biblioteca di ricette da consultare, fuori dal ricettario dell'utente.
+    Nel ricettario entra solo quello che l'utente salva."""
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", _("In coda")
+        READING = "reading", _("In lettura")
+        READY = "ready", _("Letto")
+        FAILED = "failed", _("Interrotto")
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recipe_books"
+    )
+    title = models.CharField(max_length=120)
+    file = models.FileField(upload_to=book_upload_path, max_length=200)
+    original_name = models.CharField(max_length=200, blank=True)
+    size = models.PositiveIntegerField(default=0)
+    page_count = models.PositiveSmallIntegerField(default=0)
+    # Fin dove e' arrivata la lettura: un nuovo tentativo riparte da qui.
+    pages_done = models.PositiveSmallIntegerField(default=0)
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.QUEUED)
+    error = models.CharField(max_length=500, blank=True)
+    # Lingua di chi l'ha caricato: per i tag e i messaggi d'errore.
+    language = models.CharField(max_length=8, default="it")
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
 class Recipe(BaseModel):
     class Source(models.TextChoices):
         MANUAL = "manual", _("Scritta a mano")
@@ -179,8 +218,13 @@ class Recipe(BaseModel):
     freezable = models.BooleanField(default=False)
     tags = models.ManyToManyField(Tag, blank=True, related_name="recipes")
     source = models.CharField(max_length=8, choices=Source.choices, default=Source.MANUAL)
-    # Falso per le ricette scritte dall'LLM nel piano e non ancora salvate.
+    # Falso per le ricette dei ricettari PDF e per quelle scritte dall'LLM nel
+    # piano, finche' l'utente non le salva nel suo ricettario.
     in_cookbook = models.BooleanField(default=True)
+    # Il ricettario PDF da cui viene; resta anche dopo il salvataggio.
+    book = models.ForeignKey(
+        RecipeBook, on_delete=models.SET_NULL, null=True, blank=True, related_name="recipes"
+    )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.CONFIRMED)
 
     class Meta:

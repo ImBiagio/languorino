@@ -53,8 +53,10 @@ dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
 - **i18n**: italiano sorgente, inglese in `backend/locale/en/LC_MESSAGES/`,
   frontend e backend sullo stesso catalogo gettext. Il nome dell'app sta in
   `settings.APP_NAME`, fuori dalle stringhe tradotte.
-- **LLM**: chiave Gemini in `GEMINI_API_KEY` (vuota = funzioni spente), modello
-  in `GEMINI_MODEL`.
+- **LLM** ([ADR 0005](docs/decisions/0005-llm-e-lavori-lunghi.md)): chiave Gemini in `GEMINI_API_KEY`
+  (vuota = funzioni spente), modello in `GEMINI_MODEL` e riserve in `GEMINI_FALLBACK_MODELS`.
+  Le chiamate girano sulla coda Celery `ai` (servizio `worker-ai`); log con
+  `docker compose logs -f worker-ai`.
 
 ---
 
@@ -68,7 +70,10 @@ backend/
     ├── core/            BaseModel, methods (token, hash, mail), i18n, task mail
     ├── users/           User custom + auth JWT + mail dell'account
     ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE)
-    └── recipes/         ricette, tag, catalogo ingredienti (catalog.py) e riconoscimento dei nomi
+    ├── recipes/         ricette, tag, catalogo ingredienti (catalog.py), riconoscimento dei nomi,
+    │                    import da foto (importing.py), ricettari PDF letti a pezzi (books.py, tasks.py)
+    ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
+    └── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
 frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
 ├── lib/                 client HTTP, auth, i18n, format, tipi
@@ -91,6 +96,10 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET /api/ingredients?q=` | suggerimenti dal catalogo (e dagli ingredienti propri) |
 | `GET/POST /api/recipes` (`?q=`, `?tag=`, `?slot=`, `?max_minutes=`, `?difficulty=`, `?in_cookbook=`) · `GET/PATCH/DELETE …/{id}` | ricettario, con allergeni e avvisi dal profilo |
 | `GET /api/tags` · `DELETE /api/tags/{id}` | tag con il numero di ricette |
+| `GET/POST /api/jobs` (multipart `kind`, `files`) · `GET/DELETE /api/jobs/{id}` | lavori lunghi: import di ricette da foto e PDF |
+| `POST /api/jobs/{id}/retry` · `POST /api/jobs/{id}/confirm` `{recipes}` | riprova un lavoro non riuscito · le bozze riviste diventano ricette |
+| `GET/POST /api/recipe-books` (multipart `file`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/retry` | ricettari PDF letti a pezzi ([ADR 0006](docs/decisions/0006-ricettari-pdf.md)); le ricette con `GET /api/recipes?book={id}` |
+| `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF entra nel proprio ricettario |
 | `GET /api/i18n/catalog` · `POST /api/i18n/language` | traduzioni del frontend e lingua scelta |
 | `GET /api/health` | healthcheck del container |
 

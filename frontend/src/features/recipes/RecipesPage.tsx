@@ -2,13 +2,14 @@ import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { useRecipes, useTags } from '../../api/hooks'
+import { useJobs, useRecipes, useTags } from '../../api/hooks'
 import { Page, PageHeader } from '../../components/Layout'
 import { CookbookIllustration, RecipeArt } from '../../components/illustrations'
-import { Chip, EmptyState, ErrorBanner, Fab, Icon, Skeleton } from '../../components/ui'
+import { Chip, EmptyState, ErrorBanner, Fab, Icon, Modal, Skeleton } from '../../components/ui'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
-import type { RecipeFilters, RecipeSummary } from '../../lib/types'
+import type { Job, RecipeFilters, RecipeSummary } from '../../lib/types'
 import { preferenceLabel } from '../profile/options'
+import { RecipeTabs } from './BooksPages'
 import { difficultyLabel, formatMinutes } from './options'
 
 /** Le ricette "veloci" del filtro rapido: quelle da fare in mezz'ora. */
@@ -16,11 +17,12 @@ const QUICK_MINUTES = 30
 
 /** Il ricettario: ricerca, filtri rapidi, griglia di card. */
 export function RecipesPage() {
-  const navigate = useNavigate()
   const [text, setText] = useState('')
   const [query, setQuery] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [quick, setQuick] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const { data: jobs } = useJobs(['queued', 'running', 'ready'])
 
   // La ricerca parte quando si smette di scrivere, non a ogni lettera.
   useEffect(() => {
@@ -53,6 +55,10 @@ export function RecipesPage() {
         }
       />
       <div className="grid gap-4 px-5 md:px-8">
+        <RecipeTabs />
+        {jobs?.map((job) => (
+          <JobBanner key={job.id} job={job} />
+        ))}
         <label className="flex items-center gap-3 rounded-pill bg-surface-container-high px-5 py-3 focus-within:ring-2 focus-within:ring-primary">
           <Icon name="search" size={22} className="text-on-surface-variant" />
           <input
@@ -107,10 +113,16 @@ export function RecipesPage() {
               'Scrivi le ricette che fai di solito: il piano alimentare partirà da queste.',
             )}
             action={
-              <Link to="/ricette/nuova" className="btn-filled">
-                <Icon name="add" size={20} />
-                {gettext('Scrivi la prima ricetta')}
-              </Link>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link to="/ricette/importa" className="btn-tonal">
+                  <Icon name="photo_camera" size={20} />
+                  {gettext('Da foto o PDF')}
+                </Link>
+                <Link to="/ricette/nuova" className="btn-filled">
+                  <Icon name="add" size={20} />
+                  {gettext('Scrivi la prima ricetta')}
+                </Link>
+              </div>
             }
           />
         )}
@@ -136,12 +148,17 @@ export function RecipesPage() {
           </div>
         )}
       </div>
-      <Fab icon="add" label={gettext('Nuova ricetta')} onClick={() => navigate('/ricette/nuova')} />
+      <Fab icon="add" label={gettext('Nuova ricetta')} onClick={() => setAdding(true)} />
+      <AddSheet open={adding} onClose={() => setAdding(false)} />
     </Page>
   )
 }
 
-function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
+/**
+ * La card di una ricetta. `showSaved`: nei ricettari PDF, il segno su quelle
+ * gia' salvate nel proprio ricettario.
+ */
+export function RecipeCard({ recipe, showSaved }: { recipe: RecipeSummary; showSaved?: boolean }) {
   const restrictions = recipe.warnings.filter((item) => item.kind !== 'dislike')
   const dislikes = recipe.warnings.filter((item) => item.kind === 'dislike')
   return (
@@ -158,6 +175,12 @@ function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           >
             <Icon name="warning" size={14} filled />
             <span className="truncate">{restrictions.map(preferenceLabel).join(', ')}</span>
+          </span>
+        )}
+        {showSaved && recipe.in_cookbook && (
+          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-pill bg-primary px-2.5 py-1 text-label-small text-on-primary">
+            <Icon name="bookmark_added" size={14} filled />
+            {gettext('Nel tuo ricettario')}
           </span>
         )}
       </div>
@@ -188,5 +211,87 @@ function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         )}
       </div>
     </Link>
+  )
+}
+
+/** Un import in corso o da rivedere, sopra il ricettario. */
+function JobBanner({ job }: { job: Job }) {
+  const ready = job.status === 'ready'
+  return (
+    <Link
+      to={`/ricette/importa/${job.id}`}
+      className={clsx(
+        'state flex items-center gap-3 rounded-row px-4 py-3',
+        ready
+          ? 'bg-tertiary-container text-on-tertiary-container'
+          : 'bg-surface-container-high text-on-surface',
+      )}
+    >
+      <Icon
+        name={ready ? 'rate_review' : 'auto_awesome'}
+        size={22}
+        className={ready ? '' : 'animate-pulse'}
+      />
+      <span className="min-w-0 flex-1 text-body-medium">
+        {ready
+          ? (job.result.recipes?.length ?? 0) > 0
+            ? interpolate(
+                ngettext(
+                  '%s ricetta letta da rivedere',
+                  '%s ricette lette da rivedere',
+                  job.result.recipes?.length ?? 0,
+                ),
+                [job.result.recipes?.length ?? 0],
+              )
+            : gettext('Lettura finita: guarda il risultato')
+          : gettext('Sto leggendo le tue ricette…')}
+      </span>
+      <Icon name="chevron_right" size={22} />
+    </Link>
+  )
+}
+
+/** Il FAB "Nuova ricetta" offre le due strade: a mano o da foto/PDF. */
+function AddSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const navigate = useNavigate()
+  const go = (to: string) => {
+    onClose()
+    navigate(to)
+  }
+  return (
+    <Modal open={open} onClose={onClose} title={gettext('Aggiungi una ricetta')}>
+      <div className="grid gap-2">
+        <button
+          type="button"
+          className="state flex items-center gap-4 rounded-row bg-surface-container-low p-4 text-left"
+          onClick={() => go('/ricette/importa')}
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-primary text-on-primary">
+            <Icon name="photo_camera" size={24} />
+          </span>
+          <span>
+            <span className="block text-body-large font-medium">{gettext('Da foto o PDF')}</span>
+            <span className="block text-body-small text-on-surface-variant">
+              {gettext('Quaderno di casa, ricettario, piano del nutrizionista')}
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="state flex items-center gap-4 rounded-row bg-surface-container-low p-4 text-left"
+          onClick={() => go('/ricette/nuova')}
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-secondary-container text-on-secondary-container">
+            <Icon name="edit_note" size={24} />
+          </span>
+          <span>
+            <span className="block text-body-large font-medium">{gettext('Scrivila a mano')}</span>
+            <span className="block text-body-small text-on-surface-variant">
+              {gettext('Ingredienti dal catalogo, passi, tag')}
+            </span>
+          </span>
+        </button>
+      </div>
+    </Modal>
   )
 }

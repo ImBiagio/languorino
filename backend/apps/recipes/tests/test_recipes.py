@@ -72,10 +72,16 @@ def test_varianti_singolare_plurale():
         ("uovo", "uova"),
         ("Peperoni rossi", "peperone"),
         ("caffe", "caffè"),
+        ("parmigiano grattugiato", "parmigiano reggiano"),
+        ("Cipolla tritata finemente", None),
+        ("cipolla rossa tritata", "cipolla rossa"),
+        ("macinato misto", "macinato misto"),
     ],
 )
 def test_ingrediente_riconosciuto(user, name, expected):
-    assert match_ingredient(name, user).name == expected
+    found = match_ingredient(name, user)
+    # "finemente" non e' una parola di preparazione: meglio nessuna corrispondenza.
+    assert (found.name if found else None) == expected
 
 
 def test_ricerca_ingredienti(user, api):

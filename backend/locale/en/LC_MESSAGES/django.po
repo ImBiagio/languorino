@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 13:15+0100\n"
+"POT-Creation-Date: 2026-11-10 14:55+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,121 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/ai/client.py:81
+msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
+msgstr "The AI's answer wasn't in the expected format."
+
+#: apps/ai/client.py:104
+msgid ""
+"Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
+"riavvia."
+msgstr ""
+"Gemini key not configured: set GEMINI_API_KEY in the .env file and restart."
+
+#: apps/ai/client.py:139
+msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
+msgstr "Gemini rejected the key: check GEMINI_API_KEY."
+
+#: apps/ai/client.py:143
+#, python-format
+msgid "Gemini ha risposto con un errore (%(code)s)."
+msgstr "Gemini answered with an error (%(code)s)."
+
+#: apps/ai/client.py:146
+#, python-format
+msgid "errore %(code)s"
+msgstr "error %(code)s"
+
+#: apps/ai/client.py:164
+#, python-format
+msgid ""
+"Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
+"Riprova tra qualche minuto."
+msgstr ""
+"Gemini is overloaded right now (%(models)s; last: %(error)s). Try again in a "
+"few minutes."
+
+#: apps/jobs/files.py:58
+msgid "Carica almeno una foto o un PDF."
+msgstr "Upload at least one photo or PDF."
+
+#: apps/jobs/files.py:60
+#, python-format
+msgid "Al massimo %(n)d file alla volta."
+msgstr "At most %(n)d files at a time."
+
+#: apps/jobs/files.py:69
+#, python-format
+msgid "“%(name)s” non è una foto (JPEG, PNG, WebP, HEIC) né un PDF."
+msgstr "“%(name)s” is neither a photo (JPEG, PNG, WebP, HEIC) nor a PDF."
+
+#: apps/jobs/files.py:74
+#, python-format
+msgid "“%(name)s” è troppo grande (massimo %(mb)d MB)."
+msgstr "“%(name)s” is too big (max %(mb)d MB)."
+
+#: apps/jobs/files.py:83
+#, python-format
+msgid "“%(name)s” non si apre come immagine."
+msgstr "“%(name)s” can't be opened as an image."
+
+#: apps/jobs/files.py:89
+#, python-format
+msgid "I file insieme sono troppo grandi (massimo %(mb)d MB)."
+msgstr "The files together are too big (max %(mb)d MB)."
+
+#: apps/jobs/models.py:20
+msgid "Importa ricette"
+msgstr "Import recipes"
+
+#: apps/jobs/models.py:23 apps/recipes/models.py:153
+msgid "In coda"
+msgstr "Queued"
+
+#: apps/jobs/models.py:24
+msgid "In lavorazione"
+msgstr "In progress"
+
+#: apps/jobs/models.py:25
+msgid "Da rivedere"
+msgstr "To review"
+
+#: apps/jobs/models.py:26
+msgid "Confermato"
+msgstr "Confirmed"
+
+#: apps/jobs/models.py:27
+msgid "Non riuscito"
+msgstr "Failed"
+
+#: apps/jobs/tasks.py:56
+msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
+msgstr "It's taking too long: try again with fewer pages at a time."
+
+#: apps/jobs/tasks.py:60 apps/recipes/tasks.py:107
+msgid "Qualcosa è andato storto. Riprova tra poco."
+msgstr "Something went wrong. Try again shortly."
+
+#: apps/jobs/tasks.py:75
+msgid "Il lavoro si è interrotto. Riprova."
+msgstr "The job stopped. Try again."
+
+#: apps/jobs/views.py:65
+msgid "Lavoro sconosciuto."
+msgstr "Unknown job."
+
+#: apps/jobs/views.py:68 apps/recipes/views.py:226
+msgid "La lettura con l'intelligenza artificiale non è configurata."
+msgstr "AI reading isn't configured."
+
+#: apps/jobs/views.py:127
+msgid "Si può riprovare solo un lavoro non riuscito."
+msgstr "Only a failed job can be retried."
+
+#: apps/jobs/views.py:146
+msgid "Non c'è niente da confermare."
+msgstr "There's nothing to confirm."
 
 #: apps/profiles/allergens.py:22
 msgid "Glutine"
@@ -191,6 +306,14 @@ msgstr "At most %(n)d items."
 msgid "Scegli almeno un pasto."
 msgstr "Choose at least one meal."
 
+#: apps/recipes/books.py:27
+msgid "Il PDF è protetto da password."
+msgstr "The PDF is password-protected."
+
+#: apps/recipes/books.py:32
+msgid "Il PDF non si apre: è danneggiato o non è un PDF."
+msgstr "The PDF won't open: it's damaged or not a PDF."
+
 #: apps/recipes/models.py:30
 msgid "Frutta e verdura"
 msgstr "Fruit and vegetables"
@@ -279,39 +402,51 @@ msgstr "Medium"
 msgid "Difficile"
 msgstr "Hard"
 
-#: apps/recipes/models.py:144
+#: apps/recipes/models.py:154
+msgid "In lettura"
+msgstr "Reading"
+
+#: apps/recipes/models.py:155
+msgid "Letto"
+msgstr "Read"
+
+#: apps/recipes/models.py:156
+msgid "Interrotto"
+msgstr "Stopped"
+
+#: apps/recipes/models.py:183
 msgid "Scritta a mano"
 msgstr "Written by hand"
 
-#: apps/recipes/models.py:145
+#: apps/recipes/models.py:184
 msgid "Da foto"
 msgstr "From a photo"
 
-#: apps/recipes/models.py:146
+#: apps/recipes/models.py:185
 msgid "Da PDF"
 msgstr "From a PDF"
 
-#: apps/recipes/models.py:147
+#: apps/recipes/models.py:186
 msgid "A voce"
 msgstr "Dictated"
 
-#: apps/recipes/models.py:148
+#: apps/recipes/models.py:187
 msgid "Dal piano"
 msgstr "From the plan"
 
-#: apps/recipes/models.py:149
+#: apps/recipes/models.py:188
 msgid "Dal frigo"
 msgstr "From the fridge"
 
-#: apps/recipes/models.py:150
+#: apps/recipes/models.py:189
 msgid "Copiata"
 msgstr "Copied"
 
-#: apps/recipes/models.py:155
+#: apps/recipes/models.py:194
 msgid "Bozza"
 msgstr "Draft"
 
-#: apps/recipes/models.py:156
+#: apps/recipes/models.py:195
 msgid "Confermata"
 msgstr "Confirmed"
 
@@ -319,13 +454,47 @@ msgstr "Confirmed"
 msgid "Scegli o scrivi un ingrediente."
 msgstr "Pick or type an ingredient."
 
-#: apps/recipes/serializers.py:204
+#: apps/recipes/serializers.py:213
 msgid "Dai un nome alla ricetta."
 msgstr "Give the recipe a name."
 
-#: apps/recipes/serializers.py:239
+#: apps/recipes/serializers.py:248
 msgid "Ingrediente non trovato."
 msgstr "Ingredient not found."
+
+#: apps/recipes/serializers.py:317
+msgid "Dai un nome al ricettario."
+msgstr "Give the cookbook a name."
+
+#: apps/recipes/tasks.py:104
+msgid "Questa parte del ricettario ci sta mettendo troppo. Riprova."
+msgstr "This part of the cookbook is taking too long. Try again."
+
+#: apps/recipes/views.py:231
+msgid "Carica un PDF."
+msgstr "Upload a PDF."
+
+#: apps/recipes/views.py:234
+msgid "Il file non è un PDF."
+msgstr "The file isn't a PDF."
+
+#: apps/recipes/views.py:238
+#, python-format
+msgid "Il PDF è troppo grande (massimo %(mb)d MB)."
+msgstr "The PDF is too big (max %(mb)d MB)."
+
+#: apps/recipes/views.py:249
+#, python-format
+msgid "Il PDF deve avere da 1 a %(n)d pagine."
+msgstr "The PDF must have 1 to %(n)d pages."
+
+#: apps/recipes/views.py:254
+msgid "Ricettario"
+msgstr "Cookbook"
+
+#: apps/recipes/views.py:312
+msgid "Si può riprendere solo una lettura interrotta."
+msgstr "Only a stopped reading can be resumed."
 
 #: apps/users/emails.py:22
 msgid "Conferma il tuo indirizzo email"

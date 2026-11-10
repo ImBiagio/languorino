@@ -155,6 +155,10 @@ export interface RecipeSummary {
   main_category: Category
   ingredient_count: number
   in_cookbook: boolean
+  /** `draft`: letta da un ricettario PDF e non ancora rivista. */
+  status: 'draft' | 'confirmed'
+  /** Il ricettario PDF da cui viene, se viene da li'. */
+  book: { id: UUID; title: string } | null
   updated_at: string
 }
 
@@ -167,7 +171,6 @@ export interface Recipe extends RecipeSummary {
   freezable: boolean
   ingredients: RecipeLine[]
   source: string
-  status: 'draft' | 'confirmed'
   created_at: string
 }
 
@@ -210,8 +213,80 @@ export interface Paginated<T> {
 }
 
 export interface RecipeFilters {
+  /** Solo le ricette di un ricettario PDF (salvate o no). */
+  book?: UUID
   q?: string
   tag?: string[]
   max_minutes?: number
   slot?: MealSlot
+}
+
+/* ------------------------------------------------------ lavori e import -- */
+
+export type JobStatus = 'queued' | 'running' | 'ready' | 'confirmed' | 'failed'
+
+/** Una ricetta letta da foto o PDF, prima della revisione (backend `recipes/importing.py`). */
+export interface ImportedRecipeDraft {
+  title: string
+  description: string
+  servings: number
+  prep_minutes: number
+  cook_minutes: number
+  difficulty: Difficulty
+  meal_slots: MealSlot[]
+  keeps_days: number | null
+  freezable: boolean
+  steps: string[]
+  tags: string[]
+  ingredients: {
+    ingredient_id: UUID | null
+    name: string
+    category: Category | null
+    quantity: string | null
+    unit: Unit
+    note: string
+    optional: boolean
+  }[]
+  /** I campi che l'LLM ha dedotto perche' il testo non li diceva. */
+  inferred: string[]
+}
+
+export interface Job {
+  id: UUID
+  kind: 'import_recipes'
+  status: JobStatus
+  result: {
+    recipes?: ImportedRecipeDraft[]
+    /** Perche' non c'e' nessuna ricetta (foto sfocata, non e' una ricetta). */
+    problem?: string
+    /** Dopo la conferma: le ricette create. */
+    created?: UUID[]
+  }
+  error: string
+  files: { id: UUID; content_type: string; original_name: string; size: number }[]
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+}
+
+/* ---------------------------------------------------------- ricettari -- */
+
+export type BookStatus = 'queued' | 'reading' | 'ready' | 'failed'
+
+/** Un ricettario PDF letto a pezzi (ADR 0006). */
+export interface RecipeBook {
+  id: UUID
+  title: string
+  original_name: string
+  size: number
+  page_count: number
+  /** Fin dove e' arrivata la lettura. */
+  pages_done: number
+  status: BookStatus
+  error: string
+  recipe_count: number
+  /** Quante delle sue ricette sono gia' nel ricettario dell'utente. */
+  saved_count: number
+  created_at: string
+  finished_at: string | null
 }

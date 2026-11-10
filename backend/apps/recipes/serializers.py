@@ -8,7 +8,7 @@ from rest_framework import serializers
 
 from apps.profiles.models import MEAL_SLOT_ORDER
 
-from .models import Category, Ingredient, Recipe, RecipeIngredient, Tag, Unit
+from .models import Category, Ingredient, Recipe, RecipeBook, RecipeIngredient, Tag, Unit
 from .services import (
     PreferenceIndex,
     recipe_allergens,
@@ -96,6 +96,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
     warnings = serializers.SerializerMethodField()
     main_category = serializers.SerializerMethodField()
     ingredient_count = serializers.SerializerMethodField()
+    book = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
@@ -112,9 +113,17 @@ class RecipeListSerializer(serializers.ModelSerializer):
             "main_category",
             "ingredient_count",
             "in_cookbook",
+            "status",
+            "book",
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_book(self, recipe: Recipe) -> dict | None:
+        """Il ricettario PDF da cui viene la ricetta, se viene da li'."""
+        if recipe.book_id is None or recipe.book is None:
+            return None
+        return {"id": str(recipe.book_id), "title": recipe.book.title}
 
     def get_tags(self, recipe: Recipe) -> list[str]:
         return sorted((tag.name for tag in recipe.tags.all()), key=str.lower)
@@ -173,7 +182,6 @@ class RecipeSerializer(RecipeListSerializer):
             "freezable",
             "ingredients",
             "source",
-            "status",
             "created_at",
         ]
         read_only_fields = [
@@ -184,6 +192,7 @@ class RecipeSerializer(RecipeListSerializer):
             "main_category",
             "ingredient_count",
             "in_cookbook",
+            "book",
             "source",
             "status",
             "created_at",
@@ -278,3 +287,32 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ["id", "name", "recipe_count"]
         read_only_fields = ["id", "recipe_count"]
+
+
+class RecipeBookSerializer(serializers.ModelSerializer):
+    recipe_count = serializers.IntegerField(read_only=True, default=0)
+    saved_count = serializers.IntegerField(read_only=True, default=0)
+
+    class Meta:
+        model = RecipeBook
+        fields = [
+            "id",
+            "title",
+            "original_name",
+            "size",
+            "page_count",
+            "pages_done",
+            "status",
+            "error",
+            "recipe_count",
+            "saved_count",
+            "created_at",
+            "finished_at",
+        ]
+        read_only_fields = [field for field in fields if field != "title"]
+
+    def validate_title(self, value: str) -> str:
+        value = " ".join(value.split())
+        if not value:
+            raise serializers.ValidationError(_("Dai un nome al ricettario."))
+        return value

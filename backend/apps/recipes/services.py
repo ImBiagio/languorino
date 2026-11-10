@@ -7,7 +7,7 @@ from django.db.models import Q
 from apps.profiles.allergens import detect_allergen
 from apps.profiles.models import FoodPreference
 
-from .matching import normalize, variants
+from .matching import normalize, variants, without_preparation
 from .models import Category, Ingredient, Recipe, Unit
 
 
@@ -30,6 +30,10 @@ def match_ingredient(name: str, user) -> Ingredient | None:
         )
         if found:
             return found
+    # "parmigiano grattugiato" -> "parmigiano": la preparazione va nella nota.
+    shorter = without_preparation(name)
+    if shorter:
+        return match_ingredient(shorter, user)
     return None
 
 

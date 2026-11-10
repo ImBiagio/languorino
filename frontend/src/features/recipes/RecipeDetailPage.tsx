@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { useDeleteRecipe, useRecipe } from '../../api/hooks'
+import { useDeleteRecipe, useRecipe, useSaveToCookbook } from '../../api/hooks'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
 import { RecipeArt } from '../../components/illustrations'
@@ -30,6 +30,10 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
   const navigate = useNavigate()
   const confirm = useConfirm()
   const remove = useDeleteRecipe()
+  const save = useSaveToCookbook()
+  // Una ricetta di un ricettario PDF non ancora salvata: si torna al ricettario.
+  const fromBook = recipe.book && !recipe.in_cookbook
+  const backTo = fromBook ? `/ricette/ricettari/${recipe.book!.id}` : '/ricette'
   const [servings, setServings] = useState(recipe.servings)
   const factor = servings / recipe.servings
   const restrictions = recipe.warnings.filter((item) => item.kind !== 'dislike')
@@ -45,7 +49,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
             icon="arrow_back"
             size="md"
             label={gettext('Ricette')}
-            onClick={() => navigate('/ricette')}
+            onClick={() => navigate(backTo)}
             className="bg-surface text-on-surface shadow-fab"
           />
           <div className="flex gap-2">
@@ -70,7 +74,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
                 })
                 if (!ok) return
                 await remove.mutateAsync(recipe.id)
-                navigate('/ricette', { replace: true })
+                navigate(backTo, { replace: true })
               }}
               className="bg-surface text-error shadow-fab"
             />
@@ -119,6 +123,37 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
             ))}
           </div>
         </header>
+
+        {fromBook && (
+          <section className="flex flex-wrap items-center gap-3 rounded-row bg-tertiary-container px-4 py-3 text-on-tertiary-container">
+            <Icon name="library_books" size={22} />
+            <p className="min-w-0 flex-1 text-body-medium">
+              {interpolate(
+                gettext('Dal ricettario “%s”, letta automaticamente e non ancora rivista.'),
+                [recipe.book!.title],
+              )}
+            </p>
+            <button
+              type="button"
+              className="btn-filled btn-sm"
+              disabled={save.isPending}
+              onClick={() => save.mutate(recipe.id)}
+            >
+              <Icon name="bookmark_add" size={18} />
+              {gettext('Salva nel mio ricettario')}
+            </button>
+          </section>
+        )}
+        {recipe.book && recipe.in_cookbook && (
+          <Link
+            to={`/ricette/ricettari/${recipe.book.id}`}
+            className="inline-flex w-fit items-center gap-1.5 text-body-small text-primary"
+          >
+            <Icon name="library_books" size={16} />
+            {interpolate(gettext('Dal ricettario “%s”'), [recipe.book.title])}
+          </Link>
+        )}
+        <ErrorBanner error={save.error} />
 
         {restrictions.length > 0 && (
           <div

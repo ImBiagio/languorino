@@ -63,6 +63,66 @@ def variants(text: str) -> list[str]:
     return [key, *[combo for combo in combos if combo != key]]
 
 
+# Parole di preparazione che a volte restano attaccate al nome ("parmigiano
+# grattugiato", "cipolla tritata"): se il nome intero non e' nel catalogo si
+# riprova senza, in fondo al nome. Solo queste: "macinato misto" e "latte di
+# cocco" sono nomi veri e non si accorciano.
+PREPARATION_WORDS = {
+    "grattugiato",
+    "grattugiata",
+    "grattugiati",
+    "grattugiate",
+    "tritato",
+    "tritata",
+    "tritati",
+    "tritate",
+    "fresco",
+    "fresca",
+    "freschi",
+    "fresche",
+    "affettato",
+    "affettata",
+    "affettati",
+    "affettate",
+    "sbucciato",
+    "sbucciata",
+    "sbucciati",
+    "sbucciate",
+    "tagliato",
+    "tagliata",
+    "tagliati",
+    "tagliate",
+    "lessato",
+    "lessata",
+    "lessati",
+    "lessate",
+    "sminuzzato",
+    "sminuzzata",
+    "spezzettato",
+    "spezzettata",
+    "ammollato",
+    "ammollati",
+    "sgocciolato",
+    "sgocciolati",
+    "grated",
+    "chopped",
+    "fresh",
+    "sliced",
+    "diced",
+    "peeled",
+    "minced",
+}
+
+
+def without_preparation(text: str) -> str | None:
+    """Il nome senza le parole di preparazione in fondo, o None se non cambia."""
+    words = normalize(text).split(" ")
+    while len(words) > 1 and words[-1] in PREPARATION_WORDS:
+        words.pop()
+    shorter = " ".join(words)
+    return shorter if shorter != normalize(text) else None
+
+
 def keys_for(*names: str) -> list[str]:
     """Le chiavi di ricerca di un ingrediente: nome, nome inglese, sinonimi."""
     keys: list[str] = []
