@@ -3,14 +3,15 @@ import type { ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
+import { FoodPattern } from '../../components/illustrations'
 import { ErrorBanner, Field, Icon, PasswordInput, Skeleton } from '../../components/ui'
 import { ApiError, api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { gettext } from '../../lib/i18n'
 
 /**
- * Pagina piena: una card su superficie neutra con in testa una fascia colorata
- * e il marchio. Il colore primario resta un accento, non tutto lo sfondo.
+ * Pagina piena: una card su superficie neutra con in testa una fascia di
+ * doodle del cibo e il marchio. Il blu resta un accento, non tutto lo sfondo.
  */
 function Shell({
   title,
@@ -25,8 +26,10 @@ function Shell({
     <div className="flex min-h-screen items-center justify-center bg-surface-container-low p-4 sm:p-6">
       <div className="w-full max-w-md">
         <div className="card-elevated overflow-hidden bg-surface">
-          <div className="relative h-24">
-            <div className="h-full w-full bg-primary-container" />
+          <div className="relative h-28 overflow-visible">
+            <div className="relative h-full w-full overflow-hidden bg-primary-container">
+              <FoodPattern />
+            </div>
             <img
               src="/logo-mark.svg"
               alt=""

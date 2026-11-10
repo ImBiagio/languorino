@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// Palette tonale Material 3 generata dal seed #a8433f. I valori veri stanno come
+// Palette tonale Material 3 (Vibrant) generata dal seed #1E63E9, blu (ADR 0003). I valori veri stanno come
 // custom properties in src/index.css: qui si mappano solo sui nomi di ruolo M3,
 // così nel markup si scrive `bg-surface-container` e non un hex.
 export default {
@@ -23,6 +23,9 @@ export default {
         error: 'var(--error)',
         'error-container': 'var(--error-container)',
         'on-error-container': 'var(--on-error-container)',
+        accent: 'var(--accent)',
+        'accent-container': 'var(--accent-container)',
+        'on-accent-container': 'var(--on-accent-container)',
         success: 'var(--success)',
         'success-container': 'var(--success-container)',
         'on-success-container': 'var(--on-success-container)',
@@ -65,9 +68,9 @@ export default {
         'amount-row': ['19px', { fontWeight: '600' }],
       },
       boxShadow: {
-        fab: '0 1px 3px rgba(0,0,0,0.12)',
-        'fab-mobile': '0 4px 12px rgba(0,0,0,0.2)',
-        sheet: '0 8px 24px rgba(0,0,0,0.18)',
+        fab: '0 1px 3px rgba(24,27,37,0.14)',
+        'fab-mobile': '0 4px 12px rgba(0,84,214,0.22)',
+        sheet: '0 8px 24px rgba(24,27,37,0.18)',
       },
       transitionTimingFunction: {
         // "emphasized decelerate" M3

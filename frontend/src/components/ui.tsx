@@ -417,20 +417,27 @@ export function ErrorBanner({ error }: { error: unknown }) {
 
 export function EmptyState({
   icon = 'inbox',
+  illustration,
   title,
   description,
   action,
 }: {
   icon?: string
+  /** Un disegno (components/illustrations) al posto dell'icona nel cerchio. */
+  illustration?: ReactNode
   title: string
   description?: string
   action?: ReactNode
 }) {
   return (
     <div className="card-m3 flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <span className="mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-pill bg-primary-container text-on-primary-container">
-        <Icon name={icon} size={36} />
-      </span>
+      {illustration ? (
+        <div className="mb-2">{illustration}</div>
+      ) : (
+        <span className="mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-pill bg-primary-container text-on-primary-container">
+          <Icon name={icon} size={36} />
+        </span>
+      )}
       <p className="text-title-medium">{title}</p>
       {description && (
         <p className="max-w-md text-body-medium text-on-surface-variant">{description}</p>

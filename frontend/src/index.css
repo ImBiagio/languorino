@@ -4,41 +4,59 @@
 
 @layer base {
   :root {
-    /* Palette tonale M3 dal seed #a8433f (rosso ciliegia spento), ereditata da
-       regalino: ogni progetto la rigenera dal suo seed (Material Theme
-       Builder). Il primary e' solo l'accento, le superfici sono neutre calde e
-       il secondary e' quasi grigio. Nomi = ruoli, non tinte. */
-    --primary: #9b403d;
+    /* Palette Material 3 "Vibrant" dal seed #1E63E9 (blu), generata con
+       @material/material-color-utilities (lo stesso motore del Material Theme
+       Builder): ruoli e toni sono quelli di Google, non scelti a occhio.
+       Nomi = ruoli, non tinte. Per rigenerarla: ADR 0003. */
+    --primary: #0054d6;
     --on-primary: #ffffff;
-    --primary-container: #ffdad6;
-    --on-primary-container: #410004;
-    --secondary: #755753;
-    --secondary-container: #f1e0dc;
-    --on-secondary-container: #2c1512;
-    /* Tertiary: per gli accenti non d'azione. */
-    --tertiary: #725b2b;
-    --tertiary-container: #fbe0a6;
-    --on-tertiary-container: #261900;
-    /* Fuori dallo schema M3 base: il verde di "fatto / ok". */
-    --success: #31693f;
-    --success-container: #c3eec8;
-    --on-success-container: #00210b;
-    --warning: #7d5700;
-    --warning-container: #ffdeaa;
-    --on-warning-container: #271900;
+    --primary-container: #dae1ff;
+    --on-primary-container: #003fa4;
+    --secondary: #5c5b7e;
+    --secondary-container: #e2dfff;
+    --on-secondary-container: #444465;
+    --tertiary: #665688;
+    --tertiary-container: #eaddff;
+    --on-tertiary-container: #4e3f6e;
+    /* Colori custom fuori dallo schema base, "armonizzati" verso il seed come
+       fa Material: verde per "fatto / ok", ambra per gli avvisi, arancio per
+       gli accenti caldi del cibo (illustrazioni, chip delle allergie). */
+    --success: #286a48;
+    --success-container: #adf2c6;
+    --on-success-container: #002111;
+    --warning: #865219;
+    --warning-container: #ffdcbf;
+    --on-warning-container: #2d1600;
+    --accent: #ae3200;
+    --accent-container: #ffdbd0;
+    --on-accent-container: #3a0b00;
     --error: #ba1a1a;
     --error-container: #ffdad6;
-    --on-error-container: #410002;
-    --surface: #fdf9f7;
-    --surface-container-low: #f8f2f0;
-    --surface-container: #f3ecea;
-    --surface-container-high: #ede6e4;
-    --surface-container-highest: #e7e0de;
-    --on-surface: #1f1b1a;
-    --on-surface-variant: #534341;
-    --outline: #857371;
-    --outline-variant: #d8c2bf;
-    --scrim: rgba(31, 27, 26, 0.36);
+    --on-error-container: #93000a;
+    --surface: #faf8ff;
+    --surface-container-low: #f2f3ff;
+    --surface-container: #ecedfb;
+    --surface-container-high: #e6e7f5;
+    --surface-container-highest: #e0e2ef;
+    --on-surface: #181b25;
+    --on-surface-variant: #434654;
+    --outline: #737685;
+    --outline-variant: #c3c6d6;
+    --scrim: rgba(24, 27, 37, 0.4);
+
+    /* Toni per le illustrazioni (components/illustrations.tsx): dalle stesse
+       palette tonali, cosi' i disegni stanno nel tema. */
+    --illo-blue-30: #003fa4;
+    --illo-blue-50: #216dff;
+    --illo-blue-70: #8aa8ff;
+    --illo-blue-90: #dae1ff;
+    --illo-blue-95: #eef0ff;
+    --illo-orange-60: #ff571a;
+    --illo-orange-70: #ff8b67;
+    --illo-orange-90: #ffdbd0;
+    --illo-green-50: #008856;
+    --illo-green-70: #00c47d;
+    --illo-lilac-80: #d0bdf6;
     --ease-m3: cubic-bezier(0.2, 0, 0, 1);
 
     /* Il design non definisce una variante scura: la palette e' solo chiara. */
@@ -177,8 +195,10 @@
            px-3.5 py-[9px] text-body-medium font-medium transition;
     transition-timing-function: var(--ease-m3);
   }
+  /* Selezione su primary-container e non secondary: il secondary del tema
+     blu e' lilla e sulle superfici fredde quasi non si distingueva (ADR 0003). */
   .chip-selected {
-    @apply chip bg-secondary-container text-on-secondary-container;
+    @apply chip bg-primary-container text-on-primary-container;
   }
   .chip-outlined {
     @apply chip border border-outline text-on-surface-variant;
@@ -224,8 +244,8 @@
   .card-elevated {
     @apply rounded-card bg-surface-container-low;
     box-shadow:
-      0 1px 2px rgba(31, 27, 26, 0.12),
-      0 1px 3px 1px rgba(31, 27, 26, 0.06);
+      0 1px 2px rgba(24, 27, 37, 0.12),
+      0 1px 3px 1px rgba(24, 27, 37, 0.06);
   }
 
   /* --- Linear progress M3: traccia 4px, indicatore primary --- */
