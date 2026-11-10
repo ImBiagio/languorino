@@ -178,7 +178,7 @@ immagini ma non aggiunge servizi né reti: quando cambia
 
 Primo avvio sul server:
 
-1. DNS: record A `templat` → l'IP del server (come `cinem`, `sold`, `regal`);
+1. DNS: record A per `templat.inoo.it` → l'IP del server (come gli altri progetti);
 2. `~/templatino/compose.prod.yaml` (da `deploy/`) e `~/templatino/.env`
    (modello `deploy/.env.prod.example`, SMTP Brevo come gli altri);
 3. il blocco `templat.inoo.it` del Caddyfile dell'edge (`deploy/edge/`,
