@@ -97,7 +97,9 @@ Regole:
   o pagine resta una sola.
 - title, ingredienti e passi nella lingua della ricetta, ripuliti: niente
   numeri di pagina, intestazioni, decorazioni.
-- ingredients: name senza quantita' ("farina 00", non "200 g di farina");
+- ingredients: name e' il nome generico come al supermercato, senza quantita'
+  e senza preparazione ("farina 00", non "200 g di farina"; "parmigiano" con
+  note "grattugiato"; "cipolla" con note "tritata");
   quantity solo il numero col punto decimale, unit fra quelle ammesse
   (cucchiaio = tbsp, cucchiaino = tsp, spicchio = clove, fetta = slice,
   pizzico = pinch, mazzetto = bunch, scatola/lattina = can, pezzi = pz,
