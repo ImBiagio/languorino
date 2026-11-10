@@ -10,6 +10,7 @@ import type { Recipe } from '../../lib/types'
 import { MEAL_OPTIONS, preferenceLabel } from '../profile/options'
 import { difficultyLabel, formatMinutes, formatQuantity } from './options'
 import { RecipeHeroImage } from './RecipeImage'
+import { ShareDialog } from './Sharing'
 
 export function RecipeDetailPage() {
   const { recipeId } = useParams()
@@ -49,6 +50,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
           ? '/cosa-cucino'
           : '/ricette'
   const [servings, setServings] = useState(recipe.servings)
+  const [sharing, setSharing] = useState(false)
   const factor = servings / recipe.servings
   const restrictions = recipe.warnings.filter((item) => item.kind !== 'dislike')
   const dislikes = recipe.warnings.filter((item) => item.kind === 'dislike')
@@ -56,6 +58,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
 
   return (
     <Page className="pb-8">
+      <ShareDialog recipe={recipe} open={sharing} onClose={() => setSharing(false)} />
       <div
         className={`relative overflow-hidden md:mx-8 md:mt-8 md:rounded-panel ${
           recipe.image ? 'h-64 md:h-80' : 'h-44 md:h-56'
@@ -71,6 +74,13 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
             className="bg-surface text-on-surface shadow-fab"
           />
           <div className="flex gap-2">
+            <IconButton
+              icon={recipe.share_token ? 'share' : 'ios_share'}
+              size="md"
+              label={gettext('Condividi')}
+              onClick={() => setSharing(true)}
+              className="bg-surface text-on-surface shadow-fab"
+            />
             <IconButton
               icon="edit"
               size="md"

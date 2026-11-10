@@ -160,6 +160,8 @@ REST_FRAMEWORK = {
         "refresh": env("THROTTLE_REFRESH", "60/min"),
         # Ogni chiamata a Gemini consuma la quota della chiave.
         "ai": env("THROTTLE_AI", "60/hour"),
+        # Pagina pubblica delle ricette condivise (senza login) e copia.
+        "public": env("THROTTLE_PUBLIC", "60/min"),
     },
 }
 

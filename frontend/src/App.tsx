@@ -22,6 +22,7 @@ import { ImportJobPage, ImportPage } from './features/recipes/ImportPages'
 import { RecipeDetailPage } from './features/recipes/RecipeDetailPage'
 import { RecipeFormPage } from './features/recipes/RecipeFormPage'
 import { RecipesPage } from './features/recipes/RecipesPage'
+import { SharedRecipePage } from './features/recipes/Sharing'
 import { ShoppingHomePage, ShoppingPage } from './features/shopping/ShoppingPages'
 import { useProfile } from './api/hooks'
 import { useAuth } from './lib/auth'
@@ -56,6 +57,8 @@ export default function App() {
       <Route path="/verifica-email/:token" element={<VerifyEmailPage />} />
       <Route path="/password-dimenticata" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
+      {/* Ricetta condivisa (ADR 0012): si apre anche senza account. */}
+      <Route path="/r/:token" element={<SharedRecipePage />} />
       <Route
         path="/benvenuto"
         element={

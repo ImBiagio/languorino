@@ -189,10 +189,14 @@ class RecipeSerializer(RecipeListSerializer):
             "freezable",
             "ingredients",
             "source",
+            "share_token",
+            "copied_from",
             "created_at",
         ]
         read_only_fields = [
             "id",
+            "share_token",
+            "copied_from",
             "image",
             "image_source",
             "total_minutes",
@@ -325,3 +329,48 @@ class RecipeBookSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError(_("Dai un nome al ricettario."))
         return value
+
+
+class SharedRecipeSerializer(RecipeListSerializer):
+    """La ricetta per la pagina pubblica: niente avvisi dal profilo dell'autore,
+    niente dati suoi oltre al nome che ha scelto di mostrare."""
+
+    ingredients = serializers.SerializerMethodField()
+    author = serializers.SerializerMethodField()
+    is_mine = serializers.SerializerMethodField()
+
+    class Meta(RecipeListSerializer.Meta):
+        fields = [
+            "id",
+            "title",
+            "image",
+            "description",
+            "servings",
+            "prep_minutes",
+            "cook_minutes",
+            "total_minutes",
+            "difficulty",
+            "meal_slots",
+            "keeps_days",
+            "freezable",
+            "steps",
+            "tags",
+            "allergens",
+            "main_category",
+            "ingredients",
+            "author",
+            "is_mine",
+        ]
+        read_only_fields = fields
+
+    def get_ingredients(self, recipe: Recipe) -> list[dict]:
+        return RecipeIngredientSerializer(
+            recipe.ingredients.all(), many=True, context=self.context
+        ).data
+
+    def get_author(self, recipe: Recipe) -> str:
+        return recipe.owner.display_name
+
+    def get_is_mine(self, recipe: Recipe) -> bool:
+        request = self.context.get("request")
+        return bool(request and request.user.is_authenticated and request.user == recipe.owner)

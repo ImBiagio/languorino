@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:25+0100\n"
+"POT-Creation-Date: 2026-11-10 16:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1433,6 +1433,9 @@ msgid_plural "Aggiungi %s ricette"
 msgstr[0] "Add %s recipe"
 msgstr[1] "Add %s recipes"
 
+msgid "Condividi"
+msgstr "Share"
+
 msgid "Eliminare la ricetta?"
 msgstr "Delete the recipe?"
 
@@ -1710,6 +1713,68 @@ msgstr "Write it by hand"
 
 msgid "Ingredienti dal catalogo, passi, tag"
 msgstr "Ingredients from the catalogue, steps, tags"
+
+msgid "Condividi la ricetta"
+msgstr "Share the recipe"
+
+msgid ""
+"Chi ha il link vede la ricetta anche senza account; con un account la copia "
+"nel suo ricettario."
+msgstr "Anyone with the link sees the recipe, even without an account; with an account they copy it into their cookbook."
+
+msgid "Link della ricetta"
+msgstr "Recipe link"
+
+msgid "Copiato"
+msgstr "Copied"
+
+msgid "Copia il link"
+msgstr "Copy link"
+
+msgid "Invia…"
+msgstr "Send…"
+
+msgid "Nuovo link (spegne il vecchio)"
+msgstr "New link (turns off the old one)"
+
+msgid "Spegni il link"
+msgstr "Turn off the link"
+
+msgid ""
+"Crea un link da mandare a chi vuoi: vede la ricetta anche senza account e "
+"può copiarla nel suo ricettario. Puoi spegnerlo quando vuoi."
+msgstr "Create a link to send to anyone: they see the recipe even without an account and can copy it into their cookbook. You can turn it off any time."
+
+msgid "Crea il link"
+msgstr "Create the link"
+
+msgid "Questo link non funziona più"
+msgstr "This link no longer works"
+
+msgid "Chi te l’ha mandato potrebbe averlo spento o sostituito con uno nuovo."
+msgstr "Whoever sent it may have turned it off or replaced it with a new one."
+
+#, javascript-format
+msgid "Condivisa da %s"
+msgstr "Shared by %s"
+
+#, javascript-format
+msgid "Contiene: %s"
+msgstr "Contains: %s"
+
+msgid "È una tua ricetta: così la vede chi ha il link."
+msgstr "It's your recipe: this is how people with the link see it."
+
+msgid "Ti piace? Copiala nel tuo ricettario e usala nei tuoi piani."
+msgstr "Like it? Copy it into your cookbook and use it in your plans."
+
+msgid "Copia nel mio ricettario"
+msgstr "Copy to my cookbook"
+
+msgid ""
+"Con Languorino la copi nel tuo ricettario, ci componi il piano della "
+"settimana e fai la spesa."
+msgstr "With Languorino you copy it into your cookbook, build your weekly plan with it and do the shopping."
 
 msgid "Facile"
 msgstr "Easy"

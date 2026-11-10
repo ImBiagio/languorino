@@ -174,7 +174,33 @@ export interface Recipe extends RecipeSummary {
   freezable: boolean
   ingredients: RecipeLine[]
   source: string
+  /** Link di condivisione `/r/<token>`, se acceso (ADR 0012). */
+  share_token: string | null
+  copied_from: UUID | null
   created_at: string
+}
+
+/** La ricetta vista dal link pubblico. */
+export interface SharedRecipe {
+  id: UUID
+  title: string
+  image: string | null
+  description: string
+  servings: number
+  prep_minutes: number
+  cook_minutes: number
+  total_minutes: number
+  difficulty: Difficulty
+  meal_slots: MealSlot[]
+  keeps_days: number | null
+  freezable: boolean
+  steps: string[]
+  tags: string[]
+  allergens: Allergen[]
+  main_category: Category
+  ingredients: RecipeLine[]
+  author: string
+  is_mine: boolean
 }
 
 /** Una riga del form: dal catalogo (`ingredient_id`) o scritta a mano (`name`). */
