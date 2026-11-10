@@ -1,0 +1,280 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Palette tonale M3 dal seed #a8433f (rosso ciliegia spento), ereditata da
+       regalino: ogni progetto la rigenera dal suo seed (Material Theme
+       Builder). Il primary e' solo l'accento, le superfici sono neutre calde e
+       il secondary e' quasi grigio. Nomi = ruoli, non tinte. */
+    --primary: #9b403d;
+    --on-primary: #ffffff;
+    --primary-container: #ffdad6;
+    --on-primary-container: #410004;
+    --secondary: #755753;
+    --secondary-container: #f1e0dc;
+    --on-secondary-container: #2c1512;
+    /* Tertiary: per gli accenti non d'azione. */
+    --tertiary: #725b2b;
+    --tertiary-container: #fbe0a6;
+    --on-tertiary-container: #261900;
+    /* Fuori dallo schema M3 base: il verde di "fatto / ok". */
+    --success: #31693f;
+    --success-container: #c3eec8;
+    --on-success-container: #00210b;
+    --warning: #7d5700;
+    --warning-container: #ffdeaa;
+    --on-warning-container: #271900;
+    --error: #ba1a1a;
+    --error-container: #ffdad6;
+    --on-error-container: #410002;
+    --surface: #fdf9f7;
+    --surface-container-low: #f8f2f0;
+    --surface-container: #f3ecea;
+    --surface-container-high: #ede6e4;
+    --surface-container-highest: #e7e0de;
+    --on-surface: #1f1b1a;
+    --on-surface-variant: #534341;
+    --outline: #857371;
+    --outline-variant: #d8c2bf;
+    --scrim: rgba(31, 27, 26, 0.36);
+    --ease-m3: cubic-bezier(0.2, 0, 0, 1);
+
+
+    /* Il design non definisce una variante scura: la palette e' solo chiara. */
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface text-on-surface antialiased;
+    font-family: theme('fontFamily.sans');
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  /* Un figlio di grid ha min-width:auto e non scende sotto il suo contenuto:
+     una riga `truncate` o un input bastano ad allargare la pagina su mobile.
+     Cosi' le colonne restano larghe quanto lo schermo e il testo si tronca. */
+  .grid > * {
+    min-width: 0;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--secondary-container);
+    color: var(--on-secondary-container);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* --- Icone: Material Symbols Rounded, opsz 24 / wght 400 / FILL 0 --- */
+  .icon {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+  .icon-filled {
+    font-variation-settings:
+      'FILL' 1,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24;
+  }
+
+  /* --- State layer M3: hover 8%, focus/pressed 10% del colore di primo piano --- */
+  .state {
+    position: relative;
+    isolation: isolate;
+  }
+  .state::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease-m3);
+  }
+  .state:hover::after {
+    opacity: 0.08;
+  }
+  .state:focus-visible::after {
+    opacity: 0.1;
+  }
+  .state:active::after {
+    opacity: 0.1;
+  }
+  .state:disabled::after,
+  .state[aria-disabled='true']::after {
+    opacity: 0;
+  }
+
+  /* --- Bottoni --- */
+  .btn {
+    @apply state inline-flex shrink-0 items-center justify-center gap-2 rounded-pill
+           px-6 py-[14px] text-body-medium font-medium transition
+           disabled:cursor-not-allowed disabled:opacity-40;
+    transition-timing-function: var(--ease-m3);
+  }
+  .btn-filled {
+    @apply btn bg-primary text-on-primary;
+  }
+  .btn-tonal {
+    @apply btn bg-secondary-container text-on-secondary-container;
+  }
+  /* Tonale sul primary: per l'azione ripetuta su ogni card, dove una fila di
+     bottoni pieni gridava troppo. */
+  .btn-primary-tonal {
+    @apply btn bg-primary-container text-on-primary-container;
+  }
+  .btn-outlined {
+    @apply btn border border-outline-variant text-on-surface;
+  }
+  .btn-text {
+    @apply btn px-4 text-primary;
+  }
+  .btn-sm {
+    @apply px-4 py-2;
+  }
+
+  /* --- Chip --- */
+  .chip {
+    @apply state inline-flex max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap rounded-pill
+           px-3.5 py-[9px] text-body-medium font-medium transition;
+    transition-timing-function: var(--ease-m3);
+  }
+  .chip-selected {
+    @apply chip bg-secondary-container text-on-secondary-container;
+  }
+  .chip-outlined {
+    @apply chip border border-outline text-on-surface-variant;
+  }
+  .chip-assist {
+    @apply chip bg-surface-container-high text-on-surface;
+  }
+
+  /* --- Campo filled M3: nessun bordo, label piccola sopra il valore --- */
+  .field {
+    @apply rounded-row bg-surface-container px-4 py-3 transition;
+    border-bottom: 2px solid transparent;
+    transition-timing-function: var(--ease-m3);
+  }
+  .field:focus-within {
+    border-bottom-color: var(--primary);
+  }
+  .field-label {
+    @apply block text-label-small text-on-surface-variant;
+  }
+  .field:focus-within .field-label {
+    color: var(--primary);
+  }
+  .field-input {
+    @apply w-full border-none bg-transparent p-0 text-body-large text-on-surface
+           outline-none placeholder:text-outline focus:outline-none;
+  }
+  .field-input:focus-visible {
+    outline: none;
+  }
+
+  /* --- Superfici --- */
+  .panel {
+    @apply rounded-panel bg-surface;
+  }
+  .card-m3 {
+    @apply rounded-panel bg-surface-container-low;
+  }
+  .row-m3 {
+    @apply state flex items-center gap-4 rounded-row bg-surface-container-low px-5 py-3.5;
+  }
+  /* Card elevata M3 (livello 1), su superficie neutra. */
+  .card-elevated {
+    @apply rounded-card bg-surface-container-low;
+    box-shadow:
+      0 1px 2px rgba(31, 27, 26, 0.12),
+      0 1px 3px 1px rgba(31, 27, 26, 0.06);
+  }
+
+  /* --- Linear progress M3: traccia 4px, indicatore primary --- */
+  .progress {
+    @apply h-1 w-full overflow-hidden rounded-pill bg-secondary-container;
+  }
+  .progress > span {
+    @apply block h-full rounded-pill bg-primary transition-[width] duration-500 ease-m3;
+  }
+
+  /* --- Importi e numeri: sempre mono a larghezza fissa --- */
+  .amount {
+    font-family: theme('fontFamily.mono');
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* --- Skeleton al posto dello spinner --- */
+  .skeleton {
+    @apply rounded-row bg-surface-container;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite linear;
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .safe-bottom {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}

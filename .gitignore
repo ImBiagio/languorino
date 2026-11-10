@@ -1,0 +1,21 @@
+.env
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+backend/staticfiles/
+backend/media/
+node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+.idea/
+.vscode/
+.DS_Store
+CLAUDE.md
+
+# JS traspilato solo per makemessages -d djangojs (ADR 0001)
+frontend/.i18n/

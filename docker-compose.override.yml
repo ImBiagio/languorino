@@ -1,0 +1,48 @@
+# Applicato automaticamente da `docker compose up` in sviluppo:
+# volumi montati, autoreload, niente gunicorn.
+services:
+  # Solo in sviluppo: Postgres raggiungibile dall'host (PyCharm, psql).
+  # In produzione il DB non deve avere porte aperte.
+  db:
+    ports:
+      - "5490:5432"
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+
+  worker:
+    build:
+      context: ./backend
+      target: dev
+    volumes:
+      - ./backend:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+    command: watchfiles --filter python "celery -A config worker -l info" .
+
+  beat:
+    build:
+      context: ./backend
+      target: dev
+    volumes:
+      - ./backend:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 5190

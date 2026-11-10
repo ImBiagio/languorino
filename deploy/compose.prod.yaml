@@ -1,0 +1,168 @@
+# Produzione su homeserver: immagini pre-buildate dalla GitHub Action (branch
+# prod) e aggiornate da Watchtower. Sul server servono solo questo file e un
+# .env accanto (modello in deploy/.env.prod.example). Nessuna porta pubblicata:
+# il traffico arriva dal proxy "edge" (deploy/edge) sulla rete Docker "edge".
+name: templatino
+
+x-backend: &backend
+  image: ghcr.io/imbiagio/templatino-backend:prod
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    POSTGRES_HOST: db
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+  # File caricati dagli utenti: li scrive il backend, li serve "web".
+  volumes:
+    - media:/app/media
+  labels:
+    - com.centurylinklabs.watchtower.enable=true
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-templatino}
+      POSTGRES_USER: ${POSTGRES_USER:-templatino}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?impostare POSTGRES_PASSWORD nel .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-templatino} -d ${POSTGRES_DB:-templatino}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    <<: *backend
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Risponde solo dopo migrate: worker e beat aspettano questo.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8000/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  worker:
+    <<: *backend
+    command: celery -A config worker -l info --concurrency 2
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  beat:
+    <<: *backend
+    command: >
+      celery -A config beat -l info
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  web:
+    image: ghcr.io/imbiagio/templatino-web:prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - media:/srv/media:ro
+    networks:
+      default:
+      edge:
+        aliases: [templatino-web]
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+  backup:
+    # pg_dump compresso ogni notte a mezzanotte (ora italiana) e a ogni avvio,
+    # in ~/templatino/backups: tiene 7 giornalieri, 4 settimanali e 6 mensili.
+    # Restore e prova in README (Deploy) e nel vault.
+    image: prodrigestivill/postgres-backup-local:16
+    restart: unless-stopped
+    # biagio: i dump restano leggibili solo dal proprietario della cartella.
+    user: "1000:1000"
+    environment:
+      TZ: Europe/Rome
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-templatino}
+      POSTGRES_USER: ${POSTGRES_USER:-templatino}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "@daily"
+      BACKUP_ON_START: "TRUE"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
+  media-backup:
+    # I file caricati (volume "media") non stanno in Postgres: archivio
+    # tar.gz ogni notte alle 23:30 UTC (00:30 o 01:30 in Italia) e a ogni
+    # avvio, in ~/templatino/backups/media: 7 giornalieri, 4 settimanali (la
+    # domenica) e l'ultimo. Un ciclo con sleep e non cron: busybox crond vuole
+    # root, qui si gira come biagio. Restore nel README (Deploy) e nel vault.
+    image: alpine:3.20
+    restart: unless-stopped
+    user: "1000:1000"
+    volumes:
+      - media:/media:ro
+      - ./backups/media:/backups
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        backup() {
+          mkdir -p /backups/daily /backups/weekly /backups/last
+          tmp=/backups/last/.media-in-corso.tar.gz
+          tar czf "$$tmp" -C /media .
+          cp "$$tmp" "/backups/daily/media-$$(date +%F).tar.gz"
+          if [ "$$(date +%u)" = 7 ]; then
+            cp "$$tmp" "/backups/weekly/media-$$(date +%G-W%V).tar.gz"
+          fi
+          mv "$$tmp" /backups/last/media-latest.tar.gz
+          find /backups/daily -name 'media-*.tar.gz' -mtime +7 -delete
+          find /backups/weekly -name 'media-*.tar.gz' -mtime +28 -delete
+          echo "backup media $$(date '+%F %T') $$(du -h /backups/last/media-latest.tar.gz | cut -f1)"
+        }
+        backup
+        while true; do
+          now=$$(date +%s)
+          next=$$(date -d "$$(date +%F) 23:30:00" +%s)
+          [ "$$next" -gt "$$now" ] || next=$$((next + 86400))
+          sleep $$((next - now))
+          backup
+        done
+
+# Watchtower non c'e' qui: quello di cinemino aggiorna tutti i container
+# etichettati del server, quindi anche questi.
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  pgdata:
+  media:

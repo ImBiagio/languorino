@@ -1,0 +1,12 @@
+{% load i18n %}{% autoescape off %}{% blocktranslate %}Ciao {{ name }},{% endblocktranslate %}
+
+{{ intro }}
+{% if body %}
+{{ body }}
+{% endif %}
+{{ cta_label }}: {{ cta_url }}
+{% if note %}
+{{ note }}
+{% endif %}
+Templatino
+{% endautoescape %}

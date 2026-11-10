@@ -1,0 +1,227 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-10 12:19+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Annulla"
+msgstr "Cancel"
+
+msgid "Conferma"
+msgstr "Confirm"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "Account"
+msgstr "Account"
+
+msgid "Sezioni"
+msgstr "Sections"
+
+msgid "Nascondi password"
+msgstr "Hide password"
+
+msgid "Mostra password"
+msgstr "Show password"
+
+msgid "Chiudi"
+msgstr "Close"
+
+msgid "Esci"
+msgstr "Sign out"
+
+msgid "Profilo"
+msgstr "Profile"
+
+msgid "Il nome che vedono gli altri."
+msgstr "The name other people see."
+
+msgid "Nome"
+msgstr "Name"
+
+msgid "Salvato"
+msgstr "Saved"
+
+msgid "Salva"
+msgstr "Save"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Confermata"
+msgstr "Confirmed"
+
+msgid "Da confermare"
+msgstr "Not confirmed yet"
+
+msgid "Mail mandata"
+msgstr "Email sent"
+
+msgid "Rimanda la mail di conferma"
+msgstr "Resend confirmation email"
+
+msgid "Password"
+msgstr "Password"
+
+msgid ""
+"Cambiandola si chiudono le sessioni aperte sugli altri dispositivi; questa "
+"resta aperta."
+msgstr ""
+"Changing it signs you out on your other devices; this one stays signed in."
+
+msgid "Password cambiata."
+msgstr "Password changed."
+
+msgid "Password attuale"
+msgstr "Current password"
+
+msgid "Salvo…"
+msgstr "Saving…"
+
+msgid "Cambia password"
+msgstr "Change password"
+
+msgid "Non ricordi quella attuale?"
+msgstr "Can't remember your current one?"
+
+msgid "Ti mandiamo a %(email)s un link per reimpostarla, valido 2 ore."
+msgstr "We'll send a link to %(email)s to reset it, valid for 2 hours."
+
+msgid "Link mandato, controlla la mail"
+msgstr "Link sent, check your email"
+
+msgid "Mandami il link di reset"
+msgstr "Send me the reset link"
+
+msgid "Lingua"
+msgstr "Language"
+
+msgid "Vale per l'app e per le mail che ti mandiamo."
+msgstr "Applies to the app and to the emails we send you."
+
+msgid "Il tagline della tua app."
+msgstr "Your app's tagline."
+
+msgid "Prima di entrare conferma l'indirizzo dal link che ti abbiamo mandato."
+msgstr "Before signing in, confirm your address using the link we sent you."
+
+msgid "Mail rimandata"
+msgstr "Email resent"
+
+msgid "Rimanda la mail"
+msgstr "Resend email"
+
+msgid "Accedi"
+msgstr "Sign in"
+
+msgid "Non hai un account?"
+msgstr "Don't have an account?"
+
+msgid "Registrati"
+msgstr "Sign up"
+
+msgid "Accesso…"
+msgstr "Signing in…"
+
+msgid "Entra"
+msgstr "Sign in"
+
+msgid "Password dimenticata?"
+msgstr "Forgot password?"
+
+msgid "Crea un account"
+msgstr "Create an account"
+
+msgid "Hai già un account?"
+msgstr "Already have an account?"
+
+msgid "Torna al login"
+msgstr "Back to sign in"
+
+msgid "Come ti chiamano"
+msgstr "What people call you"
+
+msgid "Almeno 10 caratteri."
+msgstr "At least 10 characters."
+
+msgid "Creazione…"
+msgstr "Creating…"
+
+msgid "Crea account"
+msgstr "Create account"
+
+msgid "Conferma email"
+msgstr "Confirm email"
+
+msgid "Password dimenticata"
+msgstr "Forgot password"
+
+msgid "Se"
+msgstr "If"
+
+msgid ""
+"ha un account, tra poco ti arriva una mail con il link per scegliere una "
+"nuova password. Il link vale 2 ore. Controlla anche lo spam."
+msgstr ""
+"has an account, you'll shortly get an email with a link to choose a new "
+"password. The link is valid for 2 hours. Check your spam folder too."
+
+msgid ""
+"Scrivi l'email dell'account: ti mandiamo un link per sceglierne una nuova."
+msgstr "Enter your account email: we'll send you a link to choose a new one."
+
+msgid "Invio…"
+msgstr "Sending…"
+
+msgid "Mandami il link"
+msgstr "Send me the link"
+
+msgid "Nuova password"
+msgstr "New password"
+
+msgid "Ripeti la nuova password"
+msgstr "Repeat new password"
+
+msgid "Non coincide."
+msgstr "Doesn't match."
+
+msgid "Salva ed entra"
+msgstr "Save and sign in"
+
+msgid "Il link non va? Chiedine uno nuovo"
+msgstr "Link not working? Request a new one"
+
+#, javascript-format
+msgid "Ciao %s"
+msgstr "Hi %s"
+
+msgid "Da qui parte la tua app."
+msgstr "Your app starts here."
+
+msgid "Ancora niente qui"
+msgstr "Nothing here yet"
+
+msgid "Aggiungi le sezioni in components/Layout.tsx e le rotte in App.tsx."
+msgstr "Add sections in components/Layout.tsx and routes in App.tsx."
+
+#, javascript-format
+msgid "Errore %s"
+msgstr "Error %s"
+
+msgid "e"
+msgstr "and"

@@ -1,0 +1,9 @@
+# Contesto della build di deploy/web.Dockerfile (radice del repo): serve solo
+# il frontend e il Caddyfile.
+**/node_modules
+**/__pycache__
+.git
+.env
+backend
+docs
+frontend/dist

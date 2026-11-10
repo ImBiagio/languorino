@@ -1,0 +1,57 @@
+# Caddy interno di templatino: HTTP semplice sulla rete Docker. HTTPS e
+# certificati li gestisce il proxy "edge" davanti (deploy/edge), che smista
+# tutti i domini *.inoo.it sullo stesso server.
+{
+	auto_https off
+	servers {
+		# Le richieste arrivano dall'edge: X-Forwarded-For/Proto sono suoi e
+		# vanno creduti, cosi' Django sa che il client era in HTTPS e
+		# client_ip e' quello vero, non l'IP dell'edge.
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	# Admin Django solo dalla rete di casa. client_ip, non remote_ip: il
+	# remote_ip e' sempre l'edge (rete privata), che passerebbe il controllo.
+	handle /admin* {
+		route {
+			@not_lan not client_ip 192.168.0.0/16 10.0.0.0/8 127.0.0.1/8 ::1
+			respond @not_lan "Forbidden" 403
+			redir /admin /admin/ 308
+			reverse_proxy backend:8000
+		}
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle /static/* {
+		reverse_proxy backend:8000
+	}
+
+	# File caricati: statici dal volume "media", letto in
+	# sola lettura. Nomi casuali e mai riscritti, quindi cache lunga.
+	handle /media/* {
+		root * /srv
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# SPA: ogni rotta che non e' un file torna a index.html.
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+}
