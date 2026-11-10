@@ -416,7 +416,7 @@ serve.
 | `GET/POST /api/nutritionist-plans`, `…/{id}` | piano del nutrizionista |
 | `GET/POST /api/shopping`, `…/{id}` · `…/{id}/items` | liste della spesa e voci |
 | `POST /api/shopping/{id}/regenerate` | ricalcola dal piano |
-| `POST /api/cook-today` | avvia il job di "cosa cucino oggi" |
+| `POST /api/cook-today/scan` · `POST /api/cook-today/suggest` | foto del frigo letta in un job · ricette dal ricettario subito e job con le idee nuove (ADR 0009) |
 
 ---
 

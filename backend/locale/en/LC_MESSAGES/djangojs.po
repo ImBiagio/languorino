@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 15:46+0100\n"
+"POT-Creation-Date: 2026-11-10 16:01+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -234,6 +234,12 @@ msgstr "Hi %s"
 msgid "Cosa mangiamo oggi?"
 msgstr "What are we eating today?"
 
+msgid "Cosa cucino oggi?"
+msgstr "What should I cook today?"
+
+msgid "Dimmi cosa hai in casa o fotografa il frigo"
+msgstr "Tell me what you have, or snap your fridge"
+
 msgid "Oggi mangi"
 msgstr "Today you eat"
 
@@ -284,6 +290,113 @@ msgstr "Must avoid"
 
 msgid "Niente"
 msgstr "Nothing"
+
+msgid "uova"
+msgstr "eggs"
+
+msgid "pasta"
+msgstr "pasta"
+
+msgid "riso"
+msgstr "rice"
+
+msgid "zucchine"
+msgstr "courgettes"
+
+msgid "pomodori"
+msgstr "tomatoes"
+
+msgid "cipolla"
+msgstr "onion"
+
+msgid "patate"
+msgstr "potatoes"
+
+msgid "mozzarella"
+msgstr "mozzarella"
+
+msgid "petto di pollo"
+msgstr "chicken breast"
+
+msgid "tonno in scatola"
+msgstr "canned tuna"
+
+msgid "ceci in scatola"
+msgstr "canned chickpeas"
+
+msgid "spinaci"
+msgstr "spinach"
+
+msgid ""
+"Dimmi cosa c’è in casa, o fotografa il frigo: ti dico cosa puoi fare con le "
+"tue ricette e ti propongo qualcosa di nuovo."
+msgstr ""
+"Tell me what you have at home, or snap your fridge: I'll show what you can "
+"make from your recipes and suggest something new."
+
+msgid "Cosa c’è in casa?"
+msgstr "What do you have at home?"
+
+msgid "Aggiungi un ingrediente"
+msgstr "Add an ingredient"
+
+msgid "Tempo"
+msgstr "Time"
+
+msgid "Per quante persone"
+msgstr "How many people"
+
+msgid "Cerca anche nei ricettari PDF"
+msgstr "Also search PDF cookbooks"
+
+msgid "Cosa posso cucinare?"
+msgstr "What can I cook?"
+
+msgid "Guardo la foto…"
+msgstr "Looking at the photo…"
+
+msgid "Fotografa il frigo o la dispensa"
+msgstr "Snap your fridge or pantry"
+
+#, javascript-format
+msgid "Ho trovato %s alimenti: controlla e correggi qui sotto."
+msgstr "I found %s foods: check and fix them below."
+
+msgid "Non ho riconosciuto alimenti."
+msgstr "I couldn't recognise any food."
+
+msgid "Fino a 3 foto. Gli alimenti finiscono nella lista qui sotto."
+msgstr "Up to 3 photos. The foods go into the list below."
+
+msgid "Dal tuo ricettario"
+msgstr "From your cookbook"
+
+msgid "Nessuna ricetta adatta"
+msgstr "No matching recipes"
+
+msgid ""
+"Aggiungi altri ingredienti, allunga il tempo o cambia pasto. Intanto guarda "
+"le idee nuove qui sotto."
+msgstr "Add more ingredients, allow more time or change meal. Meanwhile, look at the new ideas below."
+
+msgid "Hai tutto"
+msgstr "You have everything"
+
+#, javascript-format
+msgid "Ti mancano: %s"
+msgstr "You're missing: %s"
+
+msgid "Idee nuove"
+msgstr "New ideas"
+
+msgid "Sto pensando a qualcosa con i tuoi ingredienti…"
+msgstr "Thinking of something with your ingredients…"
+
+msgid "Questa volta niente idee nuove."
+msgstr "No new ideas this time."
+
+msgid "Aprila per salvarla"
+msgstr "Open it to save it"
 
 #, javascript-format
 msgid "Passo %s di %s"
@@ -1061,8 +1174,12 @@ msgid ""
 msgid_plural ""
 "Di solito ci vuole meno di un minuto per %s file. Puoi anche uscire: la "
 "lettura continua e la ritrovi nel ricettario."
-msgstr[0] "It usually takes less than a minute for %s file. You can leave: reading carries on and you'll find it in your cookbook."
-msgstr[1] "It usually takes less than a minute for %s files. You can leave: reading carries on and you'll find it in your cookbook."
+msgstr[0] ""
+"It usually takes less than a minute for %s file. You can leave: reading "
+"carries on and you'll find it in your cookbook."
+msgstr[1] ""
+"It usually takes less than a minute for %s files. You can leave: reading "
+"carries on and you'll find it in your cookbook."
 
 msgid "Non sono riuscito a leggere le ricette"
 msgstr "I couldn't read the recipes"
@@ -1176,6 +1293,9 @@ msgstr "Save to my cookbook"
 msgid "Scritta per il tuo piano: non è ancora nel tuo ricettario."
 msgstr "Written for your plan: it isn't in your cookbook yet."
 
+msgid "Un’idea con quello che hai in casa: non è ancora nel tuo ricettario."
+msgstr "An idea with what you have at home: it isn't in your cookbook yet."
+
 #, javascript-format
 msgid "Dal ricettario “%s”"
 msgstr "From the cookbook “%s”"
@@ -1233,8 +1353,12 @@ msgid ""
 msgid_plural ""
 "Quantità per %s porzioni. Scegli dai suggerimenti per avere allergeni e "
 "reparto giusti."
-msgstr[0] "Quantities for %s serving. Pick from the suggestions to get allergens and aisle right."
-msgstr[1] "Quantities for %s servings. Pick from the suggestions to get allergens and aisle right."
+msgstr[0] ""
+"Quantities for %s serving. Pick from the suggestions to get allergens and "
+"aisle right."
+msgstr[1] ""
+"Quantities for %s servings. Pick from the suggestions to get allergens and "
+"aisle right."
 
 msgid "Aggiungi ingrediente"
 msgstr "Add ingredient"

@@ -253,7 +253,7 @@ export interface ImportedRecipeDraft {
 
 export interface Job {
   id: UUID
-  kind: 'import_recipes'
+  kind: 'import_recipes' | 'fridge_scan' | 'cook_ideas'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]
@@ -261,6 +261,10 @@ export interface Job {
     problem?: string
     /** Dopo la conferma: le ricette create. */
     created?: UUID[]
+    /** Foto del frigo: gli alimenti riconosciuti. */
+    ingredients?: string[]
+    /** Cosa cucino oggi: le ricette nuove scritte dall'LLM. */
+    ideas?: RecipeSummary[]
   }
   error: string
   files: { id: UUID; content_type: string; original_name: string; size: number }[]
@@ -385,4 +389,21 @@ export interface ShoppingList {
 
 export interface ShoppingListDetail extends ShoppingList {
   items: ShoppingItem[]
+}
+
+/* -------------------------------------------------------- cosa cucino oggi -- */
+
+export interface CookMatch {
+  recipe: RecipeSummary
+  /** Ingredienti principali che ci sono gia'. */
+  have: string[]
+  /** Ingredienti principali che mancano. */
+  missing: string[]
+}
+
+export interface CookSuggestions {
+  ingredients: string[]
+  matches: CookMatch[]
+  /** Il lavoro che scrive le idee nuove; `null` se non chieste o LLM spento. */
+  job: Job | null
 }

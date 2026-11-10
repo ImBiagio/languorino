@@ -48,6 +48,21 @@ export function HomePage() {
             <p className="mt-1 text-body-large opacity-90">{gettext('Cosa mangiamo oggi?')}</p>
           </div>
         </header>
+        <Link
+          to="/cosa-cucino"
+          className="state flex items-center gap-4 rounded-card bg-primary-container p-4 text-on-primary-container"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-primary text-on-primary">
+            <Icon name="skillet" size={26} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-title-medium">{gettext('Cosa cucino oggi?')}</span>
+            <span className="block text-body-small opacity-80">
+              {gettext('Dimmi cosa hai in casa o fotografa il frigo')}
+            </span>
+          </span>
+          <Icon name="chevron_right" size={22} />
+        </Link>
         {plan ? (
           <>
             {[today, tomorrow].map((day) => {

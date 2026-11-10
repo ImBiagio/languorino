@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 15:46+0100\n"
+"POT-Creation-Date: 2026-11-10 15:57+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -85,59 +85,81 @@ msgstr "The files together are too big (max %(mb)d MB)."
 msgid "Importa ricette"
 msgstr "Import recipes"
 
-#: apps/jobs/models.py:23 apps/recipes/models.py:153
+#: apps/jobs/models.py:21
+msgid "Leggi il frigo"
+msgstr "Read the fridge"
+
+#: apps/jobs/models.py:22
+msgid "Idee per cucinare"
+msgstr "Cooking ideas"
+
+#: apps/jobs/models.py:25 apps/recipes/models.py:153
 msgid "In coda"
 msgstr "Queued"
 
-#: apps/jobs/models.py:24
+#: apps/jobs/models.py:26
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:25
+#: apps/jobs/models.py:27
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:26
+#: apps/jobs/models.py:28
 msgid "Confermato"
 msgstr "Confirmed"
 
-#: apps/jobs/models.py:27
+#: apps/jobs/models.py:29
 msgid "Non riuscito"
 msgstr "Failed"
 
-#: apps/jobs/tasks.py:56
+#: apps/jobs/tasks.py:88
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:60 apps/plans/tasks.py:76 apps/recipes/tasks.py:131
+#: apps/jobs/tasks.py:92 apps/plans/tasks.py:76 apps/recipes/tasks.py:131
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
-#: apps/jobs/tasks.py:75
+#: apps/jobs/tasks.py:107
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
-#: apps/jobs/views.py:65
+#: apps/jobs/views.py:66
 msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
-#: apps/jobs/views.py:68 apps/plans/views.py:69 apps/recipes/views.py:226
+#: apps/jobs/views.py:69 apps/kitchen/views.py:46 apps/plans/views.py:69
+#: apps/recipes/views.py:226
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
-#: apps/jobs/views.py:127
+#: apps/jobs/views.py:128
 msgid "Si può riprovare solo un lavoro non riuscito."
 msgstr "Only a failed job can be retried."
 
-#: apps/jobs/views.py:146
+#: apps/jobs/views.py:147
 msgid "Non c'è niente da confermare."
 msgstr "There's nothing to confirm."
 
-#: apps/plans/generation.py:472
+#: apps/kitchen/views.py:40
+msgid "Scrivi almeno un ingrediente."
+msgstr "Type at least one ingredient."
+
+#: apps/kitchen/views.py:75
+#, python-format
+msgid "Al massimo %(n)d foto."
+msgstr "At most %(n)d photos."
+
+#: apps/kitchen/views.py:82
+msgid "Qui servono foto, non PDF."
+msgstr "Photos only here, not PDFs."
+
+#: apps/plans/generation.py:459
 msgid "Nessuna ricetta adatta: scegline una tu."
 msgstr "No suitable recipe: pick one yourself."
 
-#: apps/plans/generation.py:477
+#: apps/plans/generation.py:464
 msgid "Non regge in frigo: meglio cucinarla il giorno stesso."
 msgstr "It doesn't keep in the fridge: better to cook it the same day."
 

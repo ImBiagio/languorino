@@ -11,6 +11,7 @@ import {
   VerifyEmailPage,
 } from './features/auth/AuthPages'
 import { HomePage } from './features/home/HomePage'
+import { CookTodayPage } from './features/kitchen/CookTodayPage'
 import { OnboardingPage } from './features/onboarding/OnboardingPage'
 import { NewPlanPage } from './features/plans/NewPlanPage'
 import { PlanHomePage, PlanPage } from './features/plans/PlanPages'
@@ -72,6 +73,7 @@ export default function App() {
         }
       >
         <Route index element={<HomePage />} />
+        <Route path="cosa-cucino" element={<CookTodayPage />} />
         <Route path="piano" element={<PlanHomePage />} />
         <Route path="piano/nuovo" element={<NewPlanPage />} />
         <Route path="piano/:planId" element={<PlanPage />} />

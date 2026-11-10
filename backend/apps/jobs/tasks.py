@@ -30,7 +30,39 @@ def _import_recipes(job: Job) -> None:
     job.result = result
 
 
-RUNNERS = {Job.Kind.IMPORT_RECIPES: _import_recipes}
+def _fridge_scan(job: Job) -> None:
+    from apps.kitchen.cook_today import read_fridge
+
+    files = []
+    for item in job.files.all():
+        with item.file.open("rb") as handle:
+            files.append((handle.read(), item.content_type))
+    result = read_fridge(files, user=job.owner, language=job.input.get("language", "it"))
+    job.model = result.pop("model", "")
+    job.result = result
+
+
+def _cook_ideas(job: Job) -> None:
+    from apps.kitchen.cook_today import write_ideas
+    from apps.recipes.serializers import RecipeListSerializer
+
+    options = job.input
+    ideas = write_ideas(
+        job.owner,
+        options.get("ingredients", []),
+        slot=options.get("slot"),
+        minutes=options.get("minutes"),
+        servings=options.get("servings", 2),
+        language=options.get("language", "it"),
+    )
+    job.result = {"ideas": RecipeListSerializer(ideas, many=True, context={}).data}
+
+
+RUNNERS = {
+    Job.Kind.IMPORT_RECIPES: _import_recipes,
+    Job.Kind.FRIDGE_SCAN: _fridge_scan,
+    Job.Kind.COOK_IDEAS: _cook_ideas,
+}
 
 
 @shared_task(soft_time_limit=300, time_limit=330, acks_late=True, reject_on_worker_lost=True)
