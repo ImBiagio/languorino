@@ -43,3 +43,12 @@ frequenze arriva in fase 7.
 **Quando rivederla:** con il piano del nutrizionista le sue regole diventano
 vincoli del passo "settimana"; se servono le calorie, una tabella nutrizionale
 per ingrediente nel catalogo.
+
+**Aggiornamento 2026-11-11, "la sera cucino anche il pranzo dopo":** il pranzo
+del giorno dopo è l'avanzo della cena, una sola cottura in doppia porzione.
+Gemini sceglie solo le cene (e il primo pranzo del piano), che devono reggere
+un giorno; il codice copia la cena nel pranzo dopo, anche a cavallo di due
+settimane (`leftover_lunches`). Prima pranzo e cena si sceglievano come due
+piatti diversi: la sera si cucinavano due cose e lo stesso piatto su due sere
+di fila. Non vale con il piano del nutrizionista alla lettera, dove pranzo e
+cena hanno opzioni diverse.

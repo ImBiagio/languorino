@@ -21,6 +21,7 @@ allergie.
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from typing import Literal
 
 from django.db import transaction
@@ -371,14 +372,16 @@ def _fits(recipe: Recipe, group: str) -> bool:
     return bool(slots & MAIN_SLOTS) if group == "main" else bool(slots - MAIN_SLOTS)
 
 
-def variety_needs(rows: list[dict], candidates: list[Recipe]) -> dict[str, int]:
+def variety_needs(
+    rows: list[dict], candidates: list[Recipe], limits: dict[str, int] | None = None
+) -> dict[str, int]:
     """Quante ricette nuove servono perche' la varieta' minima si possa rispettare.
 
     Calcolato qui e non lasciato all'LLM: con poche candidate il modello
     preferisce ripetere (la stessa torta ogni mattina) invece di inventare.
     """
     needs = {}
-    for group, limit in MAX_USES.items():
+    for group, limit in (limits or MAX_USES).items():
         meals = sum(1 for row in rows if (row["slot"] in MAIN_SLOTS) == (group == "main"))
         if not meals:
             continue
@@ -386,6 +389,28 @@ def variety_needs(rows: list[dict], candidates: list[Recipe]) -> dict[str, int]:
         available = sum(1 for recipe in candidates if _fits(recipe, group))
         needs[group] = max(0, distinct - available)
     return needs
+
+
+def leftover_lunches(plan: MealPlan, nutritionist: NutritionistPlan | None) -> dict:
+    """Con "la sera cucino anche il pranzo dopo": ``{giorno del pranzo: giorno
+    della cena}`` per ogni pranzo che e' l'avanzo della cena della sera prima.
+
+    Una sola cottura, doppia porzione: prima si sceglievano pranzo e cena come
+    due piatti diversi, e la sera si cucinavano due cose (e lo stesso piatto
+    su due sere di fila). Il primo pranzo del piano non ha una cena prima.
+    Non con il nutrizionista alla lettera: pranzo e cena hanno opzioni diverse.
+    """
+    options = plan.settings
+    slots = set(options.get("slots", []))
+    if (
+        options.get("prep_mode") != "evening_before"
+        or not {MealSlot.LUNCH, MealSlot.DINNER} <= slots
+    ):
+        return {}
+    if nutritionist is not None and nutritionist.strict:
+        return {}
+    days = plan_dates(plan.start_date, plan.days)
+    return {day: day - timedelta(days=1) for day in days[1:]}
 
 
 def _keeps(recipe: Recipe) -> int:
@@ -397,12 +422,25 @@ def generate_week(plan: MealPlan, week: int) -> None:
     from .nutritionist import rules_prompt
 
     options = plan.settings
-    rows = week_rows(plan, week)
+    all_rows = week_rows(plan, week)
     candidates = candidate_recipes(plan)
     nutritionist = nutritionist_of(plan)
+    leftovers = leftover_lunches(plan, nutritionist)
+    # I pranzi-avanzo non si scelgono: li copia il codice dalla cena prima, che
+    # quindi deve reggere almeno un giorno in frigo.
+    feeding = set(leftovers.values())
+    rows = [
+        {**row, "wait": max(row["wait"], 1)}
+        if row["slot"] == MealSlot.DINNER and row["date"] in feeding
+        else row
+        for row in all_rows
+        if not (row["slot"] == MealSlot.LUNCH and row["date"] in leftovers)
+    ]
     numbered = dict(enumerate(candidates, start=1))
     profile, forbidden = profile_summary(plan)
-    needs = variety_needs(rows, candidates)
+    # Ogni cena vale gia' due pasti: una volta sola a settimana.
+    limits = {**MAX_USES, "main": 1} if leftovers else None
+    needs = variety_needs(rows, candidates, limits)
     new_needed = sum(needs.values())
     max_new = min(MAX_NEW_RECIPES_PER_WEEK, max(NEW_RECIPES_PER_WEEK, new_needed))
     if nutritionist is not None and nutritionist.strict:
@@ -421,6 +459,12 @@ def generate_week(plan: MealPlan, week: int) -> None:
             f"- Le candidate per pranzi e cene non bastano per variare: inventa ALMENO "
             f"{needs['main']} ricette nuove per pranzi e cene."
         )
+    if leftovers:
+        variety.append(
+            "- La sera si cucina la cena in doppia porzione: meta' e' il pranzo del giorno "
+            "dopo (da portare o scaldare). Scegli cene che restano buone il giorno dopo; i "
+            "pranzi non li devi scegliere, tranne quelli nella lista."
+        )
     if needs.get("other"):
         variety.append(
             f"- Le candidate per colazioni e spuntini non bastano: inventa ALMENO "
@@ -437,7 +481,7 @@ def generate_week(plan: MealPlan, week: int) -> None:
         candidates="\n".join(describe_candidate(n, r) for n, r in numbered.items())
         or "(nessuna: inventale tutte)",
         max_new=max_new if candidates else len(rows),
-        max_main=MAX_USES["main"],
+        max_main=1 if leftovers else MAX_USES["main"],
         max_other=MAX_USES["other"],
         variety="\n".join(variety),
         avoid=(
@@ -517,9 +561,27 @@ def generate_week(plan: MealPlan, week: int) -> None:
             chosen[key] = best
             usage[best.id] = usage.get(best.id, 0) + 1
 
+    # Pranzi-avanzo: la cena della sera prima, anche se e' della settimana prima.
+    for row in all_rows:
+        if row["slot"] != MealSlot.LUNCH or row["date"] not in leftovers:
+            continue
+        evening = leftovers[row["date"]]
+        dinner = chosen.get((evening.isoformat(), MealSlot.DINNER))
+        if dinner is None:
+            earlier = (
+                plan.meals.filter(date=evening, slot=MealSlot.DINNER)
+                .select_related("recipe")
+                .first()
+            )
+            dinner = earlier.recipe if earlier else None
+        key = (row["date"].isoformat(), row["slot"])
+        wanted[key] = row
+        if dinner is not None:
+            chosen[key] = dinner
+
     servings = options.get("servings", 1)
     meals = []
-    for key, row in wanted.items():
+    for key, row in sorted(wanted.items()):
         recipe = chosen.get(key)
         note = "" if recipe is not None else _("Nessuna ricetta adatta: scegline una tu.")
         cooked = row["cooked_on"]
@@ -539,5 +601,5 @@ def generate_week(plan: MealPlan, week: int) -> None:
             )
         )
     with transaction.atomic():
-        plan.meals.filter(date__in=[row["date"] for row in rows]).delete()
+        plan.meals.filter(date__in=[row["date"] for row in all_rows]).delete()
         PlannedMeal.objects.bulk_create(meals)
