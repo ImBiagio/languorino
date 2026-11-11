@@ -281,6 +281,8 @@ GEMINI_MODEL_COOLDOWN = int(env("GEMINI_MODEL_COOLDOWN", "300"))
 # Il modello delle funzioni interattive (intervista, frigo, idee): senza
 # "thinking", risponde in pochi secondi (ADR 0014).
 GEMINI_MODEL_FAST = env("GEMINI_MODEL_FAST", "gemini-flash-lite-latest")
+# Intervista a voce in tempo reale (Live API, ADR 0014).
+GEMINI_MODEL_LIVE = env("GEMINI_MODEL_LIVE", "gemini-3.1-flash-live-preview")
 # Immagini delle ricette (ADR 0011): modello a parte, un tetto al giorno per utente.
 # Il piano gratuito di Gemini non ha quota per le immagini: serve la fatturazione.
 GEMINI_MODEL_IMAGE = env("GEMINI_MODEL_IMAGE", "gemini-2.5-flash-image")

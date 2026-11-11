@@ -13,6 +13,7 @@
     "i18n:js": "esbuild \"src/**/*.ts\" \"src/**/*.tsx\" --outdir=.i18n --outbase=src --jsx=transform --log-level=warning"
   },
   "dependencies": {
+    "@google/genai": "^1.52.0",
     "@tanstack/react-query": "^5.51.0",
     "clsx": "^2.1.1",
     "react": "^18.3.1",

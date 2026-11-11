@@ -1,73 +1,20 @@
-// Intervista per il profilo (ADR 0013): una chiacchierata scritta o a voce al
-// posto del wizard. Ogni turno passa da un job; quello che l'assistente capisce
-// si accumula qui come proposta e va nel profilo solo con "Salva nel profilo".
+// Intervista per il profilo: una conversazione a voce in tempo reale (ADR 0014)
+// o una chat scritta, anche con messaggi vocali (ADR 0013), al posto del
+// wizard. Quello che l'assistente capisce si accumula come proposta e va nel
+// profilo solo con "Salva nel profilo".
 
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import {
-  useAddPreference,
-  useCompleteOnboarding,
-  useInterviewTurn,
-  useJob,
-  useProfile,
-  useUpdateProfile,
-} from '../../api/hooks'
+import { useInterviewTurn, useJob, useProfile } from '../../api/hooks'
 import type { InterviewMessage } from '../../api/hooks'
 import { FoodPattern } from '../../components/illustrations'
-import { Chip, ErrorBanner, Icon, IconButton, Skeleton, Switch } from '../../components/ui'
+import { ErrorBanner, Icon, IconButton, Skeleton, Switch } from '../../components/ui'
 import { gettext, getLanguage, interpolate } from '../../lib/i18n'
 import { formatSeconds, useRecorder } from '../../lib/recorder'
-import type { PreferenceKind, ProfileDraft } from '../../lib/types'
-import { ACTIVITY_OPTIONS, GOAL_OPTIONS, MEAL_OPTIONS, SEX_OPTIONS } from '../profile/options'
-
-type Proposal = { kind: PreferenceKind; label: string; allergen: string }
-
-const KIND_LABELS: Record<PreferenceKind, string> = {
-  allergy: gettext('Allergia'),
-  intolerance: gettext('Intolleranza'),
-  like: gettext('Mi piace'),
-  dislike: gettext('Non mi piace'),
-}
-
-/** Una riga leggibile per ogni campo proposto. */
-function describe(key: string, value: unknown): string {
-  switch (key) {
-    case 'sex':
-      return SEX_OPTIONS.find((option) => option.value === value)?.label ?? String(value)
-    case 'height_cm':
-      return interpolate(gettext('Altezza %s cm'), [String(value)])
-    case 'weight_kg':
-      return interpolate(gettext('Peso %s kg'), [String(value)])
-    case 'goals':
-      return (value as string[])
-        .map((goal) => GOAL_OPTIONS.find((option) => option.value === goal)?.label ?? goal)
-        .join(', ')
-    case 'goals_note':
-      return interpolate(gettext('Obiettivo: “%s”'), [String(value)])
-    case 'activity_level':
-      return interpolate(gettext('Attività: %s'), [
-        ACTIVITY_OPTIONS.find((option) => option.value === value)?.label ?? String(value),
-      ])
-    case 'sport_sessions_per_week':
-      return interpolate(gettext('Sport %s volte a settimana'), [String(value)])
-    case 'conditions':
-      return interpolate(gettext('Da considerare: %s'), [(value as string[]).join(', ')])
-    case 'followed_by_nutritionist':
-      return value ? gettext('Ti segue un nutrizionista') : gettext('Nessun nutrizionista')
-    case 'meal_slots':
-      return interpolate(gettext('Pasti: %s'), [
-        (value as string[])
-          .map((slot) => MEAL_OPTIONS.find((option) => option.value === slot)?.label ?? slot)
-          .join(', '),
-      ])
-    case 'household_size':
-      return interpolate(gettext('Cucini per %s'), [String(value)])
-    default:
-      return String(value)
-  }
-}
+import { LiveInterview, canTalkLive } from './LiveInterview'
+import { ProposalsPanel, useProposals } from './proposals'
 
 function speak(text: string) {
   if (!('speechSynthesis' in window)) return
@@ -86,9 +33,8 @@ export function InterviewPage() {
 function Interview({ onboarding }: { onboarding: boolean }) {
   const navigate = useNavigate()
   const turn = useInterviewTurn()
-  const update = useUpdateProfile()
-  const addPreference = useAddPreference()
-  const complete = useCompleteOnboarding()
+  const proposals = useProposals(onboarding)
+  const [mode, setMode] = useState<'live' | 'chat'>(() => (canTalkLive() ? 'live' : 'chat'))
   const [messages, setMessages] = useState<InterviewMessage[]>(() => [
     {
       role: 'assistant',
@@ -100,11 +46,6 @@ function Interview({ onboarding }: { onboarding: boolean }) {
   const [text, setText] = useState('')
   const [jobId, setJobId] = useState<string>()
   const [voice, setVoice] = useState(false)
-  const [updates, setUpdates] = useState<Partial<ProfileDraft>>({})
-  const [preferences, setPreferences] = useState<Proposal[]>([])
-  const [finished, setFinished] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<unknown>(null)
   const { data: job } = useJob(jobId)
   const handled = useRef<string>()
   const bottom = useRef<HTMLDivElement>(null)
@@ -138,21 +79,10 @@ function Interview({ onboarding }: { onboarding: boolean }) {
       }
       return [...next, { role: 'assistant', text: result.reply ?? '' }]
     })
-    setUpdates((current) => ({ ...current, ...(result.updates ?? {}) }))
-    setPreferences((current) => {
-      const merged = [...current]
-      for (const item of result.preferences ?? []) {
-        const exists = merged.some(
-          (other) =>
-            other.kind === item.kind && other.label.toLowerCase() === item.label.toLowerCase(),
-        )
-        if (!exists) merged.push(item)
-      }
-      return merged
-    })
-    if (result.done) setFinished(true)
+    proposals.merge(result)
+    if (result.done) proposals.setFinished(true)
     if (voice && result.reply) speak(result.reply)
-  }, [job, voice])
+  }, [job, voice]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Una risposta vocale non capita: la riga "🎤 …" diventa un invito a riprovare.
   useEffect(() => {
@@ -165,35 +95,7 @@ function Interview({ onboarding }: { onboarding: boolean }) {
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages.length, thinking, finished])
-
-  const proposals = Object.entries(updates)
-  const count = proposals.length + preferences.length
-
-  const save = async () => {
-    setSaving(true)
-    setSaveError(null)
-    try {
-      if (proposals.length) await update.mutateAsync(updates)
-      for (const item of preferences) {
-        await addPreference.mutateAsync({
-          kind: item.kind,
-          label: item.label,
-          allergen: item.allergen || undefined,
-        })
-      }
-      if (onboarding) {
-        await complete.mutateAsync()
-        navigate('/', { replace: true })
-      } else {
-        navigate('/profilo', { replace: true })
-      }
-    } catch (error) {
-      setSaveError(error)
-    } finally {
-      setSaving(false)
-    }
-  }
+  }, [messages.length, thinking, proposals.finished])
 
   return (
     <div className="flex min-h-dvh flex-col bg-surface-container-low">
@@ -213,32 +115,61 @@ function Interview({ onboarding }: { onboarding: boolean }) {
               {gettext('Rispondi a voce o per iscritto: alla fine controlli tutto')}
             </p>
           </div>
-          <label className="flex items-center gap-2 text-body-small">
-            <Icon name="volume_up" size={18} />
-            <Switch
-              label={gettext('Leggi le risposte ad alta voce')}
-              checked={voice}
-              onChange={setVoice}
-            />
-          </label>
+          {mode === 'chat' && (
+            <label className="flex items-center gap-2 text-body-small">
+              <Icon name="volume_up" size={18} />
+              <Switch
+                label={gettext('Leggi le risposte ad alta voce')}
+                checked={voice}
+                onChange={setVoice}
+              />
+            </label>
+          )}
         </div>
+        {canTalkLive() && (
+          <div className="relative mx-auto flex max-w-2xl gap-2 px-4 pb-3" role="tablist">
+            {(
+              [
+                ['live', 'record_voice_over', gettext('Parliamo')],
+                ['chat', 'chat', gettext('Chat')],
+              ] as const
+            ).map(([value, icon, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={mode === value}
+                onClick={() => setMode(value)}
+                className={clsx(
+                  'flex items-center gap-1.5 rounded-pill px-4 py-1.5 text-label-large transition',
+                  mode === value ? 'bg-white text-primary' : 'text-on-primary opacity-90',
+                )}
+              >
+                <Icon name={icon} size={18} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-3 px-4 py-4">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={clsx(
-              'max-w-[85%] whitespace-pre-line rounded-[20px] px-4 py-2.5 text-body-large',
-              message.role === 'assistant'
-                ? 'self-start rounded-bl-[6px] bg-surface text-on-surface shadow-sm'
-                : 'self-end rounded-br-[6px] bg-primary text-on-primary',
-            )}
-          >
-            {message.text}
-          </div>
-        ))}
-        {thinking && (
+        {mode === 'live' && <LiveInterview proposals={proposals} />}
+        {mode === 'chat' &&
+          messages.map((message, index) => (
+            <div
+              key={index}
+              className={clsx(
+                'max-w-[85%] whitespace-pre-line rounded-[20px] px-4 py-2.5 text-body-large',
+                message.role === 'assistant'
+                  ? 'self-start rounded-bl-[6px] bg-surface text-on-surface shadow-sm'
+                  : 'self-end rounded-br-[6px] bg-primary text-on-primary',
+              )}
+            >
+              {message.text}
+            </div>
+          ))}
+        {mode === 'chat' && thinking && (
           <div className="flex items-center gap-1.5 self-start rounded-[20px] rounded-bl-[6px] bg-surface px-4 py-3 shadow-sm">
             {[0, 1, 2].map((dot) => (
               <span
@@ -251,77 +182,11 @@ function Interview({ onboarding }: { onboarding: boolean }) {
         )}
         <ErrorBanner error={turn.error ?? (job?.status === 'failed' ? job.error : null)} />
 
-        {(count > 0 || finished) && (
-          <section
-            className={clsx(
-              'mt-2 grid gap-3 rounded-card p-4',
-              finished ? 'bg-primary-container text-on-primary-container' : 'bg-surface',
-            )}
-          >
-            <h2 className="flex items-center gap-2 text-title-small">
-              <Icon name="fact_check" size={20} />
-              {finished ? gettext('Ecco cosa ho capito: controlla e salva') : gettext('Ho capito')}
-            </h2>
-            {count === 0 ? (
-              <p className="text-body-medium">{gettext('Niente di nuovo da salvare.')}</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {proposals.map(([key, value]) => (
-                  <Chip
-                    key={key}
-                    label={describe(key, value)}
-                    trailingIcon="close"
-                    onClick={() =>
-                      setUpdates((current) => {
-                        const next = { ...current }
-                        delete next[key as keyof ProfileDraft]
-                        return next
-                      })
-                    }
-                  />
-                ))}
-                {preferences.map((item) => (
-                  <Chip
-                    key={`${item.kind}-${item.label}`}
-                    icon={
-                      item.kind === 'allergy' || item.kind === 'intolerance'
-                        ? 'health_and_safety'
-                        : item.kind === 'like'
-                          ? 'favorite'
-                          : 'thumb_down'
-                    }
-                    label={`${KIND_LABELS[item.kind]}: ${item.label}`}
-                    trailingIcon="close"
-                    onClick={() =>
-                      setPreferences((current) => current.filter((other) => other !== item))
-                    }
-                  />
-                ))}
-              </div>
-            )}
-            <ErrorBanner error={saveError} />
-            <div className="flex flex-wrap justify-end gap-2">
-              {!finished && (
-                <button type="button" className="btn-text" onClick={() => setFinished(true)}>
-                  {gettext('Basta così')}
-                </button>
-              )}
-              <button
-                type="button"
-                className="btn-filled"
-                disabled={saving || (count === 0 && !onboarding)}
-                onClick={save}
-              >
-                <Icon name="check" size={20} />
-                {onboarding ? gettext('Salva e inizia') : gettext('Salva nel profilo')}
-              </button>
-            </div>
-          </section>
-        )}
+        <ProposalsPanel proposals={proposals} />
         <div ref={bottom} />
       </main>
 
-      {!finished && (
+      {mode === 'chat' && !proposals.finished && (
         <footer className="sticky bottom-0 border-t border-outline-variant bg-surface">
           <form
             className="mx-auto flex max-w-2xl items-end gap-2 px-4 py-3"

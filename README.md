@@ -70,7 +70,7 @@ backend/
 └── apps/
     ├── core/            BaseModel, methods (token, hash, mail), i18n, task mail
     ├── users/           User custom + auth JWT + mail dell'account
-    ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE), intervista (interview.py)
+    ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE), intervista (interview.py) e voce in tempo reale (live.py)
     ├── recipes/         ricette, tag, catalogo ingredienti (catalog.py), riconoscimento dei nomi, immagini (images.py),
     │                    import da foto (importing.py), ricettari PDF letti a pezzi (books.py, tasks.py), condivisione (sharing.py)
     ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
@@ -99,6 +99,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET/PATCH /api/profile` · `POST /api/profile/complete` | profilo alimentare e fine del wizard |
 | `GET/POST /api/profile/preferences` · `DELETE …/{id}` | gusti, antipatie, allergie, intolleranze |
 | `POST /api/profile/interview` (JSON o multipart `messages`, `audio`) | un turno dell'intervista, anche a voce: job con risposta e proposte da confermare ([ADR 0013](docs/decisions/0013-intervista-e-voce.md)) |
+| `POST /api/profile/interview/live` · `POST …/interview/proposal` `{name, args}` | conversazione a voce in tempo reale con Gemini Live: token monouso vincolato · pulizia di quello che Gemini segna ([ADR 0014](docs/decisions/0014-modello-veloce-e-voce-in-tempo-reale.md)) |
 | `GET /api/ingredients?q=` | suggerimenti dal catalogo (e dagli ingredienti propri) |
 | `GET/POST /api/recipes` (`?q=`, `?tag=`, `?slot=`, `?max_minutes=`, `?difficulty=`, `?in_cookbook=`) · `GET/PATCH/DELETE …/{id}` | ricettario, con allergeni e avvisi dal profilo |
 | `GET /api/tags` · `DELETE /api/tags/{id}` | tag con il numero di ricette |

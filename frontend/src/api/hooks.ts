@@ -747,3 +747,18 @@ export function useInterviewTurn() {
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
   })
 }
+
+/** Apre una conversazione a voce in tempo reale: token monouso e modello. */
+export function useStartLiveInterview() {
+  return useMutation({
+    mutationFn: () => api.post<{ token: string; model: string }>('/api/profile/interview/live'),
+  })
+}
+
+/** Una chiamata agli strumenti della voce, ripulita dal backend. */
+export function cleanLiveCall(name: string, args: Record<string, unknown>) {
+  return api.post<{
+    updates: Partial<ProfileDraft>
+    preferences: { kind: PreferenceKind; label: string; allergen: string }[]
+  }>('/api/profile/interview/proposal', { name, args })
+}
