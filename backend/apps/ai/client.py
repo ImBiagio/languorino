@@ -54,10 +54,13 @@ def mark_down(model: str, seconds: int | None = None) -> None:
     cache.set(_down_key(model), True, seconds or settings.GEMINI_MODEL_COOLDOWN)
 
 
-def models_in_order() -> list[str]:
+def models_in_order(fast: bool = False) -> list[str]:
     """Principale e riserve; quelli segnati giu' in fondo (non tolti: se sono
-    giu' tutti si riprova comunque)."""
-    models = list(dict.fromkeys([settings.GEMINI_MODEL, *settings.GEMINI_FALLBACK_MODELS]))
+    giu' tutti si riprova comunque). ``fast`` mette davanti il modello veloce."""
+    main = [settings.GEMINI_MODEL, *settings.GEMINI_FALLBACK_MODELS]
+    if fast:
+        main = [settings.GEMINI_MODEL_FAST, *main]
+    models = list(dict.fromkeys(main))
     return sorted(models, key=lambda model: bool(cache.get(_down_key(model))))
 
 
@@ -95,6 +98,7 @@ def generate[Schema: BaseModel](
     user=None,
     timeout_ms: int = 60_000,
     temperature: float = 0.2,
+    fast: bool = False,
 ) -> tuple[Schema, str]:
     """Chiama Gemini e restituisce ``(risposta validata, modello usato)``.
 
@@ -103,6 +107,10 @@ def generate[Schema: BaseModel](
     chiama non importa l'SDK. Errori temporanei passano al modello successivo;
     finito il giro si aspetta e si riprova. Chiave rifiutata o richiesta non
     valida non dipendono dal modello e si fermano subito.
+
+    ``fast``: per chi aspetta la risposta guardando lo schermo (intervista,
+    frigo). Parte dal modello veloce, che non "pensa" prima di rispondere:
+    misurato il 2026-11-11, 2,6-3 s contro 15-75 s del principale (ADR 0014).
     """
     if not is_enabled():
         raise AIError(
@@ -126,7 +134,7 @@ def generate[Schema: BaseModel](
     tried: list[str] = []
     last_error = ""
     for pause in (*RETRY_PAUSES, None):
-        for model in models_in_order():
+        for model in models_in_order(fast):
             started = time.monotonic()
             try:
                 response = client.models.generate_content(

@@ -278,6 +278,9 @@ GEMINI_MODEL = env("GEMINI_MODEL", "gemini-flash-latest")
 GEMINI_FALLBACK_MODELS = env_list("GEMINI_FALLBACK_MODELS", "gemini-flash-lite-latest")
 # Quanto resta "giu'" un modello che ha risposto sovraccarico.
 GEMINI_MODEL_COOLDOWN = int(env("GEMINI_MODEL_COOLDOWN", "300"))
+# Il modello delle funzioni interattive (intervista, frigo, idee): senza
+# "thinking", risponde in pochi secondi (ADR 0014).
+GEMINI_MODEL_FAST = env("GEMINI_MODEL_FAST", "gemini-flash-lite-latest")
 # Immagini delle ricette (ADR 0011): modello a parte, un tetto al giorno per utente.
 # Il piano gratuito di Gemini non ha quota per le immagini: serve la fatturazione.
 GEMINI_MODEL_IMAGE = env("GEMINI_MODEL_IMAGE", "gemini-2.5-flash-image")

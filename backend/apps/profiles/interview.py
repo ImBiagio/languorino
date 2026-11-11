@@ -211,6 +211,7 @@ def interview_turn(
         ],
         InterviewTurn,
         feature="interview",
+        fast=True,
         user=user,
         timeout_ms=60_000,
         temperature=0.4,

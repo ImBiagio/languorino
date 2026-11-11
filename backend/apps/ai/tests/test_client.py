@@ -115,3 +115,14 @@ def test_risposta_non_valida(fake_gemini):
     behaviour["main"] = _response("non e' json")
     with pytest.raises(ai.AIError, match="formato"):
         _ask()
+
+
+@override_settings(GEMINI_MODEL="main", GEMINI_FALLBACK_MODELS=["spare"], GEMINI_MODEL_FAST="lite")
+def test_modello_veloce_davanti_per_le_funzioni_interattive():
+    cache.clear()
+    assert ai.models_in_order() == ["main", "spare"]
+    assert ai.models_in_order(fast=True) == ["lite", "main", "spare"]
+    # Se il veloce e' giu', si passa agli altri senza aspettarlo.
+    ai.mark_down("lite")
+    assert ai.models_in_order(fast=True) == ["main", "spare", "lite"]
+    cache.clear()
