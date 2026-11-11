@@ -8,6 +8,7 @@ from .views import (
     PlanCurrentView,
     PlanDetailView,
     PlanListView,
+    PlannedMealIdeasView,
     PlannedMealView,
     PlanRegenerateView,
     PlanRetryView,
@@ -21,6 +22,11 @@ urlpatterns = [
     path("plans/<uuid:pk>/regenerate", PlanRegenerateView.as_view(), name="plan-regenerate"),
     path("plans/<uuid:pk>/retry", PlanRetryView.as_view(), name="plan-retry"),
     path("plans/<uuid:pk>/meals/<int:meal_id>", PlannedMealView.as_view(), name="plan-meal"),
+    path(
+        "plans/<uuid:pk>/meals/<int:meal_id>/ideas",
+        PlannedMealIdeasView.as_view(),
+        name="plan-meal-ideas",
+    ),
     path("nutritionist-plans", NutritionistPlanListView.as_view(), name="nutritionist-plans"),
     path(
         "nutritionist-plans/<uuid:pk>",

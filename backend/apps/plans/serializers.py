@@ -10,6 +10,7 @@ from rest_framework import serializers
 from apps.profiles.models import MEAL_SLOT_ORDER, MealSlot
 from apps.recipes.models import Difficulty, RecipeBook, Unit
 from apps.recipes.serializers import RecipeListSerializer
+from apps.shopping.aggregate import TO_BASE
 
 from .models import MealPlan, NutritionistPlan, PlannedMeal, PrepMode
 from .nutritionist import NutritionistRules, clean_rules
@@ -131,13 +132,24 @@ class PlannedMealSerializer(serializers.ModelSerializer):
         for line in recipe.ingredients.all():
             if line.optional or line.quantity is None or line.unit == Unit.TO_TASTE:
                 continue
-            lines.append(
-                {
-                    "name": line.ingredient.display_name,
-                    "quantity": str(round(line.quantity / servings, 2)),
-                    "unit": line.unit,
+            quantity = line.quantity / servings
+            item = {
+                "name": line.ingredient.display_name,
+                "quantity": str(round(quantity, 2)),
+                "unit": line.unit,
+            }
+            # Pezzi, cucchiai, tazze: anche il peso, se il catalogo lo sa
+            # ("zucchina ½ pz" dice poco a chi conta le grammature).
+            grams_per_piece = line.ingredient.grams_per_piece
+            if line.unit == Unit.PIECE and grams_per_piece:
+                item["approx"] = {
+                    "quantity": str(round(quantity * Decimal(grams_per_piece))),
+                    "unit": Unit.GRAM.value,
                 }
-            )
+            elif line.unit in TO_BASE and line.unit not in (Unit.GRAM, Unit.MILLILITRE):
+                base, factor = TO_BASE[line.unit]
+                item["approx"] = {"quantity": str(round(quantity * factor)), "unit": base.value}
+            lines.append(item)
         return lines
 
     def validate_servings(self, value: int) -> int:

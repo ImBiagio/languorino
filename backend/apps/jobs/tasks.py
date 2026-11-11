@@ -113,6 +113,19 @@ def _interview(job: Job) -> None:
     job.result = result
 
 
+def _meal_ideas(job: Job) -> None:
+    from apps.plans.models import MealPlan
+    from apps.plans.swap import meal_ideas
+    from apps.recipes.serializers import RecipeListSerializer
+
+    plan = MealPlan.objects.get(id=job.input["plan"], owner=job.owner)
+    meal = plan.meals.get(id=job.input["meal"])
+    ideas = meal_ideas(
+        plan, meal, job.input.get("hint", ""), language=job.input.get("language", "it")
+    )
+    job.result = {"ideas": RecipeListSerializer(ideas, many=True, context={}).data}
+
+
 RUNNERS = {
     Job.Kind.IMPORT_RECIPES: _import_recipes,
     Job.Kind.FRIDGE_SCAN: _fridge_scan,
@@ -120,6 +133,7 @@ RUNNERS = {
     Job.Kind.NUTRITIONIST_PLAN: _nutritionist_plan,
     Job.Kind.RECIPE_IMAGE: _recipe_image,
     Job.Kind.INTERVIEW: _interview,
+    Job.Kind.MEAL_IDEAS: _meal_ideas,
 }
 
 

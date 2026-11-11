@@ -747,3 +747,13 @@ export function useInterviewTurn() {
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
   })
 }
+
+/** Idee nuove per un pasto del piano (job): si sceglie poi con useUpdateMeal. */
+export function useMealIdeas(planId: UUID) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ mealId, hint }: { mealId: number; hint: string }) =>
+      api.post<Job>(`/api/plans/${planId}/meals/${mealId}/ideas`, { hint }),
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}

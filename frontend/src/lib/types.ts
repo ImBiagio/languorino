@@ -289,6 +289,7 @@ export interface Job {
     | 'nutritionist_plan'
     | 'recipe_image'
     | 'interview'
+    | 'meal_ideas'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]
@@ -381,6 +382,8 @@ export interface PortionLine {
   name: string
   quantity: string
   unit: Unit
+  /** Per pezzi e cucchiai: il peso o il volume, se il catalogo lo sa. */
+  approx?: { quantity: string; unit: Unit }
 }
 
 export interface MealPlan {

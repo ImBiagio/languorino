@@ -250,6 +250,7 @@ def test_pulizia_delle_idee_vecchie(user):
         plan=plan, date=date.today(), slot="lunch", recipe=planned, cooked_on=date.today()
     )
 
-    assert clean_ideas() == 1
+    # Anche la ricetta scritta per un piano e poi sostituita (in nessun pasto).
+    assert clean_ideas() == 2
     left = set(Recipe.all_objects.filter(owner=user).values_list("title", flat=True))
-    assert left == {"Di ieri", "Salvata", "Nel piano", "Del piano"}
+    assert left == {"Di ieri", "Salvata", "Nel piano"}

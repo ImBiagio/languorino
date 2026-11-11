@@ -23,6 +23,7 @@ class Job(BaseModel):
         NUTRITIONIST_PLAN = "nutritionist_plan", _("Leggi il piano del nutrizionista")
         RECIPE_IMAGE = "recipe_image", _("Disegna la ricetta")
         INTERVIEW = "interview", _("Intervista per il profilo")
+        MEAL_IDEAS = "meal_ideas", _("Idee per un pasto del piano")
 
     class Status(models.TextChoices):
         QUEUED = "queued", _("In coda")
