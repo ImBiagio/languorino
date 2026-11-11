@@ -297,7 +297,11 @@ export function useBook(id: UUID | undefined) {
     queryFn: () => api.get<RecipeBook>(`/api/recipe-books/${id}`),
     enabled: Boolean(id),
     refetchInterval: (query) =>
-      query.state.data && READING.includes(query.state.data.status) ? 3000 : false,
+      query.state.data &&
+      (READING.includes(query.state.data.status) ||
+        ['searching', 'drawing'].includes(query.state.data.images_status))
+        ? 3000
+        : false,
   })
 }
 
@@ -745,5 +749,17 @@ export function useInterviewTurn() {
       return api.post<Job>('/api/profile/interview', form)
     },
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
+/** Cerca le foto delle ricette nel PDF e fa disegnare le altre (ADR 0015). */
+export function useBookImages() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<RecipeBook>(`/api/recipe-books/${id}/images`),
+    onSuccess: (book) => {
+      client.setQueryData(keys.book(book.id), book)
+      void client.invalidateQueries({ queryKey: keys.books })
+    },
   })
 }

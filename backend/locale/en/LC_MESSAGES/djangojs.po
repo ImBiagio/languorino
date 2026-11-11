@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:40+0100\n"
+"POT-Creation-Date: 2026-11-11 11:19+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -345,7 +345,10 @@ msgid ""
 "Ciao! Ti faccio qualche domanda per conoscerti e proporti cosa mangiare. "
 "Puoi scrivere o parlare. Per cominciare: hai allergie o intolleranze "
 "alimentari?"
-msgstr "Hi! I'll ask you a few questions to get to know you and suggest what to eat. You can type or talk. To start: do you have any food allergies or intolerances?"
+msgstr ""
+"Hi! I'll ask you a few questions to get to know you and suggest what to eat. "
+"You can type or talk. To start: do you have any food allergies or "
+"intolerances?"
 
 msgid "Indietro"
 msgstr "Back"
@@ -1400,6 +1403,40 @@ msgstr "No recipes found"
 msgid "Non ho trovato ricette in questo PDF"
 msgstr "I found no recipes in this PDF"
 
+msgid "Immagini delle ricette"
+msgstr "Recipe images"
+
+#, javascript-format
+msgid "Cerco le foto nel PDF: pagina %s di %s…"
+msgstr "Looking for photos in the PDF: page %s of %s…"
+
+#, javascript-format
+msgid "Disegno le ricette senza foto: ne manca %s."
+msgid_plural "Disegno le ricette senza foto: ne mancano %s."
+msgstr[0] "Drawing the recipes without a photo: %s to go."
+msgstr[1] "Drawing the recipes without a photo: %s to go."
+
+msgid ""
+"Prendo le foto dei piatti dal PDF, se ci sono; le altre ricette le faccio "
+"disegnare in modo semplice."
+msgstr "I take the dish photos from the PDF, if there are any; I have the other recipes drawn in a simple style."
+
+#, javascript-format
+msgid "Foto trovate nel PDF: %s. Senza immagine: %s ricetta."
+msgid_plural "Foto trovate nel PDF: %s. Senza immagine: %s ricette."
+msgstr[0] "Photos found in the PDF: %s. Without an image: %s recipe."
+msgstr[1] "Photos found in the PDF: %s. Without an image: %s recipes."
+
+#, javascript-format
+msgid "Foto trovate nel PDF: %s. Tutte le ricette hanno un’immagine."
+msgstr "Photos found in the PDF: %s. Every recipe has an image."
+
+msgid "Cerca le foto e disegna le altre"
+msgstr "Find the photos and draw the rest"
+
+msgid "Riprova"
+msgstr "Try again"
+
 msgid "Rinomina il ricettario"
 msgstr "Rename the cookbook"
 
@@ -1479,9 +1516,6 @@ msgstr "I couldn't read the recipes"
 
 msgid "Lascia perdere"
 msgstr "Never mind"
-
-msgid "Riprova"
-msgstr "Try again"
 
 msgid "Non ho trovato ricette"
 msgstr "I found no recipes"

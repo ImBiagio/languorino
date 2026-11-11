@@ -173,6 +173,22 @@ class RecipeBook(BaseModel):
     language = models.CharField(max_length=8, default="it")
     finished_at = models.DateTimeField(null=True, blank=True)
 
+    class ImagesStatus(models.TextChoices):
+        # Immagini delle ricette (ADR 0015): foto ritagliate dal PDF, poi
+        # illustrazioni AI per quelle che non ne hanno.
+        NONE = "", _("Da fare")
+        SEARCHING = "searching", _("Cerco le foto")
+        DRAWING = "drawing", _("Disegno le altre")
+        DONE = "done", _("Fatto")
+        FAILED = "failed", _("Interrotto")
+
+    images_status = models.CharField(
+        max_length=10, choices=ImagesStatus.choices, default=ImagesStatus.NONE, blank=True
+    )
+    images_pages_done = models.PositiveSmallIntegerField(default=0)
+    images_found = models.PositiveSmallIntegerField(default=0)
+    images_error = models.CharField(max_length=300, blank=True)
+
     class Meta:
         ordering = ["-created_at"]
 
@@ -239,6 +255,7 @@ class Recipe(BaseModel):
     class ImageSource(models.TextChoices):
         PHOTO = "photo", _("Foto")
         AI = "ai", _("Disegnata dall'AI")
+        BOOK = "book", _("Dal ricettario PDF")
 
     # Foto vera o generata (ADR 0011), sempre WebP; vuota = disegno per categoria.
     image = models.ImageField(upload_to=recipe_image_path, max_length=200, blank=True)

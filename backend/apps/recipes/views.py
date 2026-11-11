@@ -34,7 +34,7 @@ from .serializers import (
 )
 from .services import visible_ingredients
 from .sharing import copy_recipe, share, unshare
-from .tasks import enqueue_book
+from .tasks import enqueue_book, start_book_images
 
 SEARCH_LIMIT = 12
 
@@ -199,6 +199,7 @@ def books_of(user):
     return RecipeBook.objects.filter(owner=user).annotate(
         recipe_count=Count("recipes", filter=alive),
         saved_count=Count("recipes", filter=alive & Q(recipes__in_cookbook=True)),
+        without_image=Count("recipes", filter=alive & Q(recipes__image="")),
     )
 
 
@@ -481,3 +482,33 @@ class SharedRecipeCopyView(APIView):
             RecipeSerializer(copy, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class RecipeBookImagesView(APIView):
+    """Cerca le foto delle ricette nel PDF e fa disegnare le altre (ADR 0015).
+    Per i ricettari letti prima che lo si facesse da solo, o per riprovare."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: RecipeBookSerializer})
+    def post(self, request, pk):
+        book = get_object_or_404(books_of(request.user), pk=pk)
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if book.status != RecipeBook.Status.READY:
+            raise serializers.ValidationError(
+                {"detail": _("Prima finisco di leggere il ricettario.")}
+            )
+        if book.images_status in (
+            RecipeBook.ImagesStatus.SEARCHING,
+            RecipeBook.ImagesStatus.DRAWING,
+        ):
+            raise serializers.ValidationError({"detail": _("Ci sto già lavorando.")})
+        with transaction.atomic():
+            start_book_images(book)
+        book = books_of(request.user).get(pk=pk)
+        return Response(RecipeBookSerializer(book).data, status=status.HTTP_202_ACCEPTED)

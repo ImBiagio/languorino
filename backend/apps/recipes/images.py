@@ -28,6 +28,13 @@ Il piatto pronto in un piatto di ceramica su un tavolo di legno chiaro, vista
 a 45 gradi, luce naturale morbida, sfondo sfocato. Niente testo, scritte,
 loghi, persone o mani."""
 
+# Per i ricettari PDF senza foto (ADR 0015): semplice, un po' illustrativa.
+ILLUSTRATION = """Illustrazione semplice e un po' stilizzata del piatto "{title}".
+{description}Ingredienti principali: {ingredients}.
+Il piatto pronto visto dall'alto in una ciotola o un piatto, stile flat
+illustration, colori tenui e caldi, contorni morbidi, sfondo chiaro uniforme.
+Niente testo, scritte, loghi, persone o mani."""
+
 
 class ImageRejected(ValueError):
     pass
@@ -70,7 +77,7 @@ def images_today(user) -> int:
     return AiCall.objects.filter(user=user, feature=FEATURE, created_at__gte=start).count()
 
 
-def image_prompt(recipe: Recipe) -> str:
+def image_prompt(recipe: Recipe, style: str = "photo") -> str:
     """Solo titolo, descrizione e ingredienti: niente del profilo."""
     names = [
         line.ingredient.display_name
@@ -78,15 +85,15 @@ def image_prompt(recipe: Recipe) -> str:
         if not line.optional and not line.ingredient.staple
     ]
     description = " ".join(recipe.description.split())[:300]
-    return PROMPT.format(
+    return (ILLUSTRATION if style == "illustration" else PROMPT).format(
         title=recipe.title,
         description=f"{description}\n" if description else "",
         ingredients=", ".join(names[:8]) or "a tua scelta, coerenti col titolo",
     )
 
 
-def draw_image(recipe: Recipe, user) -> str:
+def draw_image(recipe: Recipe, user, style: str = "photo") -> str:
     """Fa disegnare l'immagine a Gemini e la salva; restituisce il modello usato."""
-    data, _mime, model = generate_image(image_prompt(recipe), feature=FEATURE, user=user)
+    data, _mime, model = generate_image(image_prompt(recipe, style), feature=FEATURE, user=user)
     set_image(recipe, data, Recipe.ImageSource.AI)
     return model

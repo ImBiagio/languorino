@@ -12,6 +12,7 @@ import {
   useDeleteBook,
   useRecipes,
   useRenameBook,
+  useBookImages,
   useRetryBook,
   useUploadBook,
 } from '../../api/hooks'
@@ -232,7 +233,8 @@ export function BookPage() {
     return () => window.clearTimeout(timer)
   }, [text])
   const reading = book?.status === 'queued' || book?.status === 'reading'
-  const { data: recipes } = useRecipes({ book: bookId, q: query }, { poll: reading })
+  const drawing = book?.images_status === 'searching' || book?.images_status === 'drawing'
+  const { data: recipes } = useRecipes({ book: bookId, q: query }, { poll: reading || drawing })
 
   if (error) {
     return (
@@ -300,6 +302,7 @@ export function BookPage() {
             </div>
           )}
         </section>
+        {book.status === 'ready' && book.recipe_count > 0 && <BookImages book={book} />}
 
         <label className="flex items-center gap-3 rounded-pill bg-surface-container-high px-5 py-3 focus-within:ring-2 focus-within:ring-primary">
           <Icon name="search" size={22} className="text-on-surface-variant" />
@@ -335,6 +338,85 @@ export function BookPage() {
 
       {renaming && <RenameDialog book={book} onClose={() => setRenaming(false)} />}
     </Page>
+  )
+}
+
+/** Foto delle ricette dal PDF e illustrazioni per le altre (ADR 0015). */
+function BookImages({ book }: { book: RecipeBook }) {
+  const start = useBookImages()
+  const status = book.images_status
+  const working = status === 'searching' || status === 'drawing'
+  const missing = book.without_image
+  return (
+    <section className="grid gap-3 rounded-card bg-surface-container-low p-4">
+      <div className="flex items-start gap-3">
+        <Icon
+          name={working ? 'hourglass_top' : 'imagesmode'}
+          size={22}
+          className={clsx('mt-0.5 text-primary', working && 'animate-pulse')}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-body-large font-medium">{gettext('Immagini delle ricette')}</p>
+          <p className="text-body-small text-on-surface-variant">
+            {status === 'searching'
+              ? interpolate(gettext('Cerco le foto nel PDF: pagina %s di %s…'), [
+                  book.images_pages_done,
+                  book.page_count,
+                ])
+              : status === 'drawing'
+                ? interpolate(
+                    ngettext(
+                      'Disegno le ricette senza foto: ne manca %s.',
+                      'Disegno le ricette senza foto: ne mancano %s.',
+                      missing,
+                    ),
+                    [missing],
+                  )
+                : status === ''
+                  ? gettext(
+                      'Prendo le foto dei piatti dal PDF, se ci sono; le altre ricette le faccio disegnare in modo semplice.',
+                    )
+                  : missing
+                    ? interpolate(
+                        ngettext(
+                          'Foto trovate nel PDF: %s. Senza immagine: %s ricetta.',
+                          'Foto trovate nel PDF: %s. Senza immagine: %s ricette.',
+                          missing,
+                        ),
+                        [book.images_found, missing],
+                      )
+                    : interpolate(
+                        gettext('Foto trovate nel PDF: %s. Tutte le ricette hanno un’immagine.'),
+                        [book.images_found],
+                      )}
+          </p>
+        </div>
+      </div>
+      {book.images_error && (
+        <p
+          className={clsx(
+            'rounded-row px-3 py-2 text-body-small',
+            status === 'failed'
+              ? 'bg-error-container text-on-error-container'
+              : 'bg-surface-container-high text-on-surface-variant',
+          )}
+        >
+          {book.images_error}
+        </p>
+      )}
+      {!working && (status === '' || status === 'failed' || missing > 0) && (
+        <button
+          type="button"
+          className="btn-tonal w-fit"
+          disabled={start.isPending}
+          onClick={() => start.mutate(book.id)}
+        >
+          <Icon name={status === '' ? 'imagesmode' : 'refresh'} size={20} />
+          {status === '' ? gettext('Cerca le foto e disegna le altre') : gettext('Riprova')}
+        </button>
+      )}
+      <ErrorBanner error={start.error} />
+    </section>
   )
 }
 

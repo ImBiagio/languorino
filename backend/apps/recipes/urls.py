@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     IngredientSearchView,
     RecipeBookDetailView,
+    RecipeBookImagesView,
     RecipeBookListView,
     RecipeBookRetryView,
     RecipeDetailView,
@@ -34,6 +35,9 @@ urlpatterns = [
     path("recipe-books", RecipeBookListView.as_view(), name="recipe-books"),
     path("recipe-books/<uuid:pk>", RecipeBookDetailView.as_view(), name="recipe-book-detail"),
     path("recipe-books/<uuid:pk>/retry", RecipeBookRetryView.as_view(), name="recipe-book-retry"),
+    path(
+        "recipe-books/<uuid:pk>/images", RecipeBookImagesView.as_view(), name="recipe-book-images"
+    ),
     path("tags", TagListView.as_view(), name="tags"),
     path("tags/<uuid:pk>", TagDetailView.as_view(), name="tag-detail"),
 ]
