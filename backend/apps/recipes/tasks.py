@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import override
 
-from apps.ai.client import AIError, AIOverloaded
+from apps.ai.client import AIError, AINoImage, AIOverloaded
 
 from .books import chunk_bounds, chunk_instructions, extract_pages
 from .importing import read_recipes
@@ -162,6 +162,8 @@ def resume_stalled_books() -> int:
 # --- immagini delle ricette dei ricettari (ADR 0015) ---------------------------------------
 
 IMAGES_RETRY_PAUSE = 300
+NO_IMAGE_RETRIES = 2
+NO_IMAGE_PAUSE = 30
 
 
 def _book_update(book_id: str, **fields) -> None:
@@ -177,6 +179,7 @@ def start_book_images(book: RecipeBook) -> None:
         images_pages_done=0,
         images_found=0,
         images_error="",
+        images_skipped=[],
     )
     transaction.on_commit(lambda: find_book_images.delay(str(book.id)))
 
@@ -261,6 +264,13 @@ def draw_book_image(self, book_id: str) -> None:
         except AIOverloaded as exc:
             _book_update(book_id, images_error=str(exc)[:300])
             raise self.retry(countdown=IMAGES_RETRY_PAUSE, max_retries=3) from exc
+        except AINoImage as exc:
+            # Senza immagine per caso: si riprova; poi la ricetta si salta.
+            if self.request.retries < NO_IMAGE_RETRIES:
+                raise self.retry(countdown=NO_IMAGE_PAUSE, max_retries=NO_IMAGE_RETRIES) from exc
+            _book_update(book_id, images_skipped=[*(book.images_skipped or []), str(recipe.id)])
+            draw_book_image.delay(book_id)
+            return
         except AIError as exc:
             # Senza quota per le immagini (piano gratuito) non serve insistere.
             _book_update(

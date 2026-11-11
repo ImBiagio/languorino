@@ -42,6 +42,11 @@ class AIOverloaded(AIError):
     riprovare piu' tardi (i ricettari PDF lo fanno senza fermarsi)."""
 
 
+class AINoImage(AIError):
+    """Il modello ha risposto senza immagine: capita ogni tanto, riprovando
+    di solito va (provato il 2026-11-11 sulla piadina con hummus)."""
+
+
 def is_enabled() -> bool:
     return bool(settings.GEMINI_API_KEY)
 
@@ -249,4 +254,4 @@ def generate_image(
             inline = getattr(part, "inline_data", None)
             if inline is not None and inline.data:
                 return inline.data, inline.mime_type or "image/png", model
-    raise AIError(_("Gemini non ha disegnato niente questa volta. Riprova."))
+    raise AINoImage(_("Gemini non ha disegnato niente questa volta. Riprova."))

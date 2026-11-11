@@ -149,7 +149,12 @@ def find_photos(book: RecipeBook, data: bytes, start: int, end: int) -> int:
 
 
 def next_to_draw(book: RecipeBook) -> Recipe | None:
-    return book.recipes.filter(image="").order_by("created_at").first()
+    return (
+        book.recipes.filter(image="")
+        .exclude(id__in=book.images_skipped or [])
+        .order_by("created_at")
+        .first()
+    )
 
 
 def missing_count(book: RecipeBook) -> int:

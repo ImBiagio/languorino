@@ -219,3 +219,34 @@ def test_tutti_i_titoli_e_un_riquadro_una_ricetta(user, monkeypatch):
     assert book_images.find_photos(book, data, 0, 2) == 0
     assert "- Pasta e fagioli" in prompts[0]
     assert not Recipe.objects.get(title="Polpette di piselli").image
+
+
+def test_ricetta_senza_immagine_saltata(user, monkeypatch, django_capture_on_commit_callbacks):
+    """Una ricetta che il modello non disegna non ferma le altre."""
+    from apps.ai.client import AINoImage
+    from apps.recipes import tasks
+    from apps.recipes.tasks import start_book_images
+
+    book = _book(user)
+    monkeypatch.setattr(book_images, "generate", lambda *a, **k: (BookPhotos(), "finto"))
+    monkeypatch.setattr(tasks, "NO_IMAGE_PAUSE", 0)
+    attempts = []
+
+    def flaky(prompt, **kwargs):
+        attempts.append(prompt.split('"')[1])
+        if "Pasta e fagioli" in prompt:
+            raise AINoImage("Gemini non ha disegnato niente questa volta.")
+        AiCall.objects.create(user=kwargs["user"], feature=kwargs["feature"], model="finto")
+        buffer = io.BytesIO()
+        Image.new("RGB", (64, 64), "orange").save(buffer, "PNG")
+        return buffer.getvalue(), "image/png", "finto"
+
+    monkeypatch.setattr("apps.recipes.images.generate_image", flaky)
+    with django_capture_on_commit_callbacks(execute=True):
+        start_book_images(book)
+    book.refresh_from_db()
+    # Tre tentativi sulla pasta (uno + due riprove), poi avanti con le polpette.
+    assert attempts == ["Pasta e fagioli"] * 3 + ["Polpette di piselli"]
+    assert book.images_status == "done"
+    assert book.images_skipped == [str(Recipe.objects.get(title="Pasta e fagioli").id)]
+    assert Recipe.objects.get(title="Polpette di piselli").image_source == "ai"

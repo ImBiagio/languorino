@@ -51,3 +51,10 @@ costano, quindi vanno a rate.
 **Quando rivederla:**
 - Se i ritagli sbagliano spesso: mostrarli da confermare.
 - Con la fatturazione attiva: misurare tempi e costi delle illustrazioni.
+
+**Aggiornamento 2026-11-11, in produzione:** ogni tanto il modello risponde
+senza immagine, in mezzo secondo e senza errore. Ricapitato a 17 ricette su
+99, e prima fermava l'intero ricettario. Ora quella ricetta si riprova due
+volte dopo 30 s e, se ancora niente, si salta (`images_skipped`); il
+ricettario va avanti con le altre. "Riprova" la rimette in coda. Quota e
+chiave rifiutata invece fermano tutto, perché aspettare non serve.

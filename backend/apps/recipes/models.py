@@ -188,6 +188,9 @@ class RecipeBook(BaseModel):
     images_pages_done = models.PositiveSmallIntegerField(default=0)
     images_found = models.PositiveSmallIntegerField(default=0)
     images_error = models.CharField(max_length=300, blank=True)
+    # Ricette che il modello non ha voluto disegnare dopo i tentativi: si
+    # saltano, cosi' una sola non ferma le altre.
+    images_skipped = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
