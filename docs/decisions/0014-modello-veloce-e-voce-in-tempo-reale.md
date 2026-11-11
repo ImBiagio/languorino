@@ -64,3 +64,16 @@ predefinito dove il browser lo permette, e **Chat** (ADR 0013).
   a pagamento non dovrebbe dare 503.
 - Se nasce un gateway LLM comune ai progetti: farci passare almeno le chiamate
   non in tempo reale.
+
+**Aggiornamento 2026-11-11, fatturazione attiva:**
+
+| Modello | Turno dell'intervista |
+|---|---|
+| `gemini-flash-latest` | 12–14 s, senza più errori di sovraccarico |
+| `gemini-flash-lite-latest` | ~1 s |
+
+Le immagini si generano (circa 6 s). La scelta resta: modello veloce per le
+funzioni interattive, principale per il lavoro in background. La
+**Priority inference** (`service_tier="priority"`, 75–100% più cara) è per i
+progetti di livello 2 o 3. Sul livello 1 la richiesta è accettata ma servita
+come standard (header `x-gemini-service-tier: standard`).
