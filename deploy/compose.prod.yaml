@@ -134,6 +134,12 @@ services:
     image: alpine:3.20
     restart: unless-stopped
     user: "1000:1000"
+    # Dopo il backend: il volume "media" nuovo deve nascere dall'immagine del
+    # backend (cartella di appuser). Se lo crea prima questo container nasce
+    # di root, con le cartelle /media di alpine, e ogni upload da' 500.
+    depends_on:
+      backend:
+        condition: service_healthy
     volumes:
       - media:/media:ro
       - ./backups/media:/backups

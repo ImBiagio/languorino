@@ -40,7 +40,7 @@ export const keys = {
   tags: ['tags'] as const,
   ingredients: (query: string) => ['ingredients', query] as const,
   jobs: ['jobs'] as const,
-  jobList: (statuses: JobStatus[]) => ['jobs', 'list', statuses] as const,
+  jobList: (statuses: JobStatus[], kind?: Job['kind']) => ['jobs', 'list', statuses, kind] as const,
   job: (id: UUID) => ['jobs', 'detail', id] as const,
   books: ['books'] as const,
   book: (id: UUID) => ['books', id] as const,
@@ -196,10 +196,15 @@ export function useIngredientSearch(query: string) {
 const WORKING: JobStatus[] = ['queued', 'running']
 
 /** I lavori in corso o da rivedere: il banner sopra il ricettario. */
-export function useJobs(statuses: JobStatus[]) {
+/**
+ * I lavori dell'utente per stato e, quasi sempre, per tipo: un turno
+ * dell'intervista o un'idea del frigo restano "ready" e non sono import da
+ * rivedere (mostravano "Lettura finita" sopra il ricettario).
+ */
+export function useJobs(statuses: JobStatus[], kind?: Job['kind']) {
   return useQuery({
-    queryKey: keys.jobList(statuses),
-    queryFn: () => api.get<Job[]>('/api/jobs', { status: statuses }),
+    queryKey: keys.jobList(statuses, kind),
+    queryFn: () => api.get<Job[]>('/api/jobs', { status: statuses, kind }),
     // Finche' qualcosa e' in lavorazione si ricontrolla da soli.
     refetchInterval: (query) =>
       query.state.data?.some((job) => WORKING.includes(job.status)) ? 3000 : false,

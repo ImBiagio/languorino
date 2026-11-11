@@ -22,7 +22,7 @@ export function RecipesPage() {
   const [tags, setTags] = useState<string[]>([])
   const [quick, setQuick] = useState(false)
   const [adding, setAdding] = useState(false)
-  const { data: jobs } = useJobs(['queued', 'running', 'ready'])
+  const { data: jobs } = useJobs(['queued', 'running', 'ready'], 'import_recipes')
 
   // La ricerca parte quando si smette di scrivere, non a ogni lettera.
   useEffect(() => {
