@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 10:31+0100\n"
+"POT-Creation-Date: 2026-11-11 11:22+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -134,23 +134,27 @@ msgstr "Draw the recipe"
 msgid "Intervista per il profilo"
 msgstr "Profile interview"
 
-#: apps/jobs/models.py:28 apps/recipes/models.py:155
+#: apps/jobs/models.py:26
+msgid "Idee per un pasto del piano"
+msgstr "Ideas for a plan meal"
+
+#: apps/jobs/models.py:29 apps/recipes/models.py:155
 msgid "In coda"
 msgstr "Queued"
 
-#: apps/jobs/models.py:29
+#: apps/jobs/models.py:30
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:30 apps/plans/models.py:98
+#: apps/jobs/models.py:31 apps/plans/models.py:98
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:31 apps/plans/models.py:99
+#: apps/jobs/models.py:32 apps/plans/models.py:99
 msgid "Confermato"
 msgstr "Confirmed"
 
-#: apps/jobs/models.py:32
+#: apps/jobs/models.py:33
 msgid "Non riuscito"
 msgstr "Failed"
 
@@ -162,15 +166,16 @@ msgstr "I couldn't find a meal plan in these files."
 msgid "Piano del nutrizionista"
 msgstr "Nutritionist's plan"
 
-#: apps/jobs/tasks.py:146
+#: apps/jobs/tasks.py:160
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:150 apps/plans/tasks.py:76 apps/recipes/tasks.py:131
+#: apps/jobs/tasks.py:164 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
+#: apps/recipes/tasks.py:233
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
-#: apps/jobs/tasks.py:169
+#: apps/jobs/tasks.py:183
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
@@ -179,9 +184,10 @@ msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:75
-#: apps/plans/views.py:274 apps/profiles/live.py:160 apps/profiles/views.py:131
-#: apps/profiles/views.py:182 apps/recipes/views.py:232
-#: apps/recipes/views.py:394
+#: apps/plans/views.py:274 apps/plans/views.py:359 apps/profiles/live.py:160
+#: apps/profiles/views.py:131 apps/profiles/views.py:182
+#: apps/recipes/views.py:233 apps/recipes/views.py:395
+#: apps/recipes/views.py:499
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -206,11 +212,11 @@ msgstr "At most %(n)d photos."
 msgid "Qui servono foto, non PDF."
 msgstr "Photos only here, not PDFs."
 
-#: apps/plans/generation.py:524
+#: apps/plans/generation.py:606
 msgid "Nessuna ricetta adatta: scegline una tu."
 msgstr "No suitable recipe: pick one yourself."
 
-#: apps/plans/generation.py:529
+#: apps/plans/generation.py:611
 msgid "Non regge in frigo: meglio cucinarla il giorno stesso."
 msgstr "It doesn't keep in the fridge: better to cook it the same day."
 
@@ -251,46 +257,47 @@ msgid "Archiviato"
 msgstr "Archived"
 
 #: apps/plans/models.py:34 apps/recipes/models.py:158
+#: apps/recipes/models.py:183
 msgid "Interrotto"
 msgstr "Stopped"
 
-#: apps/plans/serializers.py:47
+#: apps/plans/serializers.py:52
 msgid "Piano del nutrizionista non trovato."
 msgstr "Nutritionist's plan not found."
 
-#: apps/plans/serializers.py:53
+#: apps/plans/serializers.py:58
 msgid "Scegli un giorno tra oggi e i prossimi due mesi."
 msgstr "Pick a day between today and the next two months."
 
-#: apps/plans/serializers.py:58 apps/profiles/serializers.py:113
+#: apps/plans/serializers.py:63 apps/profiles/serializers.py:113
 msgid "Scegli almeno un pasto."
 msgstr "Choose at least one meal."
 
-#: apps/plans/serializers.py:67
+#: apps/plans/serializers.py:72
 msgid "Ricettario non trovato."
 msgstr "Cookbook not found."
 
-#: apps/plans/serializers.py:73
+#: apps/plans/serializers.py:78
 msgid "Scegli almeno una fonte: il tuo ricettario o un ricettario PDF."
 msgstr "Choose at least one source: your cookbook or a PDF cookbook."
 
-#: apps/plans/serializers.py:118
+#: apps/plans/serializers.py:157
 msgid "Da 1 a 50 porzioni."
 msgstr "From 1 to 50 servings."
 
-#: apps/plans/serializers.py:125
+#: apps/plans/serializers.py:164
 msgid "Non si può cucinare dopo averlo mangiato."
 msgstr "You can't cook it after eating it."
 
-#: apps/plans/serializers.py:202
+#: apps/plans/serializers.py:241
 msgid "Dai un nome al piano."
 msgstr "Give the plan a name."
 
-#: apps/plans/serializers.py:209
+#: apps/plans/serializers.py:248
 msgid "Regole non valide."
 msgstr "Invalid rules."
 
-#: apps/plans/serializers.py:216
+#: apps/plans/serializers.py:255
 msgid "La fine viene prima dell'inizio."
 msgstr "The end comes before the start."
 
@@ -507,7 +514,7 @@ msgstr "The PDF is password-protected."
 msgid "Il PDF non si apre: è danneggiato o non è un PDF."
 msgstr "The PDF won't open: it's damaged or not a PDF."
 
-#: apps/recipes/images.py:48
+#: apps/recipes/images.py:55
 msgid "Il file non si apre come immagine."
 msgstr "The file can't be opened as an image."
 
@@ -607,49 +614,69 @@ msgstr "Reading"
 msgid "Letto"
 msgstr "Read"
 
-#: apps/recipes/models.py:192
+#: apps/recipes/models.py:179 apps/shopping/models.py:20
+msgid "Da fare"
+msgstr "To do"
+
+#: apps/recipes/models.py:180
+msgid "Cerco le foto"
+msgstr "Looking for photos"
+
+#: apps/recipes/models.py:181
+msgid "Disegno le altre"
+msgstr "Drawing the rest"
+
+#: apps/recipes/models.py:182
+msgid "Fatto"
+msgstr "Done"
+
+#: apps/recipes/models.py:208
 msgid "Scritta a mano"
 msgstr "Written by hand"
 
-#: apps/recipes/models.py:193
+#: apps/recipes/models.py:209
 msgid "Da foto"
 msgstr "From a photo"
 
-#: apps/recipes/models.py:194
+#: apps/recipes/models.py:210
 msgid "Da PDF"
 msgstr "From a PDF"
 
-#: apps/recipes/models.py:195
+#: apps/recipes/models.py:211
 msgid "A voce"
 msgstr "By voice"
 
-#: apps/recipes/models.py:196
+#: apps/recipes/models.py:212
 msgid "Dal piano"
 msgstr "From the plan"
 
-#: apps/recipes/models.py:197
+#: apps/recipes/models.py:213
 msgid "Dal frigo"
 msgstr "From the fridge"
 
-#: apps/recipes/models.py:198
+#: apps/recipes/models.py:214
 msgid "Copiata"
 msgstr "Copied"
 
-#: apps/recipes/models.py:203
+#: apps/recipes/models.py:219
 msgid "Bozza"
 msgstr "Draft"
 
-#: apps/recipes/models.py:204
+#: apps/recipes/models.py:220
 msgid "Confermata"
 msgstr "Confirmed"
 
-#: apps/recipes/models.py:240
+#: apps/recipes/models.py:256
 msgid "Foto"
 msgstr "Photo"
 
-#: apps/recipes/models.py:241
+#: apps/recipes/models.py:257
 msgid "Disegnata dall'AI"
 msgstr "Drawn by AI"
+
+#: apps/recipes/models.py:258
+msgid "Dal ricettario PDF"
+msgstr "From the PDF cookbook"
 
 #: apps/recipes/serializers.py:69
 msgid "Scegli o scrivi un ingrediente."
@@ -663,69 +690,77 @@ msgstr "Give the recipe a name."
 msgid "Ingrediente non trovato."
 msgstr "Ingredient not found."
 
-#: apps/recipes/serializers.py:330
+#: apps/recipes/serializers.py:336
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
-#: apps/recipes/tasks.py:128
+#: apps/recipes/tasks.py:136 apps/recipes/tasks.py:230
 msgid "Questa parte del ricettario ci sta mettendo troppo. Riprova."
 msgstr "This part of the cookbook is taking too long. Try again."
 
-#: apps/recipes/views.py:237
+#: apps/recipes/tasks.py:256
+msgid "Per oggi ho finito le immagini: continuo domani."
+msgstr "I've used up today's images: I'll continue tomorrow."
+
+#: apps/recipes/views.py:238
 msgid "Carica un PDF."
 msgstr "Upload a PDF."
 
-#: apps/recipes/views.py:240
+#: apps/recipes/views.py:241
 msgid "Il file non è un PDF."
 msgstr "The file isn't a PDF."
 
-#: apps/recipes/views.py:244
+#: apps/recipes/views.py:245
 #, python-format
 msgid "Il PDF è troppo grande (massimo %(mb)d MB)."
 msgstr "The PDF is too big (max %(mb)d MB)."
 
-#: apps/recipes/views.py:255
+#: apps/recipes/views.py:256
 #, python-format
 msgid "Il PDF deve avere da 1 a %(n)d pagine."
 msgstr "The PDF must have 1 to %(n)d pages."
 
-#: apps/recipes/views.py:260
+#: apps/recipes/views.py:261
 msgid "Ricettario"
 msgstr "Cookbook"
 
-#: apps/recipes/views.py:318
+#: apps/recipes/views.py:319
 msgid "Si può riprendere solo una lettura interrotta."
 msgstr "Only a stopped reading can be resumed."
 
-#: apps/recipes/views.py:355
+#: apps/recipes/views.py:356
 msgid "Scegli una foto."
 msgstr "Choose a photo."
 
-#: apps/recipes/views.py:359
+#: apps/recipes/views.py:360
 msgid "Serve una foto JPEG, PNG o WebP (le HEIC dell'iPhone non ancora)."
 msgstr "A JPEG, PNG or WebP photo is needed (iPhone HEIC not yet)."
 
-#: apps/recipes/views.py:364
+#: apps/recipes/views.py:365
 #, python-format
 msgid "Foto troppo grande (massimo %(mb)d MB)."
 msgstr "Photo too large (max %(mb)d MB)."
 
-#: apps/recipes/views.py:399
+#: apps/recipes/views.py:400
 msgid "Ha già una foto vera: toglila prima di farne disegnare una."
 msgstr "It already has a real photo: remove it before having one drawn."
 
-#: apps/recipes/views.py:405
+#: apps/recipes/views.py:406
 #, python-format
 msgid "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
 msgstr "You've used up today's images (%(n)d a day). Try again tomorrow."
 
-#: apps/recipes/views.py:477
+#: apps/recipes/views.py:478
 msgid "È già nel tuo ricettario."
 msgstr "It's already in your cookbook."
 
-#: apps/shopping/models.py:20
-msgid "Da fare"
-msgstr "To do"
+#: apps/recipes/views.py:504
+msgid "Prima finisco di leggere il ricettario."
+msgstr "Let me finish reading the cookbook first."
+
+#: apps/recipes/views.py:510
+msgid "Ci sto già lavorando."
+msgstr "I'm already working on it."
 
 #: apps/shopping/models.py:21
 msgid "Fatta"

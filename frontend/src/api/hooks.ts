@@ -774,6 +774,8 @@ export function useMealIdeas(planId: UUID) {
     mutationFn: ({ mealId, hint }: { mealId: number; hint: string }) =>
       api.post<Job>(`/api/plans/${planId}/meals/${mealId}/ideas`, { hint }),
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
 
 /** Cerca le foto delle ricette nel PDF e fa disegnare le altre (ADR 0015). */
 export function useBookImages() {
