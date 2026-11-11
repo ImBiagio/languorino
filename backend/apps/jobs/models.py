@@ -24,6 +24,7 @@ class Job(BaseModel):
         RECIPE_IMAGE = "recipe_image", _("Disegna la ricetta")
         INTERVIEW = "interview", _("Intervista per il profilo")
         MEAL_IDEAS = "meal_ideas", _("Idee per un pasto del piano")
+        ASK = "ask", _("Domanda su profilo e piano")
 
     class Status(models.TextChoices):
         QUEUED = "queued", _("In coda")

@@ -290,6 +290,7 @@ export interface Job {
     | 'recipe_image'
     | 'interview'
     | 'meal_ideas'
+    | 'ask'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]
@@ -303,7 +304,7 @@ export interface Job {
     ideas?: RecipeSummary[]
     /** Piano del nutrizionista: la bozza creata dalla lettura. */
     nutritionist_plan?: UUID
-    /** Intervista: la risposta, la trascrizione della voce e le proposte. */
+    /** Intervista e chat: la risposta; per l'intervista anche voce e proposte. */
     reply?: string
     heard?: string
     updates?: Partial<ProfileDraft>

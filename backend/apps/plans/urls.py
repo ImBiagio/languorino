@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    AskView,
     NutritionistPlanConfirmView,
     NutritionistPlanDetailView,
     NutritionistPlanListView,
@@ -15,6 +16,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("ask", AskView.as_view(), name="ask"),
     path("plans", PlanListView.as_view(), name="plans"),
     path("plans/current", PlanCurrentView.as_view(), name="plan-current"),
     path("plans/<uuid:pk>", PlanDetailView.as_view(), name="plan-detail"),

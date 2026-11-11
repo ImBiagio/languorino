@@ -211,15 +211,17 @@ export function useJobs(statuses: JobStatus[], kind?: Job['kind']) {
   })
 }
 
+const CHATTY: Job['kind'][] = ['interview', 'ask']
+
 export function useJob(id: UUID | undefined) {
   return useQuery({
     queryKey: keys.job(id!),
     queryFn: () => api.get<Job>(`/api/jobs/${id}`),
     enabled: Boolean(id),
-    // L'intervista e' una chiacchierata: si controlla piu' spesso.
+    // Intervista e chat sono conversazioni: si controlla piu' spesso.
     refetchInterval: (query) =>
       query.state.data && WORKING.includes(query.state.data.status)
-        ? query.state.data.kind === 'interview'
+        ? CHATTY.includes(query.state.data.kind)
           ? 800
           : 2000
         : false,
@@ -748,6 +750,15 @@ export function useInterviewTurn() {
       form.append('audio', audio)
       return api.post<Job>('/api/profile/interview', form)
     },
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
+/** Una domanda alla chat su profilo e piano (ADR 0016): risponde con un job. */
+export function useAsk() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (messages: InterviewMessage[]) => api.post<Job>('/api/ask', { messages }),
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
   })
 }

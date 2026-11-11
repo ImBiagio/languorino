@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
-
 from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
@@ -21,7 +19,9 @@ from apps.jobs.serializers import JobSerializer
 from apps.jobs.views import enqueue_job, save_job_files
 from apps.recipes.models import Recipe, RecipeIngredient
 
-from .models import MealPlan, NutritionistPlan, PlannedMeal
+from .ask import MAX_MESSAGE_CHARS as ASK_MAX_MESSAGE_CHARS
+from .ask import MAX_MESSAGES as ASK_MAX_MESSAGES
+from .models import MealPlan, NutritionistPlan, PlannedMeal, current_plan
 from .serializers import (
     MealPlanDetailSerializer,
     MealPlanSerializer,
@@ -96,20 +96,7 @@ class PlanCurrentView(APIView):
 
     @extend_schema(responses={200: MealPlanDetailSerializer, 204: None})
     def get(self, request):
-        active = plans_of(request.user).filter(status=MealPlan.Status.ACTIVE)
-        today = date.today()
-        # Quello che copre oggi; altrimenti il prossimo che deve ancora iniziare.
-        plan = (
-            next(
-                (
-                    p
-                    for p in active
-                    if p.start_date <= today < p.start_date + timedelta(days=p.days)
-                ),
-                None,
-            )
-            or active.filter(start_date__gt=today).order_by("start_date").first()
-        )
+        plan = current_plan(request.user)
         if plan is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return _detail(request, plan)
@@ -368,6 +355,45 @@ class PlannedMealIdeasView(APIView):
                     "plan": str(plan.id),
                     "meal": meal.id,
                     "hint": hint,
+                    "language": (get_language() or "it")[:2],
+                },
+            )
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
+class AskMessageSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=["assistant", "user"])
+    text = serializers.CharField(max_length=ASK_MAX_MESSAGE_CHARS, allow_blank=True)
+
+
+class AskView(APIView):
+    """Una domanda alla chat (ADR 0016): la conversazione finora, che vive nel
+    browser. Risponde con un job; la risposta e' in ``result.reply``."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+    throttle_scope = "ai"
+
+    @extend_schema(request=AskMessageSerializer(many=True), responses={202: JobSerializer})
+    def post(self, request):
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        messages = AskMessageSerializer(data=request.data.get("messages", []), many=True)
+        messages.is_valid(raise_exception=True)
+        history = list(messages.validated_data)[-ASK_MAX_MESSAGES:]
+        if not (history and history[-1]["role"] == "user" and history[-1]["text"].strip()):
+            raise serializers.ValidationError({"messages": _("Scrivi una domanda.")})
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.ASK,
+                input={
+                    "messages": [dict(message) for message in history],
                     "language": (get_language() or "it")[:2],
                 },
             )

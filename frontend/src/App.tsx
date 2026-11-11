@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppLayout } from './components/Layout'
 import { Skeleton } from './components/ui'
 import { AccountPage } from './features/account/AccountPage'
+import { AskPage } from './features/ask/AskPage'
 import {
   ForgotPasswordPage,
   LoginPage,
@@ -73,6 +74,17 @@ export default function App() {
         element={
           <RequireAuth>
             <InterviewPage />
+          </RequireAuth>
+        }
+      />
+      {/* Chat su profilo e piano (ADR 0016): a tutto schermo come l'intervista. */}
+      <Route
+        path="/chiedi"
+        element={
+          <RequireAuth>
+            <RequireOnboarding>
+              <AskPage />
+            </RequireOnboarding>
           </RequireAuth>
         }
       />

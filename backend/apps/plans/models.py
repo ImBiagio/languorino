@@ -9,6 +9,8 @@ prep. "Cosa cucini" non e' un modello a parte: sono i pasti raggruppati per
 
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -58,6 +60,19 @@ class MealPlan(BaseModel):
     @property
     def weeks_total(self) -> int:
         return (self.days + 6) // 7
+
+
+def current_plan(owner, today: date | None = None) -> MealPlan | None:
+    """Il piano attivo che copre oggi; altrimenti il prossimo che deve iniziare.
+
+    E' il piano della home "Oggi" e quello di cui parla la chat (ADR 0016).
+    """
+    today = today or date.today()
+    active = MealPlan.objects.filter(owner=owner, status=MealPlan.Status.ACTIVE)
+    for plan in active:
+        if plan.start_date <= today < plan.start_date + timedelta(days=plan.days):
+            return plan
+    return active.filter(start_date__gt=today).order_by("start_date").first()
 
 
 class PlannedMeal(models.Model):

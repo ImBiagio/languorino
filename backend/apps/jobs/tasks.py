@@ -126,6 +126,14 @@ def _meal_ideas(job: Job) -> None:
     job.result = {"ideas": RecipeListSerializer(ideas, many=True, context={}).data}
 
 
+def _ask(job: Job) -> None:
+    from apps.plans.ask import ask
+
+    result = ask(job.owner, job.input.get("messages", []), language=job.input.get("language", "it"))
+    job.model = result.pop("model", "")
+    job.result = result
+
+
 RUNNERS = {
     Job.Kind.IMPORT_RECIPES: _import_recipes,
     Job.Kind.FRIDGE_SCAN: _fridge_scan,
@@ -134,6 +142,7 @@ RUNNERS = {
     Job.Kind.RECIPE_IMAGE: _recipe_image,
     Job.Kind.INTERVIEW: _interview,
     Job.Kind.MEAL_IDEAS: _meal_ideas,
+    Job.Kind.ASK: _ask,
 }
 
 
