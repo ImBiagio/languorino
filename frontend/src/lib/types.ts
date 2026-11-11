@@ -371,6 +371,14 @@ export interface PlannedMeal {
   /** Perche' il pasto e' vuoto o e' stato cambiato. */
   note: string
   eaten: boolean
+  /** Quanto mangia una persona di ogni ingrediente (senza q.b. e facoltativi). */
+  portion: PortionLine[]
+}
+
+export interface PortionLine {
+  name: string
+  quantity: string
+  unit: Unit
 }
 
 export interface MealPlan {

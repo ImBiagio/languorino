@@ -34,9 +34,9 @@ import {
   Stepper,
 } from '../../components/ui'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
-import type { MealPlanDetail, PlannedMeal } from '../../lib/types'
+import type { MealPlanDetail, PlannedMeal, PortionLine } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
-import { formatMinutes } from '../recipes/options'
+import { formatMinutes, formatQuantity } from '../recipes/options'
 import { MakeShoppingDialog } from '../shopping/ShoppingPages'
 import {
   addDays,
@@ -411,12 +411,39 @@ function EatView({ plan, days, today }: { plan: MealPlanDetail; days: string[]; 
   )
 }
 
+/** "pasta 80 g · zucchina ½ pz": le grammature, moltiplicate per ``factor``. */
+export function Portion({
+  lines,
+  factor = 1,
+  label,
+}: {
+  lines: PortionLine[]
+  factor?: number
+  label: string
+}) {
+  if (!lines.length) return null
+  return (
+    <p className="mt-1 text-body-small text-on-surface">
+      <span className="font-medium text-primary">{label}</span>{' '}
+      {lines.map((line, index) => (
+        <span key={`${line.name}-${index}`} className="whitespace-nowrap">
+          {index > 0 && <span className="text-on-surface-variant"> · </span>}
+          {line.name}{' '}
+          <span className="amount font-medium">
+            {formatQuantity(line.quantity, line.unit, factor)}
+          </span>
+        </span>
+      ))}
+    </p>
+  )
+}
+
 export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => void }) {
   const slot = MEAL_OPTIONS.find((option) => option.value === meal.slot)
   const recipe = meal.recipe
   const restrictions = recipe?.warnings.filter((item) => item.kind !== 'dislike') ?? []
   return (
-    <li className="flex items-center gap-3 rounded-row bg-surface p-2">
+    <li className="flex items-start gap-3 rounded-row bg-surface p-2">
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px]">
         {recipe ? (
           <RecipeCover recipe={recipe} size={28} />
@@ -461,6 +488,7 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
             </span>
           )}
         </p>
+        <Portion lines={meal.portion ?? []} label={gettext('A porzione:')} />
       </div>
       {onEdit && (
         <IconButton icon="swap_horiz" label={gettext('Cambia il pasto')} onClick={onEdit} />
@@ -548,6 +576,11 @@ function CookView({ plan, days, today }: { plan: MealPlanDetail; days: string[];
                           .join(', '),
                       ])}
                     </p>
+                    <Portion
+                      lines={item.meal.portion ?? []}
+                      factor={item.servings}
+                      label={gettext('Da cucinare:')}
+                    />
                   </div>
                 </li>
               ))}

@@ -676,3 +676,35 @@ def test_alla_lettera_i_buchi_solo_con_le_scelte_dell_llm(
     plan = MealPlan.objects.get(id=response.data["id"])
     titles = {meal.recipe.title for meal in plan.meals.select_related("recipe")}
     assert titles == {"Zuppa di ceci"}
+
+
+def test_grammature_a_persona(user, api, gemini, django_capture_on_commit_callbacks):
+    from apps.recipes.serializers import RecipeSerializer
+
+    serializer = RecipeSerializer(
+        data={
+            "title": "Pasta e zucchine",
+            "servings": 4,
+            "meal_slots": ["lunch", "dinner"],
+            "ingredients": [
+                {"name": "pasta", "quantity": "320", "unit": "g"},
+                {"name": "zucchine", "quantity": "2", "unit": "pz"},
+                {"name": "olio extravergine d'oliva", "quantity": "2", "unit": "tbsp"},
+                {"name": "sale", "unit": "to_taste"},
+                {"name": "basilico", "quantity": "5", "unit": "g", "optional": True},
+            ],
+        },
+        context={},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save(owner=user)
+    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Pasta e zucchine"]
+    response = _create(api, user, django_capture_on_commit_callbacks, servings=2)
+    meal = api(user).get(f"{PLANS}/{response.data['id']}").data["meals"][0]
+    assert meal["servings"] == 2
+    # A persona, non per le porzioni del pasto: senza "q.b." e facoltativi.
+    assert meal["portion"] == [
+        {"name": "pasta", "quantity": "80.00", "unit": "g"},
+        {"name": "zucchina", "quantity": "0.50", "unit": "pz"},
+        {"name": "olio extravergine d'oliva", "quantity": "0.50", "unit": "tbsp"},
+    ]

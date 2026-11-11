@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.utils.translation import gettext as _
 from pydantic import ValidationError as PydanticError
 from rest_framework import serializers
 
 from apps.profiles.models import MEAL_SLOT_ORDER, MealSlot
-from apps.recipes.models import Difficulty, RecipeBook
+from apps.recipes.models import Difficulty, RecipeBook, Unit
 from apps.recipes.serializers import RecipeListSerializer
 
 from .models import MealPlan, NutritionistPlan, PlannedMeal, PrepMode
@@ -97,6 +98,7 @@ class PlanSettingsSerializer(serializers.Serializer):
 class PlannedMealSerializer(serializers.ModelSerializer):
     recipe = RecipeListSerializer(read_only=True)
     recipe_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    portion = serializers.SerializerMethodField()
 
     class Meta:
         model = PlannedMeal
@@ -110,8 +112,29 @@ class PlannedMealSerializer(serializers.ModelSerializer):
             "cooked_on",
             "note",
             "eaten",
+            "portion",
         ]
-        read_only_fields = ["id", "date", "slot", "note"]
+        read_only_fields = ["id", "date", "slot", "note", "portion"]
+
+    def get_portion(self, meal: PlannedMeal) -> list[dict]:
+        """Quanto mangia una persona di ogni ingrediente: la ricetta divisa per
+        le sue porzioni. Senza "q.b." e facoltativi: servono le grammature."""
+        recipe = meal.recipe
+        if recipe is None:
+            return []
+        servings = Decimal(recipe.servings or 1)
+        lines = []
+        for line in recipe.ingredients.all():
+            if line.optional or line.quantity is None or line.unit == Unit.TO_TASTE:
+                continue
+            lines.append(
+                {
+                    "name": line.ingredient.display_name,
+                    "quantity": str(round(line.quantity / servings, 2)),
+                    "unit": line.unit,
+                }
+            )
+        return lines
 
     def validate_servings(self, value: int) -> int:
         if not 1 <= value <= 50:
