@@ -126,3 +126,41 @@ def test_modello_veloce_davanti_per_le_funzioni_interattive():
     ai.mark_down("lite")
     assert ai.models_in_order(fast=True) == ["main", "spare", "lite"]
     cache.clear()
+
+
+@pytest.fixture
+def tier_gemini(monkeypatch):
+    """Registra il service_tier chiesto e risponde col livello servito nell'header."""
+    seen: list = []
+
+    class FakeModels:
+        def generate_content(self, *, model, contents, config):
+            seen.append(config.service_tier)
+            response = _response()
+            served = "priority" if config.service_tier == "priority" else "standard"
+            response.sdk_http_response = SimpleNamespace(headers={"x-gemini-service-tier": served})
+            return response
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.models = FakeModels()
+
+    monkeypatch.setattr("google.genai.Client", FakeClient)
+    cache.clear()
+    return seen
+
+
+@override_settings(GEMINI_API_KEY="k", GEMINI_PRIORITY=False)
+def test_priorita_spenta(tier_gemini):
+    ai.generate(lambda types: ["ciao"], Answer, feature="test", fast=True)
+    assert tier_gemini == [None]
+    assert AiCall.objects.get().service_tier == "standard"
+
+
+@override_settings(GEMINI_API_KEY="k", GEMINI_PRIORITY=True)
+def test_priorita_solo_per_le_funzioni_interattive(tier_gemini):
+    ai.generate(lambda types: ["ciao"], Answer, feature="interattiva", fast=True)
+    ai.generate(lambda types: ["ciao"], Answer, feature="background")
+    assert tier_gemini == ["priority", None]
+    served = dict(AiCall.objects.values_list("feature", "service_tier"))
+    assert served == {"interattiva": "priority", "background": "standard"}

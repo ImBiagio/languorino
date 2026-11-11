@@ -286,6 +286,9 @@ GEMINI_MODEL_COOLDOWN = int(env("GEMINI_MODEL_COOLDOWN", "300"))
 # Il modello delle funzioni interattive (intervista, frigo, idee): senza
 # "thinking", risponde in pochi secondi (ADR 0014).
 GEMINI_MODEL_FAST = env("GEMINI_MODEL_FAST", "gemini-flash-lite-latest")
+# Priority inference per le funzioni interattive: costa dal 75 al 100% in
+# piu' e vale dal livello di pagamento 2 (ADR 0014). Spento di default.
+GEMINI_PRIORITY = env_bool("GEMINI_PRIORITY", False)
 # Intervista a voce in tempo reale (Live API, ADR 0014).
 GEMINI_MODEL_LIVE = env("GEMINI_MODEL_LIVE", "gemini-3.1-flash-live-preview")
 # Immagini delle ricette (ADR 0011): modello a parte, un tetto al giorno per utente.

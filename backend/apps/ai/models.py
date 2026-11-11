@@ -22,6 +22,9 @@ class AiCall(models.Model):
     duration_ms = models.PositiveIntegerField(default=0)
     ok = models.BooleanField(default=True)
     error = models.CharField(max_length=200, blank=True)
+    # Il livello con cui Google ha servito la richiesta ("standard", "priority"):
+    # dice se la Priority inference e' davvero attiva (ADR 0014).
+    service_tier = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

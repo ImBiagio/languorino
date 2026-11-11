@@ -77,3 +77,12 @@ funzioni interattive, principale per il lavoro in background. La
 **Priority inference** (`service_tier="priority"`, 75–100% più cara) è per i
 progetti di livello 2 o 3. Sul livello 1 la richiesta è accettata ma servita
 come standard (header `x-gemini-service-tier: standard`).
+
+**Interruttore della priorità:**
+- `GEMINI_PRIORITY=1` chiede la Priority inference solo per le chiamate
+  `fast=True` (intervista, frigo, idee, cambio pasto). Di default è spento.
+- `AiCall.service_tier` registra il livello con cui Google ha servito ogni
+  richiesta, letto dall'header `x-gemini-service-tier`.
+- Acceso su un progetto di livello 1, Google risponde "standard" e fa pagare il
+  prezzo normale. Quando il progetto passa al livello 2 la priorità parte da
+  sola e nell'admin si vede "priority".

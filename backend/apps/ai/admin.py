@@ -14,6 +14,7 @@ class AiCallAdmin(admin.ModelAdmin):
         "output_tokens",
         "duration_ms",
         "ok",
+        "service_tier",
     ]
-    list_filter = ["feature", "model", "ok"]
+    list_filter = ["feature", "model", "ok", "service_tier"]
     search_fields = ["user__email", "error"]

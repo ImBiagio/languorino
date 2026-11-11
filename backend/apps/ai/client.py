@@ -64,6 +64,14 @@ def models_in_order(fast: bool = False) -> list[str]:
     return sorted(models, key=lambda model: bool(cache.get(_down_key(model))))
 
 
+def _served_tier(response) -> str:
+    headers = getattr(getattr(response, "sdk_http_response", None), "headers", None) or {}
+    try:
+        return str(headers.get("x-gemini-service-tier", "") or "")[:20]
+    except AttributeError:
+        return ""
+
+
 def _log(user, feature: str, model: str, started: float, response=None, error: str = "") -> None:
     usage = getattr(response, "usage_metadata", None)
     AiCall.objects.create(
@@ -75,6 +83,7 @@ def _log(user, feature: str, model: str, started: float, response=None, error: s
         duration_ms=int((time.monotonic() - started) * 1000),
         ok=not error,
         error=error[:200],
+        service_tier=_served_tier(response),
     )
 
 
@@ -124,10 +133,14 @@ def generate[Schema: BaseModel](
         api_key=settings.GEMINI_API_KEY,
         http_options=types.HttpOptions(timeout=timeout_ms, api_version=API_VERSION),
     )
+    # Priority inference (ADR 0014): solo per chi aspetta guardando lo schermo,
+    # se acceso. Sui progetti sotto il livello 2 Google la serve come standard.
+    priority = {"service_tier": "priority"} if fast and settings.GEMINI_PRIORITY else {}
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=schema,
         temperature=temperature,
+        **priority,
     )
     parts = contents(types)
 
