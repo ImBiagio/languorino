@@ -305,6 +305,7 @@ class TagSerializer(serializers.ModelSerializer):
 class RecipeBookSerializer(serializers.ModelSerializer):
     recipe_count = serializers.IntegerField(read_only=True, default=0)
     saved_count = serializers.IntegerField(read_only=True, default=0)
+    without_image = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = RecipeBook
@@ -319,6 +320,11 @@ class RecipeBookSerializer(serializers.ModelSerializer):
             "error",
             "recipe_count",
             "saved_count",
+            "without_image",
+            "images_status",
+            "images_pages_done",
+            "images_found",
+            "images_error",
             "created_at",
             "finished_at",
         ]

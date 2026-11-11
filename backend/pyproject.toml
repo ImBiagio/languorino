@@ -24,6 +24,8 @@ dependencies = [
     "pydantic>=2.7",
     # Ricettari PDF letti a pezzi (ADR 0006).
     "pypdf>=5.0",
+    # Pagine dei ricettari disegnate per ritagliare le foto delle ricette (ADR 0015).
+    "pypdfium2>=4.30",
 ]
 
 [project.optional-dependencies]

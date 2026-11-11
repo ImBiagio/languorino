@@ -335,6 +335,12 @@ export interface RecipeBook {
   recipe_count: number
   /** Quante delle sue ricette sono gia' nel ricettario dell'utente. */
   saved_count: number
+  /** Immagini delle ricette (ADR 0015): foto dal PDF, poi illustrazioni AI. */
+  without_image: number
+  images_status: '' | 'searching' | 'drawing' | 'done' | 'failed'
+  images_pages_done: number
+  images_found: number
+  images_error: string
   created_at: string
   finished_at: string | null
 }

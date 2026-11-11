@@ -233,6 +233,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.plans.tasks.resume_stalled_plans",
         "schedule": crontab(minute="*/10"),
     },
+    # Illustrazioni dei ricettari ferme per il tetto del giorno (ADR 0015).
+    "resume-book-images": {
+        "task": "apps.recipes.tasks.resume_book_images",
+        "schedule": crontab(hour=5, minute=15),
+    },
     # Idee di "cosa cucino oggi" mai salvate, dopo una settimana.
     "clean-cook-ideas": {
         "task": "apps.kitchen.tasks.clean_ideas",

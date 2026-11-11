@@ -64,6 +64,22 @@ def _draft(title, ingredient="ceci in scatola"):
     }
 
 
+@pytest.fixture(autouse=True)
+def no_book_images(monkeypatch):
+    """La ricerca delle foto parte a fine lettura (ADR 0015): qui niente Gemini vero."""
+    from apps.ai.client import AIError
+    from apps.recipes.book_images import BookPhotos
+
+    monkeypatch.setattr(
+        "apps.recipes.book_images.generate", lambda *a, **k: (BookPhotos(), "finto")
+    )
+
+    def no_quota(*args, **kwargs):
+        raise AIError("Niente quota per le immagini.")
+
+    monkeypatch.setattr("apps.recipes.images.generate_image", no_quota)
+
+
 @pytest.fixture
 def gemini(monkeypatch):
     """Ogni pezzo "legge" le ricette che il test mette in ``by_start[pagina iniziale]``."""

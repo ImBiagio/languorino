@@ -108,6 +108,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET/POST /api/recipe-books` (multipart `file`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/retry` | ricettari PDF letti a pezzi ([ADR 0006](docs/decisions/0006-ricettari-pdf.md)); le ricette con `GET /api/recipes?book={id}` |
 | `POST/DELETE /api/recipes/{id}/image` (multipart `file`) · `POST …/image/draw` | foto vera della ricetta o disegno di Gemini in un job ([ADR 0011](docs/decisions/0011-immagini-delle-ricette.md)) |
 | `POST/DELETE /api/recipes/{id}/share` · `GET /api/shared/recipes/{token}` · `POST …/copy` | link di condivisione `/r/<token>`, pagina pubblica senza login, copia nel proprio ricettario ([ADR 0012](docs/decisions/0012-condivisione-delle-ricette.md)) |
+| `POST /api/recipe-books/{id}/images` | foto delle ricette ritagliate dal PDF e illustrazioni AI per le altre; parte anche da sola a fine lettura ([ADR 0015](docs/decisions/0015-immagini-dei-ricettari-pdf.md)) |
 | `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
 | `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto (ogni pasto ha `portion`: grammature a persona) |
