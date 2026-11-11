@@ -4,7 +4,9 @@ Cosa mangio questa settimana? Languorino parte dal profilo (gusti, allergie,
 obiettivi, stile di vita, anche raccontati a voce in un'intervista), genera il piano alimentare con il meal prep (anche seguendo quello del
 nutrizionista), tiene
 il ricettario di casa (anche dalle foto delle ricette scritte a mano),
-calcola la spesa e, dalla foto del frigo, dice cosa cucinare oggi. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
+calcola la spesa e, dalla foto del frigo, dice cosa cucinare oggi. Alla chat
+"Chiedi a Languorino" si chiede quanto mangiare a pranzo e cena o cosa dice il
+piano del nutrizionista. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
 progettata in [docs/progettazione.md](docs/progettazione.md).
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
@@ -76,14 +78,14 @@ backend/
     ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
     ├── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
     ├── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py),
-    │                    piano del nutrizionista letto da PDF/foto (nutritionist.py)
+    │                    piano del nutrizionista letto da PDF/foto (nutritionist.py), chat su profilo e piano (ask.py)
     ├── shopping/        lista della spesa: somme e conversioni dal piano (aggregate.py), ricalcolo
     └── kitchen/         cosa cucino oggi: foto del frigo, ricette che si possono fare, idee nuove (cook_today.py), pulizia delle idee mai salvate
 frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
 ├── lib/                 client HTTP, auth, i18n, format, tipi
 ├── components/          UI M3, layout, dialog di conferma
-└── features/            auth · account · home · onboarding · profile · interview · recipes · plans · shopping · kitchen
+└── features/            auth · account · home · onboarding · profile · interview · ask · recipes · plans · shopping · kitchen
 deploy/                  compose di produzione e Caddy interno (edge e offsite: repo homeserver)
 docs/decisions/          ADR (modello in 0000-modello.md)
 ```
@@ -114,6 +116,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto (ogni pasto ha `portion`: grammature a persona) |
 | `POST /api/plans/{id}/meals/{meal_id}/ideas` `{hint}` | due ricette nuove per quel pasto, scritte dall'AI in un job, da scegliere con il PATCH |
 | `GET/POST /api/nutritionist-plans` (multipart `files`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/confirm` | piano del nutrizionista: lettura in un job, revisione, conferma ([ADR 0010](docs/decisions/0010-piano-del-nutrizionista.md)); si usa con `nutritionist_plan` in `POST /api/plans` |
+| `POST /api/ask` `{messages}` | una domanda alla chat "Chiedi a Languorino": job con la risposta da profilo, piano e piano del nutrizionista ([ADR 0016](docs/decisions/0016-chiedi-a-languorino.md)) |
 | `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)) |
 | `POST /api/shopping/{id}/items` · `PATCH/DELETE …/items/{item_id}` | voci a mano, spunta, "ce l'ho già", modifica |
 | `POST /api/cook-today/scan` (multipart `files`) | foto del frigo → job con gli alimenti riconosciuti ([ADR 0009](docs/decisions/0009-cosa-cucino-oggi.md)) |

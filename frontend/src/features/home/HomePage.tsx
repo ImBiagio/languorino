@@ -63,6 +63,21 @@ export function HomePage() {
           </span>
           <Icon name="chevron_right" size={22} />
         </Link>
+        <Link
+          to="/chiedi"
+          className="state flex items-center gap-4 rounded-card bg-surface-container-low p-4 text-on-surface"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-secondary-container text-on-secondary-container">
+            <Icon name="forum" size={26} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-title-medium">{gettext('Chiedi a Languorino')}</span>
+            <span className="block text-body-small text-on-surface-variant">
+              {gettext('Quanto ne mangio a pranzo e cena? Cosa ceno domani?')}
+            </span>
+          </span>
+          <Icon name="chevron_right" size={22} />
+        </Link>
         {plan ? (
           <>
             {[today, tomorrow].map((day) => {
