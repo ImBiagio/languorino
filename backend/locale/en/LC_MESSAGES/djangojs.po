@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:40+0100\n"
+"POT-Creation-Date: 2026-11-11 11:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -345,7 +345,10 @@ msgid ""
 "Ciao! Ti faccio qualche domanda per conoscerti e proporti cosa mangiare. "
 "Puoi scrivere o parlare. Per cominciare: hai allergie o intolleranze "
 "alimentari?"
-msgstr "Hi! I'll ask you a few questions to get to know you and suggest what to eat. You can type or talk. To start: do you have any food allergies or intolerances?"
+msgstr ""
+"Hi! I'll ask you a few questions to get to know you and suggest what to eat. "
+"You can type or talk. To start: do you have any food allergies or "
+"intolerances?"
 
 msgid "Indietro"
 msgstr "Back"
@@ -521,6 +524,15 @@ msgstr "Get started"
 msgid "Avanti"
 msgstr "Next"
 
+msgid "Solo le mie"
+msgstr "Only mine"
+
+msgid "Metà"
+msgstr "Half"
+
+msgid "Tutte nuove"
+msgstr "All new"
+
 msgid "Nuovo piano"
 msgstr "New plan"
 
@@ -594,12 +606,22 @@ msgid_plural "%s ricette"
 msgstr[0] "%s recipe"
 msgstr[1] "%s recipes"
 
+msgid "Quante ricette nuove?"
+msgstr "How many new recipes?"
+
 msgid ""
-"Se non trovo una ricetta adatta a un pasto ne scrivo io una nuova: la trovi "
-"nel piano e puoi salvarla."
-msgstr ""
-"If I can't find a suitable recipe for a meal I'll write a new one: you'll "
-"find it in the plan and can save it."
+"Uso le tue ricette; ne scrivo di nuove solo se mancano per variare o per un "
+"pasto."
+msgstr "I use your recipes; I write new ones only if needed for variety or for a meal."
+
+msgid "Scrivo io tutte le ricette: le trovi nel piano e puoi salvarle."
+msgstr "I write all the recipes: you'll find them in the plan and can save them."
+
+#, javascript-format
+msgid ""
+"Circa il %s dei pasti con ricette nuove scritte da me, il resto dalle tue. "
+"Le nuove le puoi salvare."
+msgstr "About %s of the meals with new recipes written by me, the rest from yours. You can save the new ones."
 
 msgid "Scegli almeno una fonte."
 msgstr "Choose at least one source."
@@ -893,11 +915,23 @@ msgstr "new"
 msgid "da controllare"
 msgstr "check it"
 
+msgid "A porzione:"
+msgstr "Per serving:"
+
 msgid "Cambia il pasto"
 msgstr "Change the meal"
 
 msgid "Niente da cucinare in questa settimana"
 msgstr "Nothing to cook this week"
+
+msgid "Da cucinare:"
+msgstr "To cook:"
+
+msgid "Ricettari PDF"
+msgstr "PDF cookbooks"
+
+msgid "Inventa"
+msgstr "Invent"
 
 msgid "Porzioni"
 msgstr "Servings"
@@ -905,11 +939,43 @@ msgstr "Servings"
 msgid "Salva le porzioni"
 msgstr "Save servings"
 
-msgid "Scegli un’altra ricetta del ricettario"
-msgstr "Pick another recipe from your cookbook"
+msgid ""
+"Il tuo ricettario è vuoto: prova un ricettario PDF o fatti inventare una "
+"ricetta."
+msgstr "Your cookbook is empty: try a PDF cookbook or have a recipe invented."
+
+msgid "Cerca nel tuo ricettario"
+msgstr "Search your cookbook"
+
+msgid "Nessuna ricetta trovata."
+msgstr "No recipes found."
+
+msgid "Questo ricettario non ha ricette."
+msgstr "This cookbook has no recipes."
+
+msgid "Cerca nel ricettario PDF"
+msgstr "Search the PDF cookbook"
 
 msgid "Tocca un’allergia o un’intolleranza del profilo"
 msgstr "It clashes with an allergy or intolerance in your profile"
+
+msgid "Hai un desiderio? (facoltativo)"
+msgstr "Any wish? (optional)"
+
+msgid "Es. “qualcosa col pesce”, “leggero”, “da portare in ufficio”."
+msgstr "E.g. “something with fish”, “light”, “to take to the office”."
+
+msgid "Altre idee"
+msgstr "More ideas"
+
+msgid "Proponimi due ricette"
+msgstr "Suggest two recipes"
+
+msgid "Scrivo due ricette adatte a questo pasto…"
+msgstr "Writing two recipes for this meal…"
+
+msgid "Questa volta niente di adatto: riprova, magari con un desiderio."
+msgstr "Nothing suitable this time: try again, maybe with a wish."
 
 msgid "Cucino al momento"
 msgstr "I cook on the day"
@@ -1313,9 +1379,6 @@ msgstr "Meals and nutritionist"
 
 msgid "L’ultima cosa: come vuoi organizzare la giornata."
 msgstr "One last thing: how you want to organise your day."
-
-msgid "Ricettari PDF"
-msgstr "PDF cookbooks"
 
 msgid "Ricettari in PDF da sfogliare"
 msgstr "PDF cookbooks to browse"

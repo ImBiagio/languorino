@@ -52,3 +52,18 @@ settimane (`leftover_lunches`). Prima pranzo e cena si sceglievano come due
 piatti diversi: la sera si cucinavano due cose e lo stesso piatto su due sere
 di fila. Non vale con il piano del nutrizionista alla lettera, dove pranzo e
 cena hanno opzioni diverse.
+
+**Aggiornamento 2026-11-11, grammature, percentuale e cambio pasto:**
+- Ogni pasto del piano porta `portion`: per ingrediente quanto mangia una
+  persona (la ricetta divisa per le sue porzioni), senza "q.b." e
+  facoltativi. Per pezzi e cucchiai c'è anche il peso o volume approssimato
+  (grammi per pezzo del catalogo, 15 ml a cucchiaio). "Cosa cucini" mostra lo
+  stesso per tutte le porzioni della sessione.
+- "Nuovo piano" sceglie quante ricette nuove (`new_share`: 0, 25, 50, 75 o
+  100% dei pasti). Il codice ne ricava quante ammetterne, mai sotto il minimo
+  per variare, e lo dice all'LLM.
+- Il cambio pasto sceglie dal ricettario, dai ricettari PDF o da due idee
+  nuove scritte per quel pasto (`plans/swap.py`, modello veloce). Le idee non
+  scelte e le ricette del piano rimaste senza pasto si cancellano dopo una
+  settimana.
+
