@@ -676,3 +676,56 @@ def test_alla_lettera_i_buchi_solo_con_le_scelte_dell_llm(
     plan = MealPlan.objects.get(id=response.data["id"])
     titles = {meal.recipe.title for meal in plan.meals.select_related("recipe")}
     assert titles == {"Zuppa di ceci"}
+
+
+def test_la_sera_cucino_anche_il_pranzo_dopo(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    """Il pranzo e' l'avanzo della cena prima: una cottura sola, anche fra due settimane."""
+    asked = []
+    dinners = ["Zuppa di ceci", "Frittata", "Pasta al pomodoro"]
+
+    def pick(candidates, slot, day, wait):
+        asked.append((day, slot, wait))
+        if slot == "lunch":
+            return candidates["Frittata"]
+        return candidates[dinners[day.toordinal() % 3]]
+
+    gemini["pick"] = pick
+    response = _create(
+        api,
+        user,
+        django_capture_on_commit_callbacks,
+        days=14,
+        prep_mode="evening_before",
+    )
+    plan = MealPlan.objects.get(id=response.data["id"])
+    assert plan.status == MealPlan.Status.DRAFT
+    # A Gemini si chiede solo il primo pranzo; le cene devono reggere un giorno.
+    assert [(day, slot) for day, slot, _w in asked if slot == "lunch"] == [(MONDAY, "lunch")]
+    last = MONDAY + timedelta(days=13)
+    assert all(wait == (0 if day == last else 1) for day, slot, wait in asked if slot == "dinner")
+    meals = {(m.date, m.slot): m for m in plan.meals.select_related("recipe")}
+    assert len(meals) == 28
+    for offset in range(1, 14):
+        day = MONDAY + timedelta(days=offset)
+        lunch, dinner = meals[(day, "lunch")], meals[(day - timedelta(days=1), "dinner")]
+        assert lunch.recipe_id == dinner.recipe_id, day
+        assert lunch.cooked_on == dinner.cooked_on == day - timedelta(days=1)
+    # Anche il pranzo del primo lunedi' della seconda settimana viene dalla domenica.
+    second_monday = MONDAY + timedelta(days=7)
+    assert (
+        meals[(second_monday, "lunch")].recipe_id
+        == meals[(second_monday - timedelta(days=1), "dinner")].recipe_id
+    )
+
+
+def test_alla_lettera_niente_pranzi_avanzo(user, cookbook):
+    from apps.plans.generation import leftover_lunches
+    from apps.plans.models import NutritionistPlan
+
+    plan = _plan(user, prep_mode="evening_before")
+    assert len(leftover_lunches(plan, None)) == 6
+    strict = NutritionistPlan(owner=user, title="P", strict=True, rules={})
+    assert leftover_lunches(plan, strict) == {}
+    assert leftover_lunches(_plan(user, prep_mode="none"), None) == {}
