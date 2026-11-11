@@ -108,7 +108,12 @@ def read_book_chunk(self, book_id: str) -> None:
                 if end >= book.page_count:
                     book.status = RecipeBook.Status.READY
                     book.finished_at = timezone.now()
-                book.save()
+                # Solo i campi della lettura: il libro e' stato caricato prima
+                # della chiamata a Gemini (decine di secondi) e un save() intero
+                # riscriverebbe il titolo cambiato nel frattempo dall'utente.
+                book.save(
+                    update_fields=["pages_done", "error", "status", "finished_at", "updated_at"]
+                )
                 if book.status == RecipeBook.Status.READING:
                     enqueue_book(book)
             return

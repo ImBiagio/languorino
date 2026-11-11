@@ -291,3 +291,22 @@ def test_ricettari_degli_altri_invisibili(
     assert api(other_user).delete(f"{BOOKS}/{book.id}").status_code == 404
     assert api(other_user).post(f"/api/recipes/{recipe.id}/save").status_code == 404
     assert api(other_user).get(f"/api/recipes?book={book.id}").data["results"] == []
+
+
+def test_rinominare_durante_la_lettura(user, api, gemini, django_capture_on_commit_callbacks):
+    """Il nome cambiato mentre Gemini legge un pezzo non torna quello di prima."""
+    renamed = []
+
+    def by_start(start):
+        if start == 5 and not renamed:
+            # L'utente rinomina mentre il secondo pezzo e' "da Gemini".
+            book = RecipeBook.objects.get()
+            api(user).patch(f"{BOOKS}/{book.id}", {"title": "Le ricette di Anna"}, format="json")
+            renamed.append(True)
+        return []
+
+    gemini["by_start"] = type("Lazy", (dict,), {"get": lambda self, k, d=None: by_start(k)})()
+    _start(api, user, django_capture_on_commit_callbacks)
+    book = RecipeBook.objects.get()
+    assert renamed and book.status == RecipeBook.Status.READY
+    assert book.title == "Le ricette di Anna"
