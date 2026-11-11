@@ -761,3 +761,23 @@ def test_alla_lettera_niente_pranzi_avanzo(user, cookbook):
     strict = NutritionistPlan(owner=user, title="P", strict=True, rules={})
     assert leftover_lunches(plan, strict) == {}
     assert leftover_lunches(_plan(user, prep_mode="none"), None) == {}
+
+
+@pytest.mark.parametrize(
+    ("share", "phrase"),
+    [(0, "Usa le ricette candidate"), (50, "Circa il 50%"), (100, "Non usare le candidate")],
+)
+def test_percentuale_di_ricette_nuove(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks, share, phrase
+):
+    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
+    response = _create(api, user, django_capture_on_commit_callbacks, new_share=share)
+    assert response.status_code == 202, response.data
+    assert MealPlan.objects.get().settings["new_share"] == share
+    assert phrase in gemini["prompts"][0]
+
+
+def test_percentuale_non_ammessa(user, api):
+    with override_settings(GEMINI_API_KEY="k"):
+        response = api(user).post(PLANS, _settings(new_share=33), format="json")
+    assert response.status_code == 400

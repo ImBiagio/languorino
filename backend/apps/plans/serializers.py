@@ -37,6 +37,9 @@ class PlanSettingsSerializer(serializers.Serializer):
     )
     goal_note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     nutritionist_plan = serializers.UUIDField(required=False, allow_null=True, default=None)
+    # Quanti pasti con ricette nuove scritte dall'LLM, in percentuale; il resto
+    # dalle fonti scelte (ricettario, ricettari PDF).
+    new_share = serializers.ChoiceField(choices=(0, 25, 50, 75, 100), default=25)
 
     def validate_nutritionist_plan(self, value):
         if value is None:
@@ -92,6 +95,7 @@ class PlanSettingsSerializer(serializers.Serializer):
             "exclude_tags": data["exclude_tags"],
             "goal_note": data["goal_note"].strip(),
             "nutritionist_plan": data["nutritionist_plan"],
+            "new_share": data["new_share"],
         }
 
 

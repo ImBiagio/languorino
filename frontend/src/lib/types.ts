@@ -358,6 +358,8 @@ export interface PlanPayload {
   exclude_tags: string[]
   goal_note: string
   nutritionist_plan: UUID | null
+  /** Percentuale di pasti con ricette nuove scritte dall'AI. */
+  new_share: 0 | 25 | 50 | 75 | 100
 }
 
 export interface PlannedMeal {

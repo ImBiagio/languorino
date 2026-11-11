@@ -31,6 +31,14 @@ import { DIFFICULTY_OPTIONS } from '../recipes/options'
 import { formatDayLong, nextMondayIso, todayIso } from './dates'
 import { MINUTES_OPTIONS, PREP_OPTIONS } from './options'
 
+const SHARE_OPTIONS: { value: PlanPayload['new_share']; label: string }[] = [
+  { value: 0, label: gettext('Solo le mie') },
+  { value: 25, label: '25%' },
+  { value: 50, label: gettext('Metà') },
+  { value: 75, label: '75%' },
+  { value: 100, label: gettext('Tutte nuove') },
+]
+
 /** "Nuovo piano": le scelte con cui l'LLM compone le settimane. */
 export function NewPlanPage() {
   const { data: profile } = useProfile()
@@ -61,6 +69,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
     exclude_tags: [],
     goal_note: profile.goals_note,
     nutritionist_plan: null,
+    new_share: 25,
   }))
   const set = (changes: Partial<PlanPayload>) => setPlan((current) => ({ ...current, ...changes }))
   // Seguire il piano del nutrizionista: i pasti diventano i suoi.
@@ -283,11 +292,33 @@ function NewPlanForm({ profile }: { profile: Profile }) {
               }
             />
           ))}
-          <p className="text-body-small text-on-surface-variant">
-            {gettext(
-              'Se non trovo una ricetta adatta a un pasto ne scrivo io una nuova: la trovi nel piano e puoi salvarla.',
-            )}
-          </p>
+          <div>
+            <p className="mb-2 text-body-large">{gettext('Quante ricette nuove?')}</p>
+            <div className="flex flex-wrap gap-2">
+              {SHARE_OPTIONS.map((option) => (
+                <Chip
+                  key={option.value}
+                  label={option.label}
+                  selected={plan.new_share === option.value}
+                  onClick={() => set({ new_share: option.value })}
+                />
+              ))}
+            </div>
+            <p className="mt-2 text-body-small text-on-surface-variant">
+              {plan.new_share === 0
+                ? gettext(
+                    'Uso le tue ricette; ne scrivo di nuove solo se mancano per variare o per un pasto.',
+                  )
+                : plan.new_share === 100
+                  ? gettext('Scrivo io tutte le ricette: le trovi nel piano e puoi salvarle.')
+                  : interpolate(
+                      gettext(
+                        'Circa il %s dei pasti con ricette nuove scritte da me, il resto dalle tue. Le nuove le puoi salvare.',
+                      ),
+                      [`${plan.new_share}%`],
+                    )}
+            </p>
+          </div>
           {(errors.books || noSource) && (
             <p className="text-body-small text-error">
               {errors.books || gettext('Scegli almeno una fonte.')}
