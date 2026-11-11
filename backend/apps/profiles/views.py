@@ -14,13 +14,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.ai.client import is_enabled
+from apps.ai.client import AIError, is_enabled
 from apps.jobs.files import FileRejected, prepare_audio
 from apps.jobs.models import Job
 from apps.jobs.serializers import JobSerializer
 from apps.jobs.views import enqueue_job, save_job_files
 
 from .interview import MAX_MESSAGE_CHARS, MAX_MESSAGES
+from .live import clean_call, live_token
 from .models import FoodPreference, Profile
 from .serializers import FoodPreferenceSerializer, ProfileSerializer
 
@@ -165,3 +166,39 @@ class InterviewView(APIView):
             enqueue_job(job)
         job.refresh_from_db()
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
+class InterviewLiveView(APIView):
+    """Apre una conversazione a voce in tempo reale (ADR 0014): un token
+    monouso con modello, istruzioni e strumenti gia' decisi qui."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={200: dict})
+    def post(self, request):
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            session = live_token(request.user, (get_language() or "it")[:2])
+        except AIError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(session)
+
+
+class InterviewProposalView(APIView):
+    """Pulisce una chiamata agli strumenti arrivata dalla conversazione a voce
+    (``{name, args}``), con le regole della chat: il browser la mette nel
+    riepilogo, non la salva."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    @extend_schema(request=dict, responses={200: dict})
+    def post(self, request):
+        data = request.data if isinstance(request.data, dict) else {}
+        args = data.get("args") if isinstance(data.get("args"), dict) else {}
+        return Response(clean_call(request.user, str(data.get("name", "")), args))

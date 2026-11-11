@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:40+0100\n"
+"POT-Creation-Date: 2026-11-11 10:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,32 +18,32 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/ai/client.py:86
+#: apps/ai/client.py:89
 msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
 msgstr "The AI's answer wasn't in the expected format."
 
-#: apps/ai/client.py:109 apps/ai/client.py:183
+#: apps/ai/client.py:117 apps/ai/client.py:191
 msgid ""
 "Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
 "riavvia."
 msgstr ""
 "Gemini key not configured: set GEMINI_API_KEY in the .env file and restart."
 
-#: apps/ai/client.py:144 apps/ai/client.py:216
+#: apps/ai/client.py:152 apps/ai/client.py:224
 msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
 msgstr "Gemini rejected the key: check GEMINI_API_KEY."
 
-#: apps/ai/client.py:148 apps/ai/client.py:218
+#: apps/ai/client.py:156 apps/ai/client.py:226
 #, python-format
 msgid "Gemini ha risposto con un errore (%(code)s)."
 msgstr "Gemini answered with an error (%(code)s)."
 
-#: apps/ai/client.py:151
+#: apps/ai/client.py:159
 #, python-format
 msgid "errore %(code)s"
 msgstr "error %(code)s"
 
-#: apps/ai/client.py:169
+#: apps/ai/client.py:177
 #, python-format
 msgid ""
 "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
@@ -52,7 +52,7 @@ msgstr ""
 "Gemini is overloaded right now (%(models)s; last: %(error)s). Try again in a "
 "few minutes."
 
-#: apps/ai/client.py:207
+#: apps/ai/client.py:215
 msgid ""
 "La chiave Gemini non ha quota per le immagini (piano gratuito): attiva la "
 "fatturazione su Google AI Studio."
@@ -60,15 +60,15 @@ msgstr ""
 "The Gemini key has no quota for images (free tier): enable billing in Google "
 "AI Studio."
 
-#: apps/ai/client.py:213
+#: apps/ai/client.py:221
 msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
 msgstr "Gemini is overloaded right now. Try again in a few minutes."
 
-#: apps/ai/client.py:224
+#: apps/ai/client.py:232
 msgid "Gemini non risponde. Riprova tra qualche minuto."
 msgstr "Gemini isn't answering. Try again in a few minutes."
 
-#: apps/ai/client.py:231
+#: apps/ai/client.py:239
 msgid "Gemini non ha disegnato niente questa volta. Riprova."
 msgstr "Gemini didn't draw anything this time. Try again."
 
@@ -179,7 +179,8 @@ msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:75
-#: apps/plans/views.py:274 apps/profiles/views.py:130 apps/recipes/views.py:232
+#: apps/plans/views.py:274 apps/profiles/live.py:160 apps/profiles/views.py:131
+#: apps/profiles/views.py:182 apps/recipes/views.py:232
 #: apps/recipes/views.py:394
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
@@ -373,6 +374,10 @@ msgstr "Lupin"
 msgid "Molluschi"
 msgstr "Molluscs"
 
+#: apps/profiles/live.py:182
+msgid "Gemini non ha aperto la conversazione. Riprova tra poco."
+msgstr "Gemini didn't open the conversation. Try again shortly."
+
 #: apps/profiles/models.py:25
 msgid "Donna"
 msgstr "Woman"
@@ -486,11 +491,11 @@ msgstr "Check the year of birth."
 msgid "Al massimo %(n)d voci."
 msgstr "At most %(n)d items."
 
-#: apps/profiles/views.py:139
+#: apps/profiles/views.py:140
 msgid "Conversazione non valida."
 msgstr "Invalid conversation."
 
-#: apps/profiles/views.py:148
+#: apps/profiles/views.py:149
 msgid "Scrivi o registra una risposta."
 msgstr "Write or record an answer."
 

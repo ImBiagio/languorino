@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:40+0100\n"
+"POT-Creation-Date: 2026-11-11 10:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -291,6 +291,97 @@ msgstr "Must avoid"
 msgid "Niente"
 msgstr "Nothing"
 
+msgid ""
+"Ciao! Ti faccio qualche domanda per conoscerti e proporti cosa mangiare. "
+"Puoi scrivere o parlare. Per cominciare: hai allergie o intolleranze "
+"alimentari?"
+msgstr ""
+"Hi! I'll ask you a few questions to get to know you and suggest what to eat. "
+"You can type or talk. To start: do you have any food allergies or "
+"intolerances?"
+
+msgid "Indietro"
+msgstr "Back"
+
+msgid "Due chiacchiere"
+msgstr "A quick chat"
+
+msgid "Rispondi a voce o per iscritto: alla fine controlli tutto"
+msgstr "Answer by voice or in writing: you check everything at the end"
+
+msgid "Leggi le risposte ad alta voce"
+msgstr "Read answers aloud"
+
+msgid "Parliamo"
+msgstr "Let's talk"
+
+msgid "Chat"
+msgstr "Chat"
+
+#, javascript-format
+msgid "Ti ascolto… %s"
+msgstr "Listening… %s"
+
+msgid "Scrivi la tua risposta"
+msgstr "Write your answer"
+
+msgid "Ferma e invia"
+msgstr "Stop and send"
+
+msgid "Rispondi a voce"
+msgstr "Answer by voice"
+
+msgid "Invia"
+msgstr "Send"
+
+msgid "La conversazione si è interrotta. Riprova."
+msgstr "The conversation dropped. Try again."
+
+msgid "Ciao, iniziamo."
+msgstr "Hi, let's start."
+
+msgid "Non riesco a usare il microfono: controlla i permessi del browser."
+msgstr "I can't use the microphone: check the browser permissions."
+
+msgid "La conversazione non è partita. Riprova."
+msgstr "The conversation didn't start. Try again."
+
+msgid "Termina la conversazione"
+msgstr "End the conversation"
+
+msgid "Inizia a parlare"
+msgstr "Start talking"
+
+msgid "Mi collego…"
+msgstr "Connecting…"
+
+msgid "Sto parlando: puoi interrompermi"
+msgstr "I'm talking: you can interrupt me"
+
+msgid "Microfono spento"
+msgstr "Microphone off"
+
+msgid "Ti ascolto"
+msgstr "Listening"
+
+msgid "Conversazione finita"
+msgstr "Conversation over"
+
+msgid "Parliamo a voce, come al telefono"
+msgstr "Let's talk out loud, like on the phone"
+
+msgid "Tocca il cerchio per finire. Quello che capisco compare nel riepilogo."
+msgstr "Tap the circle to finish. What I understand shows up in the summary."
+
+msgid "Tocca il cerchio e rispondi a voce: ti faccio io le domande."
+msgstr "Tap the circle and answer out loud: I'll ask the questions."
+
+msgid "Riaccendi il microfono"
+msgstr "Turn the microphone back on"
+
+msgid "Spegni il microfono"
+msgstr "Turn the microphone off"
+
 msgid "Allergia"
 msgstr "Allergy"
 
@@ -341,24 +432,6 @@ msgstr "Meals: %s"
 msgid "Cucini per %s"
 msgstr "You cook for %s"
 
-msgid ""
-"Ciao! Ti faccio qualche domanda per conoscerti e proporti cosa mangiare. "
-"Puoi scrivere o parlare. Per cominciare: hai allergie o intolleranze "
-"alimentari?"
-msgstr "Hi! I'll ask you a few questions to get to know you and suggest what to eat. You can type or talk. To start: do you have any food allergies or intolerances?"
-
-msgid "Indietro"
-msgstr "Back"
-
-msgid "Due chiacchiere"
-msgstr "A quick chat"
-
-msgid "Rispondi a voce o per iscritto: alla fine controlli tutto"
-msgstr "Answer by voice or in writing: you check everything at the end"
-
-msgid "Leggi le risposte ad alta voce"
-msgstr "Read answers aloud"
-
 msgid "Ecco cosa ho capito: controlla e salva"
 msgstr "Here's what I understood: check and save"
 
@@ -376,22 +449,6 @@ msgstr "Save and start"
 
 msgid "Salva nel profilo"
 msgstr "Save to profile"
-
-#, javascript-format
-msgid "Ti ascolto… %s"
-msgstr "Listening… %s"
-
-msgid "Scrivi la tua risposta"
-msgstr "Write your answer"
-
-msgid "Ferma e invia"
-msgstr "Stop and send"
-
-msgid "Rispondi a voce"
-msgstr "Answer by voice"
-
-msgid "Invia"
-msgstr "Send"
 
 msgid "uova"
 msgstr "eggs"
@@ -2080,6 +2137,3 @@ msgstr "Error %s"
 
 msgid "e"
 msgstr "and"
-
-msgid "Non riesco a usare il microfono: controlla i permessi del browser."
-msgstr "I can't use the microphone: check the browser permissions."
