@@ -678,6 +678,48 @@ def test_alla_lettera_i_buchi_solo_con_le_scelte_dell_llm(
     assert titles == {"Zuppa di ceci"}
 
 
+def test_grammature_a_persona(user, api, gemini, django_capture_on_commit_callbacks):
+    from apps.recipes.serializers import RecipeSerializer
+
+    serializer = RecipeSerializer(
+        data={
+            "title": "Pasta e zucchine",
+            "servings": 4,
+            "meal_slots": ["lunch", "dinner"],
+            "ingredients": [
+                {"name": "pasta", "quantity": "320", "unit": "g"},
+                {"name": "zucchine", "quantity": "2", "unit": "pz"},
+                {"name": "olio extravergine d'oliva", "quantity": "2", "unit": "tbsp"},
+                {"name": "sale", "unit": "to_taste"},
+                {"name": "basilico", "quantity": "5", "unit": "g", "optional": True},
+            ],
+        },
+        context={},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save(owner=user)
+    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Pasta e zucchine"]
+    response = _create(api, user, django_capture_on_commit_callbacks, servings=2)
+    meal = api(user).get(f"{PLANS}/{response.data['id']}").data["meals"][0]
+    assert meal["servings"] == 2
+    # A persona, non per le porzioni del pasto: senza "q.b." e facoltativi.
+    assert meal["portion"] == [
+        {"name": "pasta", "quantity": "80.00", "unit": "g"},
+        {
+            "name": "zucchina",
+            "quantity": "0.50",
+            "unit": "pz",
+            "approx": {"quantity": "100", "unit": "g"},
+        },
+        {
+            "name": "olio extravergine d'oliva",
+            "quantity": "0.50",
+            "unit": "tbsp",
+            "approx": {"quantity": "8", "unit": "ml"},
+        },
+    ]
+
+
 def test_la_sera_cucino_anche_il_pranzo_dopo(
     user, api, cookbook, gemini, django_capture_on_commit_callbacks
 ):
@@ -729,3 +771,101 @@ def test_alla_lettera_niente_pranzi_avanzo(user, cookbook):
     strict = NutritionistPlan(owner=user, title="P", strict=True, rules={})
     assert leftover_lunches(plan, strict) == {}
     assert leftover_lunches(_plan(user, prep_mode="none"), None) == {}
+
+
+@pytest.mark.parametrize(
+    ("share", "phrase"),
+    [(0, "Usa le ricette candidate"), (50, "Circa il 50%"), (100, "Non usare le candidate")],
+)
+def test_percentuale_di_ricette_nuove(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks, share, phrase
+):
+    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
+    response = _create(api, user, django_capture_on_commit_callbacks, new_share=share)
+    assert response.status_code == 202, response.data
+    assert MealPlan.objects.get().settings["new_share"] == share
+    assert phrase in gemini["prompts"][0]
+
+
+def test_percentuale_non_ammessa(user, api):
+    with override_settings(GEMINI_API_KEY="k"):
+        response = api(user).post(PLANS, _settings(new_share=33), format="json")
+    assert response.status_code == 400
+
+
+def test_idee_per_un_pasto(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks, monkeypatch
+):
+    from apps.jobs.models import Job
+    from apps.plans.models import NutritionistPlan
+    from apps.recipes.importing import ImportedRecipes
+
+    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
+    nutritionist = NutritionistPlan.objects.create(
+        owner=user,
+        title="N",
+        status=NutritionistPlan.Status.CONFIRMED,
+        strict=False,
+        rules={
+            "meals": [{"slot": "dinner", "options": ["150 g pesce + verdure"]}],
+            "avoid_foods": ["uova"],
+        },
+    )
+    plan_id = _create(
+        api, user, django_capture_on_commit_callbacks, nutritionist_plan=str(nutritionist.id)
+    ).data["id"]
+    meal = PlannedMeal.objects.filter(plan_id=plan_id, slot="dinner").first()
+    prompts = []
+
+    def fake(contents, schema, **kwargs):
+        prompts.append((contents(None)[0], kwargs))
+        return ImportedRecipes(
+            recipes=[
+                ImportedRecipe(
+                    title="Orata al cartoccio",
+                    servings=2,
+                    ingredients=[ImportedIngredient(name="orata", quantity="300", unit="g")],
+                    steps=["Inforna."],
+                ),
+                ImportedRecipe(
+                    title="Frittata di zucchine",  # uova: il nutrizionista dice di evitarle
+                    servings=2,
+                    ingredients=[ImportedIngredient(name="uova", quantity="4", unit="pz")],
+                    steps=["Sbatti."],
+                ),
+            ]
+        ), "finto"
+
+    monkeypatch.setattr("apps.plans.swap.generate", fake)
+    url = f"{PLANS}/{plan_id}/meals/{meal.id}/ideas"
+    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+        response = api(user).post(url, {"hint": "  qualcosa  col pesce "}, format="json")
+    assert response.status_code == 202, response.data
+    job = Job.objects.get(id=response.data["id"])
+    assert job.status == Job.Status.READY, job.error
+    assert [idea["title"] for idea in job.result["ideas"]] == ["Orata al cartoccio"]
+    prompt, kwargs = prompts[0]
+    assert kwargs["fast"] is True and kwargs["feature"] == "meal_ideas"
+    assert '"qualcosa col pesce"' in prompt and "150 g pesce + verdure" in prompt
+    assert "Zuppa di ceci" in prompt  # gia' nel piano: da non ripetere
+    idea = Recipe.objects.get(title="Orata al cartoccio")
+    assert (idea.source, idea.in_cookbook, "dinner" in idea.meal_slots) == ("plan", False, True)
+    # Scelta: entra nel pasto come qualsiasi altra ricetta.
+    api(user).patch(
+        f"{PLANS}/{plan_id}/meals/{meal.id}", {"recipe_id": str(idea.id)}, format="json"
+    )
+    meal.refresh_from_db()
+    assert meal.recipe_id == idea.id
+
+
+def test_idee_per_un_pasto_degli_altri(
+    user, other_user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
+    plan_id = _create(api, user, django_capture_on_commit_callbacks).data["id"]
+    meal = PlannedMeal.objects.filter(plan_id=plan_id).first()
+    with override_settings(GEMINI_API_KEY="k"):
+        response = api(other_user).post(
+            f"{PLANS}/{plan_id}/meals/{meal.id}/ideas", {}, format="json"
+        )
+    assert response.status_code == 404

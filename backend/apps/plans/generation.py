@@ -442,7 +442,15 @@ def generate_week(plan: MealPlan, week: int) -> None:
     limits = {**MAX_USES, "main": 1} if leftovers else None
     needs = variety_needs(rows, candidates, limits)
     new_needed = sum(needs.values())
-    max_new = min(MAX_NEW_RECIPES_PER_WEEK, max(NEW_RECIPES_PER_WEEK, new_needed))
+    share = options.get("new_share")
+    if share is None:
+        # Piani creati prima della percentuale: come allora.
+        max_new = min(MAX_NEW_RECIPES_PER_WEEK, max(NEW_RECIPES_PER_WEEK, new_needed))
+    else:
+        # Una ricetta copre in media un pasto e mezzo (cucinata per due); con i
+        # pranzi-avanzo le cene sono gia' una per ricetta.
+        target = round(len(rows) * share / 100 / (1 if leftovers else 1.5))
+        max_new = min(MAX_NEW_RECIPES_PER_WEEK, max(new_needed, target))
     if nutritionist is not None and nutritionist.strict:
         # Alla lettera le candidate corrispondono di rado: servono piu' ricette nuove.
         max_new = MAX_NEW_RECIPES_PER_WEEK
@@ -458,6 +466,18 @@ def generate_week(plan: MealPlan, week: int) -> None:
         variety.append(
             f"- Le candidate per pranzi e cene non bastano per variare: inventa ALMENO "
             f"{needs['main']} ricette nuove per pranzi e cene."
+        )
+    if share == 0:
+        variety.append(
+            "- Usa le ricette candidate: inventa solo se servono per la varieta' minima o "
+            "se per un pasto nessuna candidata va bene."
+        )
+    elif share == 100:
+        variety.append("- Non usare le candidate: inventa tu tutte le ricette.")
+    elif share is not None:
+        variety.append(
+            f"- Circa il {share}% dei pasti con ricette nuove inventate da te, il resto "
+            "con le candidate."
         )
     if leftovers:
         variety.append(

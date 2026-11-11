@@ -289,6 +289,7 @@ export interface Job {
     | 'nutritionist_plan'
     | 'recipe_image'
     | 'interview'
+    | 'meal_ideas'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]
@@ -358,6 +359,8 @@ export interface PlanPayload {
   exclude_tags: string[]
   goal_note: string
   nutritionist_plan: UUID | null
+  /** Percentuale di pasti con ricette nuove scritte dall'AI. */
+  new_share: 0 | 25 | 50 | 75 | 100
 }
 
 export interface PlannedMeal {
@@ -371,6 +374,16 @@ export interface PlannedMeal {
   /** Perche' il pasto e' vuoto o e' stato cambiato. */
   note: string
   eaten: boolean
+  /** Quanto mangia una persona di ogni ingrediente (senza q.b. e facoltativi). */
+  portion: PortionLine[]
+}
+
+export interface PortionLine {
+  name: string
+  quantity: string
+  unit: Unit
+  /** Per pezzi e cucchiai: il peso o il volume, se il catalogo lo sa. */
+  approx?: { quantity: string; unit: Unit }
 }
 
 export interface MealPlan {

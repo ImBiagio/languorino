@@ -341,3 +341,36 @@ class NutritionistPlanConfirmView(APIView):
             plan.job.status = Job.Status.CONFIRMED
             plan.job.save(update_fields=["status", "updated_at"])
         return Response(NutritionistPlanSerializer(plan).data)
+
+
+class PlannedMealIdeasView(APIView):
+    """Ricette nuove per un pasto del piano, scritte dall'LLM in un job."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+    throttle_scope = "ai"
+
+    @extend_schema(request=dict, responses={202: JobSerializer})
+    def post(self, request, pk, meal_id):
+        plan = get_object_or_404(plans_of(request.user), pk=pk)
+        meal = get_object_or_404(plan.meals, id=meal_id)
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        hint = " ".join(str(request.data.get("hint", "")).split())[:200]
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.MEAL_IDEAS,
+                input={
+                    "plan": str(plan.id),
+                    "meal": meal.id,
+                    "hint": hint,
+                    "language": (get_language() or "it")[:2],
+                },
+            )
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)

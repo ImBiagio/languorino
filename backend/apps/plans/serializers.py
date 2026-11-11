@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.utils.translation import gettext as _
 from pydantic import ValidationError as PydanticError
 from rest_framework import serializers
 
 from apps.profiles.models import MEAL_SLOT_ORDER, MealSlot
-from apps.recipes.models import Difficulty, RecipeBook
+from apps.recipes.models import Difficulty, RecipeBook, Unit
 from apps.recipes.serializers import RecipeListSerializer
+from apps.shopping.aggregate import TO_BASE
 
 from .models import MealPlan, NutritionistPlan, PlannedMeal, PrepMode
 from .nutritionist import NutritionistRules, clean_rules
@@ -36,6 +38,9 @@ class PlanSettingsSerializer(serializers.Serializer):
     )
     goal_note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
     nutritionist_plan = serializers.UUIDField(required=False, allow_null=True, default=None)
+    # Quanti pasti con ricette nuove scritte dall'LLM, in percentuale; il resto
+    # dalle fonti scelte (ricettario, ricettari PDF).
+    new_share = serializers.ChoiceField(choices=(0, 25, 50, 75, 100), default=25)
 
     def validate_nutritionist_plan(self, value):
         if value is None:
@@ -91,12 +96,14 @@ class PlanSettingsSerializer(serializers.Serializer):
             "exclude_tags": data["exclude_tags"],
             "goal_note": data["goal_note"].strip(),
             "nutritionist_plan": data["nutritionist_plan"],
+            "new_share": data["new_share"],
         }
 
 
 class PlannedMealSerializer(serializers.ModelSerializer):
     recipe = RecipeListSerializer(read_only=True)
     recipe_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    portion = serializers.SerializerMethodField()
 
     class Meta:
         model = PlannedMeal
@@ -110,8 +117,40 @@ class PlannedMealSerializer(serializers.ModelSerializer):
             "cooked_on",
             "note",
             "eaten",
+            "portion",
         ]
-        read_only_fields = ["id", "date", "slot", "note"]
+        read_only_fields = ["id", "date", "slot", "note", "portion"]
+
+    def get_portion(self, meal: PlannedMeal) -> list[dict]:
+        """Quanto mangia una persona di ogni ingrediente: la ricetta divisa per
+        le sue porzioni. Senza "q.b." e facoltativi: servono le grammature."""
+        recipe = meal.recipe
+        if recipe is None:
+            return []
+        servings = Decimal(recipe.servings or 1)
+        lines = []
+        for line in recipe.ingredients.all():
+            if line.optional or line.quantity is None or line.unit == Unit.TO_TASTE:
+                continue
+            quantity = line.quantity / servings
+            item = {
+                "name": line.ingredient.display_name,
+                "quantity": str(round(quantity, 2)),
+                "unit": line.unit,
+            }
+            # Pezzi, cucchiai, tazze: anche il peso, se il catalogo lo sa
+            # ("zucchina ½ pz" dice poco a chi conta le grammature).
+            grams_per_piece = line.ingredient.grams_per_piece
+            if line.unit == Unit.PIECE and grams_per_piece:
+                item["approx"] = {
+                    "quantity": str(round(quantity * Decimal(grams_per_piece))),
+                    "unit": Unit.GRAM.value,
+                }
+            elif line.unit in TO_BASE and line.unit not in (Unit.GRAM, Unit.MILLILITRE):
+                base, factor = TO_BASE[line.unit]
+                item["approx"] = {"quantity": str(round(quantity * factor)), "unit": base.value}
+            lines.append(item)
+        return lines
 
     def validate_servings(self, value: int) -> int:
         if not 1 <= value <= 50:

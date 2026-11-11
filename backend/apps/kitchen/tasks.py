@@ -16,12 +16,14 @@ IDEAS_KEEP_DAYS = 7
 def clean_ideas() -> int:
     """Via le idee mai salvate dopo una settimana (ADR 0009).
 
-    Ogni ricerca ne scrive due: senza pulizia si accumulerebbero fuori dal
-    ricettario. Restano quelle salvate e quelle finite in un piano.
+    Ogni ricerca di "cosa cucino oggi" ne scrive due, e cosi' ogni richiesta di
+    idee per un pasto del piano: senza pulizia si accumulerebbero fuori dal
+    ricettario. Lo stesso per le ricette scritte per un piano e poi sostituite.
+    Restano quelle salvate e quelle in un pasto di un piano.
     """
     old = timezone.now() - timedelta(days=IDEAS_KEEP_DAYS)
     stale = Recipe.objects.filter(
-        source=Recipe.Source.FRIDGE,
+        source__in=[Recipe.Source.FRIDGE, Recipe.Source.PLAN],
         in_cookbook=False,
         book__isnull=True,
         created_at__lt=old,
