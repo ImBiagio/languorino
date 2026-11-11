@@ -145,3 +145,11 @@ def test_tetto_giornaliero(user, api, drawer, django_capture_on_commit_callbacks
 def test_senza_chiave(user, api):
     recipe = _recipe(user)
     assert api(user).post(f"/api/recipes/{recipe.id}/image/draw").status_code == 503
+
+
+def test_nel_tetto_contano_solo_le_immagini_riuscite(user):
+    from apps.recipes.images import FEATURE, images_today
+
+    AiCall.objects.create(user=user, feature=FEATURE, model="m", ok=True)
+    AiCall.objects.create(user=user, feature=FEATURE, model="m", ok=False, error="nessuna immagine")
+    assert images_today(user) == 1

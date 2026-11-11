@@ -73,8 +73,9 @@ def clear_image(recipe: Recipe) -> None:
 
 
 def images_today(user) -> int:
+    """Le immagini davvero disegnate oggi: i tentativi a vuoto non contano."""
     start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
-    return AiCall.objects.filter(user=user, feature=FEATURE, created_at__gte=start).count()
+    return AiCall.objects.filter(user=user, feature=FEATURE, created_at__gte=start, ok=True).count()
 
 
 def image_prompt(recipe: Recipe, style: str = "photo") -> str:

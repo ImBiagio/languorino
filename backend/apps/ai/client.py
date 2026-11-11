@@ -248,10 +248,12 @@ def generate_image(
     except Exception as exc:  # rete, timeout
         _log(user, feature, model, started, error=str(exc) or type(exc).__name__)
         raise AIOverloaded(_("Gemini non risponde. Riprova tra qualche minuto.")) from exc
-    _log(user, feature, model, started, response=response)
     for candidate in response.candidates or []:
         for part in getattr(candidate.content, "parts", None) or []:
             inline = getattr(part, "inline_data", None)
             if inline is not None and inline.data:
+                _log(user, feature, model, started, response=response)
                 return inline.data, inline.mime_type or "image/png", model
+    # Registrata come non riuscita: non conta nel tetto delle immagini del giorno.
+    _log(user, feature, model, started, response=response, error="nessuna immagine")
     raise AINoImage(_("Gemini non ha disegnato niente questa volta. Riprova."))

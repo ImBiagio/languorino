@@ -164,3 +164,23 @@ def test_priorita_solo_per_le_funzioni_interattive(tier_gemini):
     assert tier_gemini == ["priority", None]
     served = dict(AiCall.objects.values_list("feature", "service_tier"))
     assert served == {"interattiva": "priority", "background": "standard"}
+
+
+@override_settings(GEMINI_API_KEY="k", GEMINI_MODEL_IMAGE="img")
+def test_immagine_vuota_registrata_come_non_riuscita(monkeypatch):
+    class FakeModels:
+        def generate_content(self, *, model, contents, config):
+            return SimpleNamespace(
+                candidates=[SimpleNamespace(content=SimpleNamespace(parts=[]))],
+                usage_metadata=None,
+            )
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.models = FakeModels()
+
+    monkeypatch.setattr("google.genai.Client", FakeClient)
+    with pytest.raises(ai.AINoImage):
+        ai.generate_image("un piatto", feature="recipe_image")
+    call = AiCall.objects.get()
+    assert (call.ok, call.error) == (False, "nessuna immagine")
