@@ -20,13 +20,21 @@ import type {
   ImportedRecipeDraft,
   Ingredient,
   MealSlot,
+  Nutrition,
+  NutritionSource,
   Recipe,
   RecipePayload,
   Unit,
   UUID,
 } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
-import { CATEGORY_LABELS, DIFFICULTY_OPTIONS, UNIT_OPTIONS, unitLabel } from './options'
+import {
+  CATEGORY_LABELS,
+  DIFFICULTY_OPTIONS,
+  UNIT_OPTIONS,
+  nutritionLabel,
+  unitLabel,
+} from './options'
 
 /** Una riga di ingrediente nel form. `key` serve solo a React. */
 export interface LineDraft {
@@ -54,6 +62,23 @@ export interface Draft {
   freezable: boolean
   tags: string[]
   lines: LineDraft[]
+  /** Valori a porzione come scritti nel campo (ADR 0018). */
+  nutrition: Record<NutritionField, string>
+  nutrition_source: NutritionSource
+}
+
+export const NUTRITION_FIELDS = ['kcal', 'protein_g', 'carbs_g', 'fat_g'] as const
+export type NutritionField = (typeof NUTRITION_FIELDS)[number]
+
+function nutritionDraft(values: Partial<Nutrition>): Record<NutritionField, string> {
+  const text = (value: string | number | null | undefined) =>
+    value === null || value === undefined ? '' : String(Number(value))
+  return {
+    kcal: text(values.kcal),
+    protein_g: text(values.protein_g),
+    carbs_g: text(values.carbs_g),
+    fat_g: text(values.fat_g),
+  }
 }
 
 let nextKey = 0
@@ -87,6 +112,8 @@ export function draftFromRecipe(recipe?: Recipe): Draft {
       freezable: false,
       tags: [],
       lines: [emptyLine(), emptyLine(), emptyLine()],
+      nutrition: nutritionDraft({}),
+      nutrition_source: '',
     }
   }
   return {
@@ -101,6 +128,8 @@ export function draftFromRecipe(recipe?: Recipe): Draft {
     keeps_days: recipe.keeps_days,
     freezable: recipe.freezable,
     tags: recipe.tags,
+    nutrition: nutritionDraft(recipe),
+    nutrition_source: recipe.nutrition_source,
     lines: recipe.ingredients.length
       ? recipe.ingredients.map((line) => ({
           key: newKey(),
@@ -119,7 +148,19 @@ export function draftFromRecipe(recipe?: Recipe): Draft {
 
 export function payloadFrom(draft: Draft): RecipePayload {
   const minutes = (raw: string) => (raw.trim() ? Math.max(0, Math.round(Number(raw))) : 0)
+  // Un decimale come nel modello; vuoto = non lo so.
+  const grams = (raw: string) => {
+    const value = Number(raw.replace(',', '.').trim())
+    return raw.trim() && Number.isFinite(value) && value >= 0 ? value.toFixed(1) : null
+  }
+  const kcal = Number(draft.nutrition.kcal.replace(',', '.').trim())
   return {
+    kcal:
+      draft.nutrition.kcal.trim() && Number.isFinite(kcal) && kcal >= 0 ? Math.round(kcal) : null,
+    protein_g: grams(draft.nutrition.protein_g),
+    carbs_g: grams(draft.nutrition.carbs_g),
+    fat_g: grams(draft.nutrition.fat_g),
+    nutrition_source: draft.nutrition_source,
     title: draft.title,
     description: draft.description.trim(),
     servings: draft.servings,
@@ -162,6 +203,8 @@ export function draftFromImport(imported: ImportedRecipeDraft): Draft {
     keeps_days: imported.keeps_days,
     freezable: imported.freezable,
     tags: imported.tags,
+    nutrition: nutritionDraft(imported),
+    nutrition_source: imported.nutrition_source ?? '',
     lines: imported.ingredients.length
       ? imported.ingredients.map((line) => ({
           key: newKey(),
@@ -436,6 +479,37 @@ export function RecipeEditor({
             checked={draft.freezable}
             onChange={(freezable) => set({ freezable })}
           />
+        </div>
+      </Card>
+
+      <Card title={gettext('Calorie e macro')} icon="nutrition">
+        <p className="-mt-2 text-body-small text-on-surface-variant">
+          {draft.nutrition_source === 'recipe'
+            ? gettext('A porzione, letti dalla ricetta.')
+            : draft.nutrition_source === 'ai'
+              ? gettext(
+                  'A porzione, stimati dall’AI. Se cambi ingredienti o porzioni si tolgono: ricalcolali dalla ricetta.',
+                )
+              : gettext(
+                  'Facoltativi, a porzione. Se li lasci vuoti puoi farli stimare all’AI dalla ricetta.',
+                )}
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {NUTRITION_FIELDS.map((field) => (
+            <Field key={field} label={nutritionLabel(field)} error={errors[field]}>
+              <input
+                className="field-input"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step={field === 'kcal' ? 1 : 0.1}
+                value={draft.nutrition[field]}
+                onChange={(event) =>
+                  set({ nutrition: { ...draft.nutrition, [field]: event.target.value } })
+                }
+              />
+            </Field>
+          ))}
         </div>
       </Card>
 

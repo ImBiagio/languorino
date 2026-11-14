@@ -11,7 +11,7 @@ finche' l'utente non conferma (progettazione, principio 1).
 from __future__ import annotations
 
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -70,6 +70,17 @@ class ImportedIngredient(BaseModel):
     optional: bool = False
 
 
+class ImportedNutrition(BaseModel):
+    kcal: float | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
+    per: Literal["serving", "recipe", "100g"] = Field(
+        default="serving",
+        description="A cosa si riferiscono: a porzione, a tutta la ricetta o a 100 g",
+    )
+
+
 class ImportedRecipe(BaseModel):
     # Il testo trascritto prima di strutturarlo: scrivendolo tutto il modello
     # non salta righe e quantita' (prima mancavano spesso). Non si salva.
@@ -94,6 +105,10 @@ class ImportedRecipe(BaseModel):
     ingredients: list[ImportedIngredient]
     steps: list[str] = Field(description="Passi in ordine, uno per elemento")
     tags: list[str] = Field(default_factory=list, description="Da 1 a 4 tag brevi")
+    nutrition: ImportedNutrition | None = Field(
+        default=None,
+        description="Calorie e macro SOLO se scritti nella ricetta, altrimenti null",
+    )
     inferred: list[InferableField] = Field(
         default_factory=list, description="I campi dedotti perche' il testo non li dice"
     )
@@ -143,6 +158,9 @@ Regole:
   scrivi il nome del campo in "inferred": servings (porzioni), prep_minutes e
   cook_minutes, difficulty, keeps_days (giorni in frigo una volta cucinata),
   freezable, meal_slots (per quali pasti va bene).
+- nutrition: solo se la ricetta scrive calorie o macronutrienti (kcal,
+  proteine, carboidrati, grassi), con "per" a cosa si riferiscono; non
+  stimarli tu: se non ci sono, null.
 - tags: da 1 a 4 tag brevi in {language}, minuscoli (es. "primi", "veloce", "forno").
 - Se non trovi nessuna ricetta leggibile, recipes vuoto e in "problem" una
   frase in {language} che spiega perche' (es. foto sfocata).
@@ -263,6 +281,27 @@ def _note(item: ImportedIngredient, quantity: str | None, unit: str) -> str:
     return note[:80]
 
 
+def _nutrition(recipe: ImportedRecipe, servings: int) -> dict:
+    """Valori scritti nella ricetta, riportati a porzione (ADR 0018). Quelli
+    per 100 g non si convertono: il peso della porzione non si sa."""
+    found = recipe.nutrition
+    if found is None or found.per == "100g":
+        return {}
+    divide = servings if found.per == "recipe" else 1
+    values = {}
+    for field in ("kcal", "protein_g", "carbs_g", "fat_g"):
+        raw = getattr(found, field)
+        if raw is None or raw < 0 or raw > 20000:
+            continue
+        value = Decimal(str(raw)) / divide
+        step = Decimal("1") if field == "kcal" else Decimal("0.1")
+        value = value.quantize(step, rounding=ROUND_HALF_UP)
+        values[field] = int(value) if field == "kcal" else str(value)
+    if not values:
+        return {}
+    return {**values, "nutrition_source": "recipe"}
+
+
 def to_draft(recipe: ImportedRecipe, user) -> dict:
     """Una ricetta letta come bozza per il form di revisione (stesso formato del POST)."""
     ingredients = []
@@ -289,10 +328,12 @@ def to_draft(recipe: ImportedRecipe, user) -> dict:
         )
     meal_slots = sorted(set(recipe.meal_slots), key=MEAL_SLOT_ORDER.index)
     keeps = recipe.keeps_days
+    servings = _clamp(recipe.servings or 2, *LIMITS["servings"])
     return {
+        **_nutrition(recipe, servings),
         "title": " ".join(recipe.title.split())[:120],
         "description": recipe.description.strip()[:2000],
-        "servings": _clamp(recipe.servings or 2, *LIMITS["servings"]),
+        "servings": servings,
         "prep_minutes": _clamp(recipe.prep_minutes, *LIMITS["prep_minutes"]),
         "cook_minutes": _clamp(recipe.cook_minutes, *LIMITS["cook_minutes"]),
         "difficulty": recipe.difficulty

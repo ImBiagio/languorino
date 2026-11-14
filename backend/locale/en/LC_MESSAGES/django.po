@@ -10,6 +10,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-11-14 14:59+0100\n"
 "POT-Creation-Date: 2026-11-14 13:49+0100\n"
+"POT-Creation-Date: 2026-11-14 14:00+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -99,6 +100,14 @@ msgid "Gemini non risponde. Riprova tra qualche minuto."
 msgstr "Gemini isn't answering. Try again in a few minutes."
 
 #: apps/ai/client.py:284
+#: apps/ai/client.py:248
+msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
+msgstr "Gemini is overloaded right now. Try again in a few minutes."
+
+#: apps/ai/client.py:259
+msgid "Gemini non risponde. Riprova tra qualche minuto."
+msgstr "Gemini isn't answering. Try again in a few minutes."
+
 #: apps/ai/client.py:248
 msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
 msgstr "Gemini is overloaded right now. Try again in a few minutes."
@@ -227,23 +236,27 @@ msgstr "Ideas for a plan meal"
 msgid "Domanda su profilo e piano"
 msgstr "Question about profile and plan"
 
-#: apps/jobs/models.py:30 apps/recipes/models.py:155
+#: apps/jobs/models.py:28
+msgid "Calorie e macro della ricetta"
+msgstr "Recipe calories and macros"
+
+#: apps/jobs/models.py:31 apps/recipes/models.py:155
 msgid "In coda"
 msgstr "Queued"
 
-#: apps/jobs/models.py:31
+#: apps/jobs/models.py:32
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:32 apps/plans/models.py:113
+#: apps/jobs/models.py:33 apps/plans/models.py:113
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:33 apps/plans/models.py:114
+#: apps/jobs/models.py:34 apps/plans/models.py:114
 msgid "Confermato"
 msgstr "Confirmed"
 
-#: apps/jobs/models.py:34
+#: apps/jobs/models.py:35
 msgid "Non riuscito"
 msgstr "Failed"
 
@@ -260,11 +273,17 @@ msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
 #: apps/jobs/tasks.py:188 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
+#: apps/jobs/tasks.py:182
+msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
+msgstr "It's taking too long: try again with fewer pages at a time."
+
+#: apps/jobs/tasks.py:186 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
 #: apps/recipes/tasks.py:236
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
 #: apps/jobs/tasks.py:207
+#: apps/jobs/tasks.py:205
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
@@ -281,6 +300,8 @@ msgstr "Unknown job."
 #: apps/profiles/live.py:160 apps/profiles/views.py:131
 #: apps/profiles/views.py:182 apps/recipes/views.py:233
 #: apps/recipes/views.py:395 apps/recipes/views.py:510
+#: apps/recipes/views.py:395 apps/recipes/views.py:433
+#: apps/recipes/views.py:528
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -790,6 +811,29 @@ msgstr "With the link"
 #: apps/recipes/models.py:271
 msgid "Pubblica"
 msgstr "Public"
+#: apps/recipes/models.py:271
+msgid "Non calcolati"
+msgstr "Not calculated"
+
+#: apps/recipes/models.py:272
+msgid "Dalla ricetta"
+msgstr "From the recipe"
+
+#: apps/recipes/models.py:273
+msgid "Stimati dall'AI"
+msgstr "Estimated by AI"
+
+#: apps/recipes/models.py:274
+msgid "Scritti a mano"
+msgstr "Entered by hand"
+
+#: apps/recipes/nutrition.py:100 apps/recipes/views.py:438
+msgid "Senza ingredienti non posso stimare calorie e macro."
+msgstr "I can't estimate calories and macros without ingredients."
+
+#: apps/recipes/nutrition.py:128
+msgid "Non sono riuscito a stimare i valori di questa ricetta."
+msgstr "I couldn't estimate the values for this recipe."
 
 #: apps/recipes/serializers.py:69
 msgid "Scegli o scrivi un ingrediente."
@@ -804,6 +848,19 @@ msgid "Ingrediente non trovato."
 msgstr "Ingredient not found."
 
 #: apps/recipes/serializers.py:356
+#: apps/recipes/serializers.py:233
+msgid "Dai un nome alla ricetta."
+msgstr "Give the recipe a name."
+
+#: apps/recipes/serializers.py:255
+msgid "Fonte non valida."
+msgstr "Invalid source."
+
+#: apps/recipes/serializers.py:298
+msgid "Ingrediente non trovato."
+msgstr "Ingredient not found."
+
+#: apps/recipes/serializers.py:389
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
@@ -875,6 +932,15 @@ msgid "Prima finisco di leggere il ricettario."
 msgstr "Let me finish reading the cookbook first."
 
 #: apps/recipes/views.py:521
+#: apps/recipes/views.py:507
+msgid "È già nel tuo ricettario."
+msgstr "It's already in your cookbook."
+
+#: apps/recipes/views.py:533
+msgid "Prima finisco di leggere il ricettario."
+msgstr "Let me finish reading the cookbook first."
+
+#: apps/recipes/views.py:539
 msgid "Ci sto già lavorando."
 msgstr "I'm already working on it."
 

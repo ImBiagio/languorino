@@ -184,8 +184,37 @@ export interface Recipe extends RecipeSummary {
   rating: RatingSummary | null
   comment_count: number
   copied_from: UUID | null
+  /** Valori a porzione (ADR 0018); null = non calcolati. */
+  kcal: number | null
+  protein_g: string | null
+  carbs_g: string | null
+  fat_g: string | null
+  nutrition_source: NutritionSource
+  /** La stima dell'AI ingrediente per ingrediente, per tutta la ricetta. */
+  nutrition_detail: NutritionDetail | Record<string, never>
   created_at: string
 }
+
+export type NutritionSource = '' | 'recipe' | 'ai' | 'manual'
+
+export interface NutritionDetail {
+  ingredients: {
+    name: string
+    grams: number
+    kcal: number
+    protein_g: number
+    carbs_g: number
+    fat_g: number
+  }[]
+  note: string
+  servings: number
+}
+
+/** I valori a porzione: li condividono ricetta, pagina pubblica e form. */
+export type Nutrition = Pick<
+  Recipe,
+  'kcal' | 'protein_g' | 'carbs_g' | 'fat_g' | 'nutrition_source'
+>
 
 /** La ricetta vista dal link pubblico. */
 export interface SharedRecipe {
@@ -206,6 +235,11 @@ export interface SharedRecipe {
   allergens: Allergen[]
   main_category: Category
   ingredients: RecipeLine[]
+  kcal: number | null
+  protein_g: string | null
+  carbs_g: string | null
+  fat_g: string | null
+  nutrition_source: NutritionSource
   author: string
   /** Profilo pubblico dell'autore, se ne ha uno. */
   author_handle: string | null
@@ -275,7 +309,8 @@ export type RecipePayload = Pick<
   | 'keeps_days'
   | 'freezable'
   | 'tags'
-> & { ingredients: RecipeLinePayload[] }
+> &
+  Partial<Nutrition> & { ingredients: RecipeLinePayload[] }
 
 export interface Tag {
   id: UUID
@@ -304,7 +339,7 @@ export interface RecipeFilters {
 export type JobStatus = 'queued' | 'running' | 'ready' | 'confirmed' | 'failed'
 
 /** Una ricetta letta da foto o PDF, prima della revisione (backend `recipes/importing.py`). */
-export interface ImportedRecipeDraft {
+export interface ImportedRecipeDraft extends Partial<Nutrition> {
   title: string
   description: string
   servings: number
@@ -340,6 +375,7 @@ export interface Job {
     | 'interview'
     | 'meal_ideas'
     | 'ask'
+    | 'recipe_nutrition'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]

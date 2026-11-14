@@ -90,7 +90,7 @@ backend/
     ├── users/           User custom + auth JWT + mail dell'account
     ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE), intervista (interview.py) e voce in tempo reale (live.py)
     ├── recipes/         ricette, tag, catalogo ingredienti (catalog.py), riconoscimento dei nomi, immagini (images.py),
-    │                    import da foto (importing.py), ricettari PDF letti a pezzi (books.py, tasks.py), condivisione (sharing.py)
+    │                    import da foto (importing.py), calorie e macro (nutrition.py), ricettari PDF letti a pezzi (books.py, tasks.py), condivisione (sharing.py)
     ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
     ├── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
     ├── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py),
@@ -130,6 +130,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST/DELETE /api/recipes/{id}/share` · `GET /api/shared/recipes/{token}` · `POST …/copy` | link di condivisione `/r/<token>`, pagina pubblica senza login, copia nel proprio ricettario ([ADR 0012](docs/decisions/0012-condivisione-delle-ricette.md)) |
 | `POST /api/recipes/{id}/share` `{visibility, renew?}` · `GET /api/public/profiles/{handle}` | visibilità privata, con il link o pubblica; profilo pubblico `/u/<handle>` con le ricette pubbliche ([ADR 0017](docs/decisions/0017-ricette-pubbliche-voti-e-commenti.md)) |
 | `PUT/DELETE /api/shared/recipes/{token}/rating` `{stars}` · `GET/POST …/comments` (multipart `text`, `parent`, `images`) · `DELETE /api/comments/{id}` | voti da 1 a 5 stelle, commenti con risposte e foto |
+| `POST /api/recipes/{id}/nutrition` | calorie e macro a porzione stimati dall'AI dagli ingredienti, in un job ([ADR 0018](docs/decisions/0018-calorie-e-macro-delle-ricette.md)); si leggono anche dalla ricetta importata o si scrivono a mano |
 | `POST /api/recipe-books/{id}/images` | foto delle ricette ritagliate dal PDF e illustrazioni AI per le altre; parte anche da sola a fine lettura ([ADR 0015](docs/decisions/0015-immagini-dei-ricettari-pdf.md)) |
 | `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
