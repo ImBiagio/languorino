@@ -344,6 +344,12 @@ FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", "http://localhost:5177")
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5177")
 
+# --- Segnalazione degli errori (GlitchTip, protocollo Sentry) ---
+# Vuoto = spento. L'avvio sta in config/sentry.py, chiamato da dev.py e
+# prod.py: i settings dei test non lo chiamano mai.
+SENTRY_DSN = env("SENTRY_DSN", "").strip()
+SENTRY_ENVIRONMENT = env("SENTRY_ENVIRONMENT", "production")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

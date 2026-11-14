@@ -26,6 +26,8 @@ dependencies = [
     "pypdf>=5.0",
     # Pagine dei ricettari disegnate per ritagliare le foto delle ricette (ADR 0015).
     "pypdfium2>=4.30",
+    # Segnalazione degli errori a GlitchTip (parla il protocollo di Sentry).
+    "sentry-sdk>=2.20,<3",
 ]
 
 [project.optional-dependencies]

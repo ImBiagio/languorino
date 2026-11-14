@@ -59,6 +59,11 @@ dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
   PDF dei ricettari (`books/`) e file dei lavori (`jobs/`, anche i piani del
   nutrizionista) non si scaricano mai: 404 da Caddy in produzione e da Django in
   sviluppo (`PRIVATE_MEDIA_PREFIXES`, `apps/core/media.py`).
+- **Errori**: con `SENTRY_DSN` impostato le eccezioni non gestite di richieste
+  e task Celery (worker, worker-ai, beat) vanno a GlitchTip via `sentry-sdk`
+  (`config/sentry.py`), senza dati personali, corpo delle richieste né variabili
+  locali; `SENTRY_ENVIRONMENT` di default `production`. Vuoto = spento; nei test
+  non parte mai. Solo backend.
 - **Soft delete + audit**: `BaseModel` (UUID, `deleted_at`) e `django-simple-history`.
 - **Material 3**: ruoli M3 mappati in Tailwind, Roboto Flex, Roboto Mono per i
   numeri, Material Symbols Rounded. Rail su desktop, bottom bar e FAB sotto i
