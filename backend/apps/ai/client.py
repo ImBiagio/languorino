@@ -113,6 +113,7 @@ def generate[Schema: BaseModel](
     timeout_ms: int = 60_000,
     temperature: float = 0.2,
     fast: bool = False,
+    media_resolution: str = "",
 ) -> tuple[Schema, str]:
     """Chiama Gemini e restituisce ``(risposta validata, modello usato)``.
 
@@ -125,6 +126,9 @@ def generate[Schema: BaseModel](
     ``fast``: per chi aspetta la risposta guardando lo schermo (intervista,
     frigo). Parte dal modello veloce, che non "pensa" prima di rispondere:
     misurato il 2026-11-11, 2,6-3 s contro 15-75 s del principale (ADR 0014).
+
+    ``media_resolution``: "high" per leggere testo piccolo o scritto a mano
+    nelle foto e nei PDF (piu' token in ingresso, cifre leggibili).
     """
     if not is_enabled():
         raise AIError(
@@ -146,6 +150,11 @@ def generate[Schema: BaseModel](
         response_schema=schema,
         temperature=temperature,
         **priority,
+        **(
+            {"media_resolution": f"MEDIA_RESOLUTION_{media_resolution.upper()}"}
+            if media_resolution
+            else {}
+        ),
     )
     parts = contents(types)
 

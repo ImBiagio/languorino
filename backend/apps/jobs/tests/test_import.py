@@ -306,3 +306,53 @@ def test_audio_insieme_alle_foto_rifiutato(user, api, gemini, django_capture_on_
     voice = SimpleUploadedFile("racconto.ogg", b"OggS" + b"\x00" * 100)
     response = _start(api, user, [_image(), voice], django_capture_on_commit_callbacks)
     assert response.status_code == 400
+
+
+@pytest.mark.parametrize(
+    ("written", "quantity", "unit", "expected", "note"),
+    [
+        # Il numero solo nel testo scritto, nella stessa unita': si recupera.
+        ("200 gr", None, "g", "200", ""),
+        ("1/2", None, "pz", "0.5", ""),
+        ("1 ½", None, "pz", "1.5", ""),
+        ("mezzo", None, "pz", "0.5", ""),
+        ("1,5 l", None, "l", "1.5", ""),
+        # Frazioni e numeri con l'unita' attaccata nel campo convertito.
+        ("", "1/4", "tsp", "0.25", ""),
+        ("", "250g", "g", "250", ""),
+        ("", "2-3", "pz", "2", ""),
+        # Unita' diversa da quella scritta: non si indovina, resta nella nota.
+        ("un etto", None, "g", None, "un etto"),
+        # Contenitore che non e' un'unita': numero preso, testo nella nota.
+        ("1 bicchiere", "1", "pz", "1", "1 bicchiere"),
+        ("q.b.", None, "to_taste", None, ""),
+    ],
+)
+def test_quantita_scritte_come_capita(user, written, quantity, unit, expected, note):
+    from apps.recipes.importing import to_draft
+
+    recipe = ImportedRecipe(
+        title="Prova",
+        servings=2,
+        ingredients=[
+            ImportedIngredient(name="latte", quantity_text=written, quantity=quantity, unit=unit)
+        ],
+        steps=["Mescola."],
+    )
+    item = to_draft(recipe, user)["ingredients"][0]
+    assert item["quantity"] == expected
+    assert item["note"] == note
+
+
+def test_lettura_ad_alta_risoluzione(user, monkeypatch):
+    from apps.recipes import importing
+
+    seen = {}
+
+    def fake_generate(contents, schema, **kwargs):
+        seen.update(kwargs)
+        return ImportedRecipes(recipes=[]), "gemini-finto"
+
+    monkeypatch.setattr(importing, "generate", fake_generate)
+    importing.read_recipes([(b"x", "image/jpeg")], user=user)
+    assert seen["media_resolution"] == "high"
