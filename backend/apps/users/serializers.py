@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hmac
+
 from django.conf import settings
 from django.contrib.auth import get_user_model, password_validation
 from django.utils import translation
@@ -38,6 +40,25 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     display_name = serializers.CharField(required=False, allow_blank=True)
+    # Codice di invito: con SIGNUP_CODE impostato si registra solo chi lo
+    # conosce (deploy pubblico, accesso per chi e' stato invitato).
+    invite_code = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, default="", trim_whitespace=True
+    )
+
+    def to_internal_value(self, data):
+        # Il codice si controlla prima di tutto il resto: chi non lo conosce
+        # non deve poter scoprire dagli altri errori se un'email ha un account.
+        expected = settings.SIGNUP_CODE
+        if expected:
+            given = data.get("invite_code") if hasattr(data, "get") else ""
+            given = given.strip() if isinstance(given, str) else ""
+            # compare_digest: il tempo di risposta non dice quanti caratteri tornano.
+            if not hmac.compare_digest(given.encode(), expected.encode()):
+                raise serializers.ValidationError(
+                    {"invite_code": [_("Codice di invito non valido.")]}
+                )
+        return super().to_internal_value(data)
 
     def validate_email(self, value: str) -> str:
         value = normalize_email(value)

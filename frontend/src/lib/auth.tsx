@@ -9,7 +9,12 @@ interface AuthState {
   user: User | null
   ready: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, displayName: string) => Promise<string | null>
+  register: (
+    email: string,
+    password: string,
+    displayName: string,
+    inviteCode?: string,
+  ) => Promise<string | null>
   verifyEmail: (token: string) => Promise<void>
   /** Nuova password dal link della mail: se va bene si entra direttamente. */
   resetPassword: (uid: string, token: string, password: string) => Promise<void>
@@ -89,11 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login: async (email, password) => {
         apply(await api.post<AuthPayload>('/api/auth/login', { email, password }))
       },
-      register: async (email, password, displayName) => {
+      register: async (email, password, displayName, inviteCode = '') => {
         const response = await api.post<AuthPayload | { detail: string }>('/api/auth/register', {
           email,
           password,
           display_name: displayName,
+          invite_code: inviteCode,
         })
         if ('access' in response) {
           apply(response)

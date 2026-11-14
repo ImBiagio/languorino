@@ -6,6 +6,8 @@ CELERY_TASK_ALWAYS_EAGER = True
 # Niente chiamate vere agli LLM nei test: si fingono nei test che li riguardano.
 GEMINI_API_KEY = ""
 REQUIRE_EMAIL_VERIFICATION = False
+# Il .env di chi lancia i test non deve chiudere la registrazione.
+SIGNUP_CODE = ""
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}

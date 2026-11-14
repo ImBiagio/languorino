@@ -43,7 +43,8 @@ dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
 - **Auth JWT ibrida**: access token (15 min) in memoria, refresh (14 giorni) in
   cookie `httpOnly` su `/api/auth`, blacklist a logout e cambio password, un
   solo refresh in volo nel client (`frontend/src/lib/api.ts`). Registrazione,
-  conferma email, reset password, cambio password. Rate limit su
+  conferma email, reset password, cambio password. Registrazione aperta, o
+  solo con un codice di invito se `SIGNUP_CODE` è impostato. Rate limit su
   login/registrazione (`THROTTLE_AUTH`) e sulle chiamate all'LLM (`THROTTLE_AI`).
 - **Tetto alla spesa per l'AI** (`apps/ai/budget.py`): oltre al limite orario,
   chiamate riuscite a Gemini al giorno per utente (`AI_CALLS_PER_DAY`, 400) e
@@ -105,6 +106,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | | |
 |---|---|
 | `POST /api/auth/register` · `login` · `refresh` · `logout` | account e sessione (refresh nel cookie) |
+| `GET /api/auth/config` | `{signup_code_required}`: con `SIGNUP_CODE` impostato la registrazione vuole `invite_code` (vuoto = aperta) |
 | `POST /api/auth/verify-email/{token}` · `verify-email/resend` | conferma dell'indirizzo |
 | `POST /api/auth/password` · `password-reset` · `password-reset/confirm` | cambio e reset della password |
 | `GET/PATCH /api/me` | account (nome visibile, lingua) |

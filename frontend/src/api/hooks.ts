@@ -33,6 +33,7 @@ import type {
 } from '../lib/types'
 
 export const keys = {
+  authConfig: ['auth-config'] as const,
   profile: ['profile'] as const,
   recipes: ['recipes'] as const,
   recipeList: (filters: RecipeFilters) => ['recipes', 'list', filters] as const,
@@ -51,6 +52,17 @@ export const keys = {
   shoppingList: (id: UUID) => ['shopping', 'detail', id] as const,
   nutritionistPlans: ['nutritionist-plans'] as const,
   nutritionistPlan: (id: UUID) => ['nutritionist-plans', 'detail', id] as const,
+}
+
+/* ------------------------------------------------------------ registrazione -- */
+
+/** Cosa chiede il server a chi si registra: oggi solo il codice di invito. */
+export function useAuthConfig() {
+  return useQuery({
+    queryKey: keys.authConfig,
+    queryFn: () => api.get<{ signup_code_required: boolean }>('/api/auth/config'),
+    staleTime: 5 * 60 * 1000,
+  })
 }
 
 /* ------------------------------------------------------ profilo alimentare -- */

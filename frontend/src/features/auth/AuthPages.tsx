@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
+import { useAuthConfig } from '../../api/hooks'
 import { LanguageSwitcher } from '../../components/LanguageSwitcher'
 import { FoodPattern } from '../../components/illustrations'
 import { ErrorBanner, Field, Icon, PasswordInput, Skeleton } from '../../components/ui'
@@ -186,10 +187,13 @@ export function RegisterPage() {
   const [email, setEmail] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState<unknown>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const { next, query } = useNextPath()
+  // Il campo del codice compare solo se il server lo chiede (SIGNUP_CODE).
+  const inviteRequired = useAuthConfig().data?.signup_code_required ?? false
 
   if (user) return <Navigate to={next} replace />
 
@@ -223,7 +227,7 @@ export function RegisterPage() {
             setBusy(true)
             setError(null)
             try {
-              setMessage(await register(email, password, displayName))
+              setMessage(await register(email, password, displayName, inviteCode))
             } catch (err) {
               setError(err)
             } finally {
@@ -262,6 +266,23 @@ export function RegisterPage() {
               required
             />
           </Field>
+          {inviteRequired && (
+            <Field
+              label={gettext('Codice di invito')}
+              error={error instanceof ApiError ? error.fieldErrors().invite_code : undefined}
+              hint={gettext('Te lo dà chi ti ha invitato.')}
+            >
+              <input
+                className="field-input"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={inviteCode}
+                onChange={(event) => setInviteCode(event.target.value)}
+                required
+              />
+            </Field>
+          )}
           <button className="btn-filled mt-1 w-full" disabled={busy}>
             {busy ? gettext('Creazione…') : gettext('Crea account')}
           </button>

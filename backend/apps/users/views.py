@@ -58,6 +58,18 @@ def revoke_all_refresh_tokens(user) -> None:
     )
 
 
+class AuthConfigView(APIView):
+    """Cosa serve sapere alla pagina di registrazione prima del login: se
+    chiedere il codice di invito. Il codice non esce mai, solo se c'e'."""
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+
+    @extend_schema(responses={200: dict})
+    def get(self, request):
+        return Response({"signup_code_required": bool(settings.SIGNUP_CODE)})
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "auth"
