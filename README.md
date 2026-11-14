@@ -115,7 +115,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
 | `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto (ogni pasto ha `portion`: grammature a persona) |
 | `POST /api/plans/{id}/meals/{meal_id}/ideas` `{hint}` | due ricette nuove per quel pasto, scritte dall'AI in un job, da scegliere con il PATCH |
-| `GET/POST /api/nutritionist-plans` (multipart `files`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/confirm` | piano del nutrizionista: lettura in un job, revisione, conferma ([ADR 0010](docs/decisions/0010-piano-del-nutrizionista.md)); si usa con `nutritionist_plan` in `POST /api/plans` |
+| `GET/POST /api/nutritionist-plans` (multipart `files`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/confirm` · `POST …/{id}/reread` | piano del nutrizionista: lettura in un job, revisione, conferma ([ADR 0010](docs/decisions/0010-piano-del-nutrizionista.md)); si usa con `nutritionist_plan` in `POST /api/plans` |
 | `POST /api/ask` `{messages}` | una domanda alla chat "Chiedi a Languorino": job con la risposta da profilo, piano e piano del nutrizionista ([ADR 0016](docs/decisions/0016-chiedi-a-languorino.md)) |
 | `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)) |
 | `POST /api/shopping/{id}/items` · `PATCH/DELETE …/items/{item_id}` | voci a mano, spunta, "ce l'ho già", modifica |

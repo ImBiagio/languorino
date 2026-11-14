@@ -595,6 +595,9 @@ def test_generare_dal_piano_del_nutrizionista(
         title="Piano della dottoressa",
         rules={
             "meals": [{"slot": "lunch", "options": ["80 g pasta + verdure"]}],
+            "substitutions": [
+                {"group": "Carboidrati", "equivalents": ["80 g pasta", "100 g pane"], "note": ""}
+            ],
             "weekly": [{"food": "legumi", "times": 3}],
             "avoid_foods": ["salmone", "uova"],
         },
@@ -623,10 +626,15 @@ def test_generare_dal_piano_del_nutrizionista(
     week = gemini["prompts"][0]
     assert "Piano del nutrizionista" in week and "80 g pasta + verdure" in week
     assert "ALLA LETTERA" in week and "legumi 3 volte" in week
+    # Le sostituzioni, con la grammatura di ogni equivalente, arrivano alla
+    # settimana e alla ricetta nuova (prima stavano solo nelle note).
+    assert "Carboidrati: 80 g pasta = 100 g pane" in week
+    assert "grammatura scritta per l'equivalente" in week
     # La ricetta nuova con le uova (da evitare) e' scartata: il pasto lo riempie il codice.
     assert not Recipe.objects.filter(title="Frittatona di uova").exists()
     written = gemini["prompts"][1]
     assert "80 g pasta + verdure" in written and "evitare: salmone, uova" in written
+    assert "80 g pasta = 100 g pane" in written
     plan = MealPlan.objects.get(id=response.data["id"])
     titles = {meal.recipe.title for meal in plan.meals.select_related("recipe") if meal.recipe}
     assert titles and not titles & {"Salmone al forno", "Frittata", "Frittatona di uova"}
@@ -869,3 +877,68 @@ def test_idee_per_un_pasto_degli_altri(
             f"{PLANS}/{plan_id}/meals/{meal.id}/ideas", {}, format="json"
         )
     assert response.status_code == 404
+
+
+def test_sostituzioni_lette(user, api, reading, django_capture_on_commit_callbacks):
+    from apps.plans.models import NutritionistPlan
+    from apps.plans.nutritionist import NutritionistMeal, NutritionistReading, SubstitutionGroup
+
+    reading["result"] = NutritionistReading(
+        meals=[NutritionistMeal(slot="lunch", options=["80 g pasta + verdure"])],
+        substitutions=[
+            SubstitutionGroup(
+                group=" Carboidrati ",
+                equivalents=["80 g pasta", "80 g riso", "100 g  pane", "80 g riso"],
+                note="a pranzo",
+            ),
+            # Un alimento solo non sostituisce niente.
+            SubstitutionGroup(group="Frutta", equivalents=["1 mela"]),
+        ],
+    )
+    _upload(api, user, django_capture_on_commit_callbacks)
+    rules = NutritionistPlan.objects.get().rules
+    assert rules["substitutions"] == [
+        {
+            "group": "Carboidrati",
+            "equivalents": ["80 g pasta", "80 g riso", "100 g pane"],
+            "note": "a pranzo",
+        }
+    ]
+    # La lettura le chiede a parte, non nelle note.
+    assert '"substitutions"' in reading["prompts"][0]
+    # Si correggono dalla revisione come il resto.
+    plan = NutritionistPlan.objects.get()
+    rules["substitutions"][0]["equivalents"].append("300 g patate")
+    response = api(user).patch(f"{NUTRITIONIST}/{plan.id}", {"rules": rules}, format="json")
+    assert response.data["rules"]["substitutions"][0]["equivalents"][-1] == "300 g patate"
+
+
+def test_rileggere_dai_file(user, api, reading, django_capture_on_commit_callbacks):
+    from apps.plans.models import NutritionistPlan
+    from apps.plans.nutritionist import NutritionistMeal, NutritionistReading, SubstitutionGroup
+
+    _upload(api, user, django_capture_on_commit_callbacks)
+    plan = NutritionistPlan.objects.get()
+    plan.title = "Il mio piano"
+    plan.strict = False
+    plan.status = NutritionistPlan.Status.CONFIRMED
+    plan.save()
+    reading["result"] = NutritionistReading(
+        title="Altro titolo",
+        meals=[NutritionistMeal(slot="lunch", options=["80 g pasta + verdure"])],
+        substitutions=[SubstitutionGroup(group="Proteine", equivalents=["150 g pollo", "2 uova"])],
+    )
+    url = f"{NUTRITIONIST}/{plan.id}/reread"
+    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+        response = api(user).post(url)
+    assert response.status_code == 202, response.data
+    plan.refresh_from_db()
+    # Regole nuove da rivedere; nome e "alla lettera" restano quelli scelti.
+    assert plan.status == "draft" and plan.title == "Il mio piano" and plan.strict is False
+    assert plan.rules["substitutions"][0]["equivalents"] == ["150 g pollo", "2 uova"]
+    assert NutritionistPlan.objects.count() == 1
+    # Gli altri no.
+    from apps.conftest import UserFactory
+
+    with override_settings(GEMINI_API_KEY="k"):
+        assert api(UserFactory()).post(url).status_code == 404

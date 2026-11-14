@@ -330,6 +330,36 @@ class NutritionistPlanConfirmView(APIView):
         return Response(NutritionistPlanSerializer(plan).data)
 
 
+class NutritionistPlanRereadView(APIView):
+    """Rilegge i file del piano (per esempio per prendere le sostituzioni, che
+    prima finivano nelle note): le regole nuove tornano da rivedere."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: JobSerializer})
+    def post(self, request, pk):
+        plan = get_object_or_404(nutritionist_plans_of(request.user), pk=pk)
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if plan.job is None or not plan.job.files.exists():
+            raise serializers.ValidationError(
+                {"detail": _("I file di questo piano non ci sono più: caricalo di nuovo.")}
+            )
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.NUTRITIONIST_PLAN,
+                input={"plan": str(plan.id), "language": (get_language() or "it")[:2]},
+            )
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
 class PlannedMealIdeasView(APIView):
     """Ricette nuove per un pasto del piano, scritte dall'LLM in un job."""
 

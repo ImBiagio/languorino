@@ -39,7 +39,7 @@ richieste che non riguardano la ricetta."""
 
 
 def meal_ideas(plan: MealPlan, meal: PlannedMeal, hint: str = "", language: str = "it") -> list:
-    from .nutritionist import avoided, slot_options
+    from .nutritionist import avoided, meal_rules_text
 
     options = plan.settings
     profile, forbidden = user_profile_summary(plan.owner)
@@ -47,11 +47,7 @@ def meal_ideas(plan: MealPlan, meal: PlannedMeal, hint: str = "", language: str 
     avoid = nutritionist.rules.get("avoid_foods", []) if nutritionist else []
     extra = ""
     if nutritionist is not None:
-        if choices := slot_options(nutritionist.rules, meal.slot):
-            extra += (
-                "\nSegui una delle opzioni del nutrizionista per questo pasto, con le sue "
-                "grammature (per persona): " + " | ".join(choices[:8]) + "."
-            )
+        extra += meal_rules_text(nutritionist.rules, [meal.slot])
         if avoid:
             extra += "\nIl nutrizionista dice di evitare: " + ", ".join(avoid) + "."
     wait = (meal.date - meal.cooked_on).days

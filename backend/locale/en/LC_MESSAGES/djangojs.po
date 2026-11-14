@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:56+0100\n"
+"POT-Creation-Date: 2026-11-14 14:32+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -162,7 +162,9 @@ msgstr "New conversation"
 msgid ""
 "Chiedimi quello che vuoi sui tuoi pasti: grammature, cosa mangi o cucini e "
 "quando, cosa dice il piano del nutrizionista."
-msgstr "Ask me anything about your meals: amounts, what you eat or cook and when, what your nutritionist's plan says."
+msgstr ""
+"Ask me anything about your meals: amounts, what you eat or cook and when, "
+"what your nutritionist's plan says."
 
 msgid "Scrivi una domanda"
 msgstr "Write a question"
@@ -698,16 +700,21 @@ msgstr "How many new recipes?"
 msgid ""
 "Uso le tue ricette; ne scrivo di nuove solo se mancano per variare o per un "
 "pasto."
-msgstr "I use your recipes; I only write new ones when there aren't enough for variety or for a meal."
+msgstr ""
+"I use your recipes; I only write new ones when there aren't enough for "
+"variety or for a meal."
 
 msgid "Scrivo io tutte le ricette: le trovi nel piano e puoi salvarle."
-msgstr "I write all the recipes: you'll find them in the plan and can save them."
+msgstr ""
+"I write all the recipes: you'll find them in the plan and can save them."
 
 #, javascript-format
 msgid ""
 "Circa il %s dei pasti con ricette nuove scritte da me, il resto dalle tue. "
 "Le nuove le puoi salvare."
-msgstr "About %s of meals with new recipes written by me, the rest from yours. You can save the new ones."
+msgstr ""
+"About %s of meals with new recipes written by me, the rest from yours. You "
+"can save the new ones."
 
 msgid "Scegli almeno una fonte."
 msgstr "Choose at least one source."
@@ -851,6 +858,33 @@ msgstr "Remove option"
 msgid "Aggiungi un’opzione"
 msgstr "Add an option"
 
+msgid "Sostituzioni"
+msgstr "Substitutions"
+
+msgid ""
+"Alimenti che si scambiano fra loro, ognuno con la sua grammatura (es. 80 g "
+"pasta, 100 g pane): il piano li usa per variare le opzioni. Un gruppo serve "
+"almeno due alimenti."
+msgstr "Foods that can replace each other, each with its own amount (e.g. 80 g pasta, 100 g bread): the plan uses them to vary the options. A group needs at least two foods."
+
+msgid "Gruppo"
+msgstr "Group"
+
+msgid "Quando vale"
+msgstr "When it applies"
+
+msgid "sempre"
+msgstr "always"
+
+msgid "Togli il gruppo"
+msgstr "Remove group"
+
+msgid "Alimento con grammatura (es. 80 g riso)"
+msgstr "Food with amount (e.g. 80 g rice)"
+
+msgid "Aggiungi un gruppo"
+msgstr "Add a group"
+
 msgid "Quante volte a settimana"
 msgstr "How many times a week"
 
@@ -889,6 +923,23 @@ msgstr "Other advice"
 
 msgid "Conferma il piano"
 msgstr "Confirm the plan"
+
+msgid "Rileggere il piano dai file?"
+msgstr "Read the plan again from the files?"
+
+msgid ""
+"Opzioni, sostituzioni, frequenze e alimenti vengono riletti e sostituiscono "
+"quelli di adesso, anche le tue correzioni. Il piano torna da rivedere."
+msgstr "Options, substitutions, frequencies and foods are read again and replace the current ones, including your corrections. The plan goes back to review."
+
+msgid "Rileggi"
+msgstr "Read again"
+
+msgid "Rileggo…"
+msgstr "Reading…"
+
+msgid "Rileggi dai file"
+msgstr "Read again from the files"
 
 msgid ""
 "Componi la settimana dalle tue ricette e dai ricettari PDF, con il meal prep "
@@ -1565,7 +1616,9 @@ msgstr[1] "Drawing the recipes without a photo: %s missing."
 msgid ""
 "Prendo le foto dei piatti dal PDF, se ci sono; le altre ricette le faccio "
 "disegnare in modo semplice."
-msgstr "I take the dish photos from the PDF, if there are any; the other recipes get a simple drawing."
+msgstr ""
+"I take the dish photos from the PDF, if there are any; the other recipes get "
+"a simple drawing."
 
 #, javascript-format
 msgid "Foto trovate nel PDF: %s. Senza immagine: %s ricetta."

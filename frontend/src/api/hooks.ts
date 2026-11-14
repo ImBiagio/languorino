@@ -650,6 +650,15 @@ export function useUpdateNutritionistPlan() {
   )
 }
 
+/** Rilegge i file del piano: le regole nuove tornano da rivedere (col job). */
+export function useRereadNutritionistPlan() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<Job>(`/api/nutritionist-plans/${id}/reread`),
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
 export function useConfirmNutritionistPlan() {
   return useNutritionistMutation((id: UUID) =>
     api.post<NutritionistPlan>(`/api/nutritionist-plans/${id}/confirm`),

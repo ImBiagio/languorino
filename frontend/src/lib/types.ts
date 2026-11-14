@@ -479,10 +479,18 @@ export interface CookSuggestions {
 
 export interface NutritionistRules {
   meals: { slot: MealSlot; options: string[] }[]
+  /** Alimenti equivalenti, ognuno con la sua grammatura ("80 g pasta", "100 g pane"). */
+  substitutions?: SubstitutionGroup[]
   weekly: { food: string; times: number }[]
   free_foods: string[]
   avoid_foods: string[]
   notes: string
+}
+
+export interface SubstitutionGroup {
+  group: string
+  equivalents: string[]
+  note: string
 }
 
 export interface NutritionistPlan {

@@ -62,8 +62,13 @@ def _nutritionist_plan(job: Job) -> None:
     from apps.plans.models import NutritionistPlan
     from apps.plans.nutritionist import read_plan
 
+    # "Rileggi dai file": i file sono quelli del job che ha creato il piano.
+    reread = None
+    if plan_id := job.input.get("plan"):
+        reread = NutritionistPlan.objects.select_related("job").get(id=plan_id, owner=job.owner)
+    source = reread.job if reread is not None else job
     files = []
-    for item in job.files.all():
+    for item in source.files.all():
         with item.file.open("rb") as handle:
             files.append((handle.read(), item.content_type))
     result = read_plan(files, user=job.owner, language=job.input.get("language", "it"))
@@ -72,6 +77,16 @@ def _nutritionist_plan(job: Job) -> None:
         job.result = {
             "problem": result["problem"] or _("Non ho trovato un piano alimentare in questi file.")
         }
+        return
+    if reread is not None:
+        # Regole nuove da ricontrollare: il piano torna da rivedere. Nome,
+        # "alla lettera" e date scelti dall'utente restano.
+        reread.rules = result["rules"]
+        reread.status = NutritionistPlan.Status.DRAFT
+        reread.valid_from = reread.valid_from or result["valid_from"]
+        reread.valid_to = reread.valid_to or result["valid_to"]
+        reread.save(update_fields=["rules", "status", "valid_from", "valid_to", "updated_at"])
+        job.result = {"nutritionist_plan": str(reread.id), "problem": ""}
         return
     plan = NutritionistPlan.objects.create(
         owner=job.owner,

@@ -4,16 +4,19 @@
 // da li'.
 
 import clsx from 'clsx'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import {
+  keys,
   useConfirmNutritionistPlan,
   useDeleteNutritionistPlan,
   useJob,
   useNutritionistPlan,
   useNutritionistPlans,
   useReadNutritionistPlan,
+  useRereadNutritionistPlan,
   useUpdateNutritionistPlan,
 } from '../../api/hooks'
 import { useConfirm } from '../../components/ConfirmDialog'
@@ -32,7 +35,12 @@ import {
 } from '../../components/ui'
 import { ApiError } from '../../lib/api'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
-import type { MealSlot, NutritionistPlan, NutritionistRules } from '../../lib/types'
+import type {
+  MealSlot,
+  NutritionistPlan,
+  NutritionistRules,
+  SubstitutionGroup,
+} from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
 import { FileThumb } from '../recipes/ImportPages'
 import { formatDayLong } from './dates'
@@ -244,7 +252,18 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
   const [strict, setStrict] = useState(plan.strict)
   const [validFrom, setValidFrom] = useState(plan.valid_from ?? '')
   const [validTo, setValidTo] = useState(plan.valid_to ?? '')
-  const [rules, setRules] = useState<NutritionistRules>(plan.rules)
+  // I piani letti prima delle sostituzioni non hanno la chiave.
+  const [rules, setRules] = useState<NutritionistRules>({
+    ...plan.rules,
+    substitutions: plan.rules.substitutions ?? [],
+  })
+  const substitutions = rules.substitutions ?? []
+  const setGroup = (index: number, changes: Partial<SubstitutionGroup>) =>
+    setRule({
+      substitutions: substitutions.map((group, at) =>
+        at === index ? { ...group, ...changes } : group,
+      ),
+    })
   const errors = update.error instanceof ApiError ? update.error.fieldErrors() : {}
   const draft = plan.status === 'draft'
   const busy = update.isPending || confirmPlan.isPending
@@ -273,6 +292,9 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
           options: meal.options.map((option) => option.trim()).filter(Boolean),
         })),
         weekly: rules.weekly.filter((item) => item.food.trim()),
+        substitutions: substitutions
+          .map((group) => ({ ...group, group: group.group.trim() }))
+          .filter((group) => group.equivalents.length >= 2),
       },
     })
 
@@ -374,6 +396,7 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
               {plan.files.map((file) => file.original_name).join(', ')}
             </p>
           )}
+          {plan.files.length > 0 && <Reread plan={plan} />}
         </Card>
 
         <Card title={gettext('Pasti')} icon="restaurant">
@@ -455,6 +478,66 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
             </div>
           )}
           {errors.rules && <p className="text-body-small text-error">{errors.rules}</p>}
+        </Card>
+
+        <Card title={gettext('Sostituzioni')} icon="swap_horiz">
+          <p className="-mt-2 text-body-small text-on-surface-variant">
+            {gettext(
+              'Alimenti che si scambiano fra loro, ognuno con la sua grammatura (es. 80 g pasta, 100 g pane): il piano li usa per variare le opzioni. Un gruppo serve almeno due alimenti.',
+            )}
+          </p>
+          {substitutions.map((group, index) => (
+            <div key={index} className="grid gap-2 rounded-row bg-surface p-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <Field label={gettext('Gruppo')} className="min-w-[10rem] flex-1">
+                  <input
+                    className="field-input"
+                    value={group.group}
+                    maxLength={80}
+                    onChange={(event) => setGroup(index, { group: event.target.value })}
+                  />
+                </Field>
+                <Field label={gettext('Quando vale')} className="min-w-[10rem] flex-1">
+                  <input
+                    className="field-input"
+                    value={group.note}
+                    maxLength={200}
+                    placeholder={gettext('sempre')}
+                    onChange={(event) => setGroup(index, { note: event.target.value })}
+                  />
+                </Field>
+                <IconButton
+                  icon="delete"
+                  label={gettext('Togli il gruppo')}
+                  onClick={() =>
+                    setRule({ substitutions: substitutions.filter((_, at) => at !== index) })
+                  }
+                />
+              </div>
+              <ChipEditor
+                inputLabel={gettext('Alimento con grammatura (es. 80 g riso)')}
+                items={group.equivalents.map((food) => ({ key: food, label: food }))}
+                onAdd={(food) => setGroup(index, { equivalents: [...group.equivalents, food] })}
+                onRemove={(food) =>
+                  setGroup(index, {
+                    equivalents: group.equivalents.filter((other) => other !== food),
+                  })
+                }
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn-text btn-sm justify-self-start"
+            onClick={() =>
+              setRule({
+                substitutions: [...substitutions, { group: '', equivalents: [], note: '' }],
+              })
+            }
+          >
+            <Icon name="add" size={18} />
+            {gettext('Aggiungi un gruppo')}
+          </button>
         </Card>
 
         <Card title={gettext('Quante volte a settimana')} icon="event_repeat">
@@ -578,6 +661,56 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
         </div>
       </div>
     </Page>
+  )
+}
+
+/** Rilegge i file: per i piani letti prima che si prendessero le sostituzioni. */
+function Reread({ plan }: { plan: NutritionistPlan }) {
+  const client = useQueryClient()
+  const confirm = useConfirm()
+  const reread = useRereadNutritionistPlan()
+  const [jobId, setJobId] = useState<string>()
+  const { data: job } = useJob(jobId)
+  const working = reread.isPending || job?.status === 'queued' || job?.status === 'running'
+
+  useEffect(() => {
+    if (job?.status === 'ready') {
+      void client.invalidateQueries({ queryKey: keys.nutritionistPlan(plan.id) })
+    }
+  }, [job?.status, client, plan.id])
+
+  return (
+    <div className="grid gap-1">
+      <button
+        type="button"
+        className="btn-outlined btn-sm justify-self-start"
+        disabled={working}
+        onClick={async () => {
+          const ok = await confirm({
+            title: gettext('Rileggere il piano dai file?'),
+            message: gettext(
+              'Opzioni, sostituzioni, frequenze e alimenti vengono riletti e sostituiscono quelli di adesso, anche le tue correzioni. Il piano torna da rivedere.',
+            ),
+            confirmLabel: gettext('Rileggi'),
+            icon: 'refresh',
+          })
+          if (!ok) return
+          try {
+            setJobId((await reread.mutateAsync(plan.id)).id)
+          } catch {
+            // Errore sotto.
+          }
+        }}
+      >
+        <Icon name="refresh" size={18} />
+        {working ? gettext('Rileggo…') : gettext('Rileggi dai file')}
+      </button>
+      {job?.status === 'ready' && job.result.problem && (
+        <p className="text-body-small text-error">{job.result.problem}</p>
+      )}
+      {job?.status === 'failed' && <p className="text-body-small text-error">{job.error}</p>}
+      <ErrorBanner error={reread.error} />
+    </div>
   )
 }
 

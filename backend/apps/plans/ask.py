@@ -197,6 +197,10 @@ def nutritionist_text(plan: MealPlan | None, user) -> str:
         lines.append(
             "- A settimana: " + ", ".join(f"{i['food']} {i['times']} volte" for i in weekly)
         )
+    from .nutritionist import substitutions_text
+
+    if substitutions := substitutions_text(rules):
+        lines.append(substitutions)
     if free := rules.get("free_foods"):
         lines.append("- Liberi: " + ", ".join(free))
     if avoid := rules.get("avoid_foods"):

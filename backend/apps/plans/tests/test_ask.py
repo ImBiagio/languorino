@@ -175,3 +175,19 @@ def test_api_senza_chiave(user, api):
 
 def test_api_solo_utenti_loggati(api):
     assert api().post(URL, {"messages": []}, format="json").status_code == 401
+
+
+def test_sostituzioni_nella_chat(user):
+    nutritionist = NutritionistPlan.objects.create(
+        owner=user,
+        title="Piano",
+        status=NutritionistPlan.Status.CONFIRMED,
+        rules={
+            "meals": [{"slot": "lunch", "options": ["80 g pasta"]}],
+            "substitutions": [
+                {"group": "Carboidrati", "equivalents": ["80 g pasta", "100 g pane"], "note": ""}
+            ],
+        },
+    )
+    assert nutritionist
+    assert "Carboidrati: 80 g pasta = 100 g pane" in nutritionist_text(None, user)

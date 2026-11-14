@@ -38,6 +38,20 @@ confermato. In quel caso:
   (ADR 0007). Escono dai candidati e fanno scartare le ricette nuove che li
   contengono negli ingredienti veri. Il pasto lo riempie il codice.
 
+- **Sostituzioni** (aggiornamento del 2026-11-14). Le tabelle di
+  equivalenza ("80 g pasta = 80 g riso = 100 g pane", "150 g pollo = 200 g
+  merluzzo") si leggono in `rules.substitutions`: un gruppo per volta, ogni
+  alimento con la **sua** grammatura, più quando vale ("solo a colazione").
+  Prima finivano nelle note, che il modello riassumeva in una frase senza
+  grammature. Ora arrivano alla settimana, alle ricette nuove, al cambio pasto
+  e alla chat. Alla lettera sono le uniche variazioni ammesse alle opzioni, e
+  il sostituto prende la grammatura della tabella, non quella dell'alimento
+  tolto. "Rileggi dai file" (`POST …/{id}/reread`) rilegge i file tenuti e
+  rimette il piano da rivedere: serve ai piani letti prima della correzione.
+- Nella risposta della lettura i campi sono in un ordine fisso, con
+  `problem` per ultimo. Con `problem` fra i primi, Gemini ci girava in tondo
+  e chiudeva la risposta senza pasti.
+
 **Perché:**
 - Il piano del nutrizionista è un documento libero. Leggerlo è da modello,
   ma il risultato va controllato da chi lo conosce, come per le ricette.

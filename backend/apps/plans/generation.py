@@ -306,21 +306,14 @@ def write_recipe(
     nutritionist: NutritionistPlan | None = None,
 ) -> Recipe | None:
     """Scrive e salva una ricetta nuova per il piano; None se tocca un divieto."""
-    from .nutritionist import avoided, slot_options
+    from .nutritionist import avoided, meal_rules_text
 
     options = plan.settings
     extra = ""
     avoid = []
     if nutritionist is not None:
         avoid = nutritionist.rules.get("avoid_foods", [])
-        choices = sorted(
-            {option for row in uses for option in slot_options(nutritionist.rules, row["slot"])}
-        )
-        if choices:
-            extra += (
-                "\nRispetta le grammature del nutrizionista per questo pasto (porzione di "
-                "una persona, da moltiplicare per le porzioni): " + " | ".join(choices[:8]) + "."
-            )
+        extra += meal_rules_text(nutritionist.rules, [row["slot"] for row in uses])
         if avoid:
             extra += "\nIl nutrizionista dice di evitare: " + ", ".join(avoid) + "."
     slots = sorted({SLOT_NAMES[row["slot"]] for row in uses})
