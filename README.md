@@ -199,6 +199,11 @@ immagini ma non aggiunge servizi né reti: quando cambia
 `deploy/compose.prod.yaml` va ricopiato a mano in `~/languorino` e poi
 `docker compose -f compose.prod.yaml up -d`.
 
+Il Caddyfile interno invece sta dentro l'immagine `languorino-web`: si aggiorna
+col deploy, non va ricopiato. Nel compose ogni servizio ha
+`no-new-privileges` e un tetto di memoria (`mem_limit`); backend, worker,
+worker-ai e beat girano anche senza capability (`cap_drop: [ALL]`).
+
 Primo avvio sul server:
 
 1. DNS: record A per `languor.inoo.it` → l'IP del server (come gli altri progetti);

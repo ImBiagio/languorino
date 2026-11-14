@@ -4,9 +4,20 @@
 # il traffico arriva dal proxy "edge" (repo homeserver, edge/) sulla rete Docker "edge".
 name: languorino
 
+# Contenimento (su ogni servizio): un processo non puo' guadagnare privilegi
+# con binari setuid, e ognuno ha un tetto di memoria, cosi' un servizio che
+# impazzisce non porta giu' gli altri progetti dello stesso server.
+x-no-new-privileges: &no-new-privileges
+  security_opt: ["no-new-privileges:true"]
+
 x-backend: &backend
   image: ghcr.io/imbiagio/languorino-backend:prod
   restart: unless-stopped
+  <<: *no-new-privileges
+  # Le immagini del progetto girano come appuser (non root) e non aprono porte
+  # sotto la 1024: non serve nessuna capability del kernel. Non vale per
+  # postgres, redis, caddy e i backup, che partono da root e ne usano alcune.
+  cap_drop: [ALL]
   env_file: .env
   environment:
     POSTGRES_HOST: db
@@ -22,6 +33,8 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    <<: *no-new-privileges
+    mem_limit: 512m
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-languorino}
       POSTGRES_USER: ${POSTGRES_USER:-languorino}
@@ -37,6 +50,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    <<: *no-new-privileges
+    mem_limit: 128m
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -45,6 +60,7 @@ services:
 
   backend:
     <<: *backend
+    mem_limit: 768m
     environment:
       POSTGRES_HOST: db
       REDIS_URL: redis://redis:6379/0
@@ -64,6 +80,7 @@ services:
 
   worker:
     <<: *backend
+    mem_limit: 512m
     command: celery -A config worker -l info --concurrency 2
     depends_on:
       backend:
@@ -72,6 +89,8 @@ services:
   # Coda "ai" (ADR 0005): le chiamate a Gemini, due alla volta.
   worker-ai:
     <<: *backend
+    # Piu' del worker: qui si tengono in memoria PDF e pagine disegnate.
+    mem_limit: 768m
     command: celery -A config worker -l info -Q ai -c 2 -n ai@%h
     depends_on:
       backend:
@@ -79,6 +98,7 @@ services:
 
   beat:
     <<: *backend
+    mem_limit: 256m
     command: >
       celery -A config beat -l info
       --scheduler django_celery_beat.schedulers:DatabaseScheduler
@@ -89,6 +109,8 @@ services:
   web:
     image: ghcr.io/imbiagio/languorino-web:prod
     restart: unless-stopped
+    <<: *no-new-privileges
+    mem_limit: 128m
     depends_on:
       - backend
     volumes:
@@ -106,6 +128,8 @@ services:
     # Restore e prova in README (Deploy) e nel vault.
     image: prodrigestivill/postgres-backup-local:16
     restart: unless-stopped
+    <<: *no-new-privileges
+    mem_limit: 256m
     # biagio: i dump restano leggibili solo dal proprietario della cartella.
     user: "1000:1000"
     environment:
@@ -133,6 +157,8 @@ services:
     # root, qui si gira come biagio. Restore nel README (Deploy) e nel vault.
     image: alpine:3.20
     restart: unless-stopped
+    <<: *no-new-privileges
+    mem_limit: 256m
     user: "1000:1000"
     # Dopo il backend: il volume "media" nuovo deve nascere dall'immagine del
     # backend (cartella di appuser). Se lo crea prima questo container nasce
