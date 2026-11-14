@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import get_language
 from django.utils.translation import gettext as _
@@ -21,7 +22,7 @@ from apps.recipes.models import Recipe, RecipeIngredient
 
 from .ask import MAX_MESSAGE_CHARS as ASK_MAX_MESSAGE_CHARS
 from .ask import MAX_MESSAGES as ASK_MAX_MESSAGES
-from .models import MealPlan, NutritionistPlan, PlannedMeal, current_plan
+from .models import MealPlan, NutritionistPlan, PlannedMeal, PlanShare, current_plan
 from .serializers import (
     MealPlanDetailSerializer,
     MealPlanSerializer,
@@ -29,6 +30,7 @@ from .serializers import (
     PlannedMealSerializer,
     PlanSettingsSerializer,
 )
+from .sharing import share_plan, visible_settings
 from .tasks import enqueue_plan
 
 
@@ -400,3 +402,110 @@ class AskView(APIView):
             enqueue_job(job)
         job.refresh_from_db()
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
+# --- piano condiviso in sola lettura (ADR 0019) -----------------------------------------------
+
+
+def _person(user) -> dict:
+    return {"id": str(user.id), "name": user.display_name}
+
+
+class PlanShareListView(APIView):
+    """GET a chi faccio vedere il piano e chi lo fa vedere a me; POST ``{email}``."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get_throttles(self):
+        # Ogni POST dice se un'email ha un account: pochi tentativi.
+        self.throttle_scope = "invites" if self.request.method == "POST" else None
+        return super().get_throttles()
+
+    def _payload(self, user) -> dict:
+        given = PlanShare.objects.filter(owner=user).select_related("viewer")
+        received = PlanShare.objects.filter(viewer=user).select_related("owner")
+        return {
+            # Chi condivide ha scritto l'email: la rivede per riconoscere chi e'.
+            "given": [
+                {**_person(share.viewer), "share": str(share.id), "email": share.viewer.email}
+                for share in given
+            ],
+            "received": [
+                {
+                    **_person(share.owner),
+                    "share": str(share.id),
+                    "has_plan": current_plan(share.owner) is not None,
+                }
+                for share in received
+            ],
+        }
+
+    def get(self, request):
+        return Response(self._payload(request.user))
+
+    def post(self, request):
+        share_plan(request.user, str(request.data.get("email", "")))
+        return Response(self._payload(request.user), status=status.HTTP_201_CREATED)
+
+
+def _share_for(user, pk, *, as_viewer: bool = True) -> PlanShare:
+    shares = PlanShare.objects.select_related("owner", "viewer")
+    if as_viewer:
+        return get_object_or_404(shares, pk=pk, viewer=user)
+    return get_object_or_404(shares.filter(Q(owner=user) | Q(viewer=user)), pk=pk)
+
+
+class PlanShareDetailView(APIView):
+    """DELETE: chi condivide la spegne, chi riceve la toglie dal suo elenco."""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        _share_for(request.user, pk, as_viewer=False).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SharedPlanView(APIView):
+    """Il piano di oggi di chi condivide, in sola lettura; ``plan`` null se non ne ha."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        share = _share_for(request.user, pk)
+        plan = current_plan(share.owner)
+        if plan is None:
+            return Response({"owner": _person(share.owner), "plan": None})
+        plan = with_meals(plans_of(share.owner)).get(pk=plan.pk)
+        data = MealPlanDetailSerializer(plan, context={"request": request}).data
+        data["settings"] = visible_settings(plan.settings)
+        data["nutritionist"] = None
+        data["error"] = ""
+        return Response({"owner": _person(share.owner), "plan": data})
+
+
+class SharedPlanRecipeView(APIView):
+    """Una ricetta del piano condiviso: solo quelle che ci sono adesso."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk, recipe_id):
+        from apps.recipes.serializers import SharedRecipeSerializer
+
+        share = _share_for(request.user, pk)
+        plan = current_plan(share.owner)
+        if plan is None or not plan.meals.filter(recipe_id=recipe_id).exists():
+            raise Http404
+        recipe = get_object_or_404(
+            Recipe.all_objects.select_related("owner").prefetch_related(
+                "tags",
+                Prefetch(
+                    "ingredients",
+                    queryset=RecipeIngredient.objects.select_related("ingredient").order_by(
+                        "position"
+                    ),
+                ),
+            ),
+            pk=recipe_id,
+            owner=share.owner,
+        )
+        return Response(SharedRecipeSerializer(recipe, context={"request": request}).data)

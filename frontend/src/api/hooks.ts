@@ -25,6 +25,8 @@ import type {
   RecipePayload,
   RecipeSummary,
   SharedRecipe,
+  PlanShares,
+  SharedPlan,
   ShoppingItem,
   ShoppingList,
   ShoppingListDetail,
@@ -366,6 +368,51 @@ export function usePlans() {
     queryFn: () => api.get<MealPlan[]>('/api/plans'),
     refetchInterval: (query) =>
       query.state.data?.some((plan) => plan.status === 'generating') ? 4000 : false,
+  })
+}
+
+/* -------------------------------- piano condiviso in sola lettura -- */
+
+const planSharesKey = ['plan-shares'] as const
+
+export function usePlanShares() {
+  return useQuery({
+    queryKey: planSharesKey,
+    queryFn: () => api.get<PlanShares>('/api/plan-shares'),
+  })
+}
+
+export function useSharePlan() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (email: string) => api.post<PlanShares>('/api/plan-shares', { email }),
+    onSuccess: (data) => client.setQueryData(planSharesKey, data),
+  })
+}
+
+export function useDeletePlanShare() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (share: UUID) => api.delete<void>(`/api/plan-shares/${share}`),
+    onSuccess: () => void client.invalidateQueries({ queryKey: planSharesKey }),
+  })
+}
+
+export function useSharedPlan(share: UUID | undefined) {
+  return useQuery({
+    queryKey: [...planSharesKey, share, 'plan'],
+    queryFn: () => api.get<SharedPlan>(`/api/plan-shares/${share}/plan`),
+    enabled: Boolean(share),
+    retry: false,
+  })
+}
+
+export function useSharedPlanRecipe(share: UUID | undefined, recipe: UUID | undefined) {
+  return useQuery({
+    queryKey: [...planSharesKey, share, 'recipe', recipe],
+    queryFn: () => api.get<SharedRecipe>(`/api/plan-shares/${share}/recipes/${recipe}`),
+    enabled: Boolean(share && recipe),
+    retry: false,
   })
 }
 

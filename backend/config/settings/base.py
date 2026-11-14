@@ -162,6 +162,8 @@ REST_FRAMEWORK = {
         "ai": env("THROTTLE_AI", "60/hour"),
         # Pagina pubblica delle ricette condivise (senza login) e copia.
         "public": env("THROTTLE_PUBLIC", "60/min"),
+        # Condivisione del piano: ogni tentativo dice se un'email ha un account.
+        "invites": env("THROTTLE_INVITES", "20/hour"),
     },
 }
 

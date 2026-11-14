@@ -18,6 +18,7 @@ REST_FRAMEWORK = {
         "refresh": "10000/min",
         "ai": "10000/min",
         "public": "10000/min",
+        "invites": "10000/min",
     },
 }
 STORAGES = {

@@ -424,6 +424,20 @@ export interface MealPlanDetail extends MealPlan {
   meals: PlannedMeal[]
 }
 
+/** Piano fatto vedere a un altro account (ADR 0019). */
+export interface PlanShares {
+  /** A chi faccio vedere il mio piano. */
+  given: { id: UUID; name: string; email: string; share: UUID }[]
+  /** Chi mi fa vedere il suo. */
+  received: { id: UUID; name: string; share: UUID; has_plan: boolean }[]
+}
+
+/** Il piano di un altro, in sola lettura: ``settings`` ha solo pasti, porzioni e prep. */
+export interface SharedPlan {
+  owner: { id: UUID; name: string }
+  plan: MealPlanDetail | null
+}
+
 /* ------------------------------------------------------------------ spesa -- */
 
 export interface ShoppingItem {

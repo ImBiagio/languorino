@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:56+0100\n"
+"POT-Creation-Date: 2026-11-14 14:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -162,7 +162,9 @@ msgstr "New conversation"
 msgid ""
 "Chiedimi quello che vuoi sui tuoi pasti: grammature, cosa mangi o cucini e "
 "quando, cosa dice il piano del nutrizionista."
-msgstr "Ask me anything about your meals: amounts, what you eat or cook and when, what your nutritionist's plan says."
+msgstr ""
+"Ask me anything about your meals: amounts, what you eat or cook and when, "
+"what your nutritionist's plan says."
 
 msgid "Scrivi una domanda"
 msgstr "Write a question"
@@ -698,16 +700,21 @@ msgstr "How many new recipes?"
 msgid ""
 "Uso le tue ricette; ne scrivo di nuove solo se mancano per variare o per un "
 "pasto."
-msgstr "I use your recipes; I only write new ones when there aren't enough for variety or for a meal."
+msgstr ""
+"I use your recipes; I only write new ones when there aren't enough for "
+"variety or for a meal."
 
 msgid "Scrivo io tutte le ricette: le trovi nel piano e puoi salvarle."
-msgstr "I write all the recipes: you'll find them in the plan and can save them."
+msgstr ""
+"I write all the recipes: you'll find them in the plan and can save them."
 
 #, javascript-format
 msgid ""
 "Circa il %s dei pasti con ricette nuove scritte da me, il resto dalle tue. "
 "Le nuove le puoi salvare."
-msgstr "About %s of meals with new recipes written by me, the rest from yours. You can save the new ones."
+msgstr ""
+"About %s of meals with new recipes written by me, the rest from yours. You "
+"can save the new ones."
 
 msgid "Scegli almeno una fonte."
 msgstr "Choose at least one source."
@@ -921,6 +928,9 @@ msgstr[1] "%s servings"
 msgid "Fai la spesa"
 msgstr "Go shopping"
 
+msgid "Fallo vedere a qualcuno"
+msgstr "Share it with someone"
+
 msgid "Elimina il piano"
 msgstr "Delete the plan"
 
@@ -1062,6 +1072,88 @@ msgstr "Writing two recipes for this meal…"
 
 msgid "Questa volta niente di adatto: riprova, magari con un desiderio."
 msgstr "Nothing suitable this time: try again, maybe with a craving."
+
+msgid "Fai vedere il tuo piano"
+msgstr "Share your plan"
+
+msgid ""
+"Chi scegli vede il tuo piano di oggi e le sue ricette, sempre aggiornato, ma "
+"non può cambiarlo. Gli arriva una mail. Serve che abbia un account."
+msgstr "The people you choose see your current plan and its recipes, always up to date, but can't change it. They get an email. They need an account."
+
+msgid "Condividi"
+msgstr "Share"
+
+msgid "Lo vedono"
+msgstr "Shared with"
+
+msgid "Non farlo più vedere"
+msgstr "Stop sharing"
+
+#, javascript-format
+msgid "Non far più vedere il piano a %s?"
+msgstr "Stop sharing the plan with %s?"
+
+msgid "Puoi condividerlo di nuovo quando vuoi."
+msgstr "You can share it again whenever you like."
+
+msgid "Piani che ti fanno vedere"
+msgstr "Plans shared with you"
+
+#, javascript-format
+msgid "Il piano di %s"
+msgstr "%s's plan"
+
+msgid "Solo da guardare: il tuo resta tuo"
+msgstr "View only: yours stays yours"
+
+msgid "Per ora non ha un piano attivo"
+msgstr "No active plan for now"
+
+msgid "Questo piano non è più condiviso con te"
+msgstr "This plan is no longer shared with you"
+
+msgid "Torna al tuo piano"
+msgstr "Back to your plan"
+
+#, javascript-format
+msgid "%s non ha un piano attivo"
+msgstr "%s has no active plan"
+
+msgid "Quando ne attiva uno lo vedi qui."
+msgstr "When they activate one, you'll see it here."
+
+msgid "Togliere questo piano dal tuo elenco?"
+msgstr "Remove this plan from your list?"
+
+#, javascript-format
+msgid "Per rivederlo %s dovrà condividerlo di nuovo."
+msgstr "To see it again, %s will have to share it again."
+
+msgid "Non mostrarmelo più"
+msgstr "Stop showing it to me"
+
+#, javascript-format
+msgid "Il piano di %s · solo da guardare"
+msgstr "%s's plan · view only"
+
+msgid "Cosa mangia"
+msgstr "What they eat"
+
+msgid "Cosa cucina"
+msgstr "What they cook"
+
+msgid "Questa ricetta non è più nel piano"
+msgstr "This recipe is no longer in the plan"
+
+msgid "Torna al piano"
+msgstr "Back to the plan"
+
+msgid "Ingredienti"
+msgstr "Ingredients"
+
+msgid "Preparazione"
+msgstr "Method"
 
 msgid "Cucino al momento"
 msgstr "I cook on the day"
@@ -1565,7 +1657,9 @@ msgstr[1] "Drawing the recipes without a photo: %s missing."
 msgid ""
 "Prendo le foto dei piatti dal PDF, se ci sono; le altre ricette le faccio "
 "disegnare in modo semplice."
-msgstr "I take the dish photos from the PDF, if there are any; the other recipes get a simple drawing."
+msgstr ""
+"I take the dish photos from the PDF, if there are any; the other recipes get "
+"a simple drawing."
 
 #, javascript-format
 msgid "Foto trovate nel PDF: %s. Senza immagine: %s ricetta."
@@ -1733,9 +1827,6 @@ msgid_plural "Aggiungi %s ricette"
 msgstr[0] "Add %s recipe"
 msgstr[1] "Add %s recipes"
 
-msgid "Condividi"
-msgstr "Share"
-
 msgid "Eliminare la ricetta?"
 msgstr "Delete the recipe?"
 
@@ -1783,17 +1874,11 @@ msgstr "Careful: it contains things you can't eat"
 msgid "Contiene cose che non ti piacciono: %s"
 msgstr "It contains things you don't like: %s"
 
-msgid "Ingredienti"
-msgstr "Ingredients"
-
 msgid "Nessun ingrediente scritto."
 msgstr "No ingredients written."
 
 msgid "facoltativo"
 msgstr "optional"
-
-msgid "Preparazione"
-msgstr "Method"
 
 msgid "Nessun passo scritto."
 msgstr "No steps written."

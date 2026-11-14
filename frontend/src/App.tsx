@@ -18,6 +18,7 @@ import { OnboardingPage } from './features/onboarding/OnboardingPage'
 import { NewPlanPage } from './features/plans/NewPlanPage'
 import { NutritionistHomePage, NutritionistPlanPage } from './features/plans/NutritionistPages'
 import { PlanHomePage, PlanPage } from './features/plans/PlanPages'
+import { SharedPlanPage, SharedPlanRecipePage } from './features/plans/SharedPlanPages'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { BookPage, BooksPage } from './features/recipes/BooksPages'
 import { ImportJobPage, ImportPage } from './features/recipes/ImportPages'
@@ -103,6 +104,11 @@ export default function App() {
         <Route path="piano/nuovo" element={<NewPlanPage />} />
         <Route path="piano/nutrizionista" element={<NutritionistHomePage />} />
         <Route path="piano/nutrizionista/:planId" element={<NutritionistPlanPage />} />
+        <Route path="piano/condivisi/:shareId" element={<SharedPlanPage />} />
+        <Route
+          path="piano/condivisi/:shareId/ricette/:recipeId"
+          element={<SharedPlanRecipePage />}
+        />
         <Route path="piano/:planId" element={<PlanPage />} />
         <Route path="spesa" element={<ShoppingHomePage />} />
         <Route path="spesa/:listId" element={<ShoppingPage />} />

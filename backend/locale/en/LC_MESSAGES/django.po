@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:56+0100\n"
+"POT-Creation-Date: 2026-11-14 14:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,28 +22,28 @@ msgstr ""
 msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
 msgstr "The AI's answer wasn't in the expected format."
 
-#: apps/ai/client.py:131 apps/ai/client.py:209
+#: apps/ai/client.py:135 apps/ai/client.py:218
 msgid ""
 "Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
 "riavvia."
 msgstr ""
 "Gemini key not configured: set GEMINI_API_KEY in the .env file and restart."
 
-#: apps/ai/client.py:170 apps/ai/client.py:242
+#: apps/ai/client.py:179 apps/ai/client.py:251
 msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
 msgstr "Gemini rejected the key: check GEMINI_API_KEY."
 
-#: apps/ai/client.py:174 apps/ai/client.py:244
+#: apps/ai/client.py:183 apps/ai/client.py:253
 #, python-format
 msgid "Gemini ha risposto con un errore (%(code)s)."
 msgstr "Gemini answered with an error (%(code)s)."
 
-#: apps/ai/client.py:177
+#: apps/ai/client.py:186
 #, python-format
 msgid "errore %(code)s"
 msgstr "error %(code)s"
 
-#: apps/ai/client.py:195
+#: apps/ai/client.py:204
 #, python-format
 msgid ""
 "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
@@ -52,7 +52,7 @@ msgstr ""
 "Gemini is overloaded right now (%(models)s; last: %(error)s). Try again in a "
 "few minutes."
 
-#: apps/ai/client.py:233
+#: apps/ai/client.py:242
 msgid ""
 "La chiave Gemini non ha quota per le immagini (piano gratuito): attiva la "
 "fatturazione su Google AI Studio."
@@ -60,15 +60,15 @@ msgstr ""
 "The Gemini key has no quota for images (free tier): enable billing in Google "
 "AI Studio."
 
-#: apps/ai/client.py:239
+#: apps/ai/client.py:248
 msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
 msgstr "Gemini is overloaded right now. Try again in a few minutes."
 
-#: apps/ai/client.py:250
+#: apps/ai/client.py:259
 msgid "Gemini non risponde. Riprova tra qualche minuto."
 msgstr "Gemini isn't answering. Try again in a few minutes."
 
-#: apps/ai/client.py:259
+#: apps/ai/client.py:268
 msgid "Gemini non ha disegnato niente questa volta. Riprova."
 msgstr "Gemini didn't draw anything this time. Try again."
 
@@ -150,11 +150,11 @@ msgstr "Queued"
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:32 apps/plans/models.py:113
+#: apps/jobs/models.py:32 apps/plans/models.py:114
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:33 apps/plans/models.py:114
+#: apps/jobs/models.py:33 apps/plans/models.py:115
 msgid "Confermato"
 msgstr "Confirmed"
 
@@ -187,8 +187,8 @@ msgstr "The job stopped. Try again."
 msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
-#: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:75
-#: apps/plans/views.py:261 apps/plans/views.py:346 apps/plans/views.py:383
+#: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:77
+#: apps/plans/views.py:263 apps/plans/views.py:348 apps/plans/views.py:385
 #: apps/profiles/live.py:160 apps/profiles/views.py:131
 #: apps/profiles/views.py:182 apps/recipes/views.py:233
 #: apps/recipes/views.py:395 apps/recipes/views.py:499
@@ -224,43 +224,43 @@ msgstr "No suitable recipe: pick one yourself."
 msgid "Non regge in frigo: meglio cucinarla il giorno stesso."
 msgstr "It doesn't keep in the fridge: better to cook it the same day."
 
-#: apps/plans/models.py:23
+#: apps/plans/models.py:24
 msgid "Cucino al momento"
 msgstr "I cook on the day"
 
-#: apps/plans/models.py:24
+#: apps/plans/models.py:25
 msgid "La sera cucino anche il pranzo del giorno dopo"
 msgstr "In the evening I also cook the next day's lunch"
 
-#: apps/plans/models.py:25
+#: apps/plans/models.py:26
 msgid "Cucino ogni 2 giorni"
 msgstr "I cook every 2 days"
 
-#: apps/plans/models.py:26
+#: apps/plans/models.py:27
 msgid "Cucino ogni 3 giorni"
 msgstr "I cook every 3 days"
 
-#: apps/plans/models.py:27
+#: apps/plans/models.py:28
 msgid "Domenica e mercoledì per tutta la settimana"
 msgstr "Sunday and Wednesday for the whole week"
 
-#: apps/plans/models.py:32
+#: apps/plans/models.py:33
 msgid "In preparazione"
 msgstr "Being prepared"
 
-#: apps/plans/models.py:33
+#: apps/plans/models.py:34
 msgid "Da attivare"
 msgstr "To activate"
 
-#: apps/plans/models.py:34
+#: apps/plans/models.py:35
 msgid "Attivo"
 msgstr "Active"
 
-#: apps/plans/models.py:35
+#: apps/plans/models.py:36
 msgid "Archiviato"
 msgstr "Archived"
 
-#: apps/plans/models.py:36 apps/recipes/models.py:158
+#: apps/plans/models.py:37 apps/recipes/models.py:158
 #: apps/recipes/models.py:183
 msgid "Interrotto"
 msgstr "Stopped"
@@ -305,31 +305,59 @@ msgstr "Invalid rules."
 msgid "La fine viene prima dell'inizio."
 msgstr "The end comes before the start."
 
+#: apps/plans/sharing.py:31
+msgid "Il piano è già tuo."
+msgstr "The plan is already yours."
+
+#: apps/plans/sharing.py:35
+msgid "Nessun account Languorino con questa email: prima deve registrarsi."
+msgstr "No Languorino account with this email: they need to sign up first."
+
+#: apps/plans/sharing.py:48
+#, python-format
+msgid "%(name)s ti fa vedere il suo piano"
+msgstr "%(name)s is sharing their plan with you"
+
+#: apps/plans/sharing.py:51
+#, python-format
+msgid ""
+"%(name)s ha condiviso con te il suo piano alimentare su %(app)s: lo vedi "
+"così com'è, senza poterlo cambiare."
+msgstr "%(name)s shared their meal plan with you on %(app)s: you see it as it is, without being able to change it."
+
+#: apps/plans/sharing.py:55
+msgid "Guarda il piano"
+msgstr "View the plan"
+
+#: apps/plans/sharing.py:57
+msgid "Il tuo piano resta tuo: puoi crearne uno quando vuoi."
+msgstr "Your plan stays yours: you can create one whenever you like."
+
 #: apps/plans/tasks.py:73
 msgid "Questa settimana ci sta mettendo troppo. Riprova."
 msgstr "This week is taking too long. Try again."
 
-#: apps/plans/views.py:138
+#: apps/plans/views.py:140
 msgid "Il piano non è pronto."
 msgstr "The plan isn't ready."
 
-#: apps/plans/views.py:159
+#: apps/plans/views.py:161
 msgid "Si rifà solo una bozza o un piano interrotto."
 msgstr "Only a draft or a stopped plan can be redone."
 
-#: apps/plans/views.py:182
+#: apps/plans/views.py:184
 msgid "Si può riprendere solo un piano interrotto."
 msgstr "Only a stopped plan can be resumed."
 
-#: apps/plans/views.py:213
+#: apps/plans/views.py:215
 msgid "Pasto libero."
 msgstr "Free meal."
 
-#: apps/plans/views.py:323
+#: apps/plans/views.py:325
 msgid "Serve almeno un pasto con le sue opzioni."
 msgstr "At least one meal with its options is needed."
 
-#: apps/plans/views.py:390
+#: apps/plans/views.py:392
 msgid "Scrivi una domanda."
 msgstr "Write a question."
 
