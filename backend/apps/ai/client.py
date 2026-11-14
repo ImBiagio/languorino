@@ -42,6 +42,11 @@ class AIOverloaded(AIError):
     riprovare piu' tardi (i ricettari PDF lo fanno senza fermarsi)."""
 
 
+class AIBudgetExceeded(AIError):
+    """Tetto giornaliero delle chiamate finito (``apps/ai/budget.py``): non si
+    chiama Gemini e non si riprova, passa da solo a mezzanotte."""
+
+
 class AINoImage(AIError):
     """Il modello ha risposto senza immagine: capita ogni tanto, riprovando
     di solito va (provato il 2026-11-11 sulla piadina con hummus)."""
@@ -67,6 +72,15 @@ def models_in_order(fast: bool = False) -> list[str]:
         main = [settings.GEMINI_MODEL_FAST, *main]
     models = list(dict.fromkeys(main))
     return sorted(models, key=lambda model: bool(cache.get(_down_key(model))))
+
+
+def check_budget(user=None, *, live: bool = False) -> None:
+    """Ferma la chiamata se il tetto di oggi e' finito (anche dentro Celery)."""
+    from .budget import exhausted
+
+    message = exhausted(user, live=live)
+    if message:
+        raise AIBudgetExceeded(message)
 
 
 def _served_tier(response) -> str:
@@ -134,6 +148,7 @@ def generate[Schema: BaseModel](
         raise AIError(
             _("Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e riavvia.")
         )
+    check_budget(user)
 
     from google import genai
     from google.genai import errors, types
@@ -217,6 +232,7 @@ def generate_image(
         raise AIError(
             _("Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e riavvia.")
         )
+    check_budget(user)
 
     from google import genai
     from google.genai import errors, types

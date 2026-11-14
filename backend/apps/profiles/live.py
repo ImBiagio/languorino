@@ -28,7 +28,8 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from apps.ai.client import AIError, _log, is_enabled
+from apps.ai.budget import LIVE_FEATURE
+from apps.ai.client import AIError, _log, check_budget, is_enabled
 from apps.recipes.importing import LANGUAGES
 
 from .interview import (
@@ -39,7 +40,7 @@ from .interview import (
     clean_updates,
 )
 
-FEATURE = "interview_live"
+FEATURE = LIVE_FEATURE
 # Una sessione solo audio di Gemini Live dura al massimo 15 minuti.
 SESSION_MINUTES = 15
 
@@ -158,6 +159,9 @@ def live_token(user, language: str = "it") -> dict:
     """Un token monouso per una sessione: va aperta entro un minuto."""
     if not is_enabled():
         raise AIError(_("La lettura con l'intelligenza artificiale non è configurata."))
+    # Qui il registro conta le sessioni, non i token: una sessione vale fino a
+    # 15 minuti di audio, quindi ha anche un tetto suo al giorno.
+    check_budget(user, live=True)
     from google import genai
 
     client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options={"api_version": "v1alpha"})

@@ -45,6 +45,12 @@ dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
   solo refresh in volo nel client (`frontend/src/lib/api.ts`). Registrazione,
   conferma email, reset password, cambio password. Rate limit su
   login/registrazione (`THROTTLE_AUTH`) e sulle chiamate all'LLM (`THROTTLE_AI`).
+- **Tetto alla spesa per l'AI** (`apps/ai/budget.py`): oltre al limite orario,
+  chiamate riuscite a Gemini al giorno per utente (`AI_CALLS_PER_DAY`, 400) e
+  per tutta l'app (`AI_CALLS_PER_DAY_GLOBAL`, 2000), conversazioni a voce per
+  utente (`AI_LIVE_SESSIONS_PER_DAY`, 20), immagini (`AI_IMAGES_PER_DAY`).
+  Finito il tetto le view rispondono 429 e i lavori in coda si fermano con lo
+  stesso messaggio, fino a mezzanotte; 0 spegne un tetto.
 - **Mail** dal worker Celery dopo il commit, con retry, testo + HTML su un solo
   layout (`backend/templates/emails/`). In produzione SMTP di **Brevo**, lo
   stesso account di tutti i progetti (mittente `messagg@inoo.it`).

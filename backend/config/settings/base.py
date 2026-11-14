@@ -159,7 +159,9 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.exceptions.exception_handler",
     # Solo le view con ``throttle_scope`` sono limitate: login, registrazione e
     # le chiamate agli LLM. I contatori stanno nella cache Django, cioe' Redis.
-    "DEFAULT_THROTTLE_CLASSES": ("rest_framework.throttling.ScopedRateThrottle",),
+    # AiBudgetThrottle e' ScopedRateThrottle piu' il tetto giornaliero delle
+    # chiamate a Gemini sulle view "ai" (apps/ai/budget.py).
+    "DEFAULT_THROTTLE_CLASSES": ("apps.ai.budget.AiBudgetThrottle",),
     "DEFAULT_THROTTLE_RATES": {
         "auth": env("THROTTLE_AUTH", "10/min"),
         "refresh": env("THROTTLE_REFRESH", "60/min"),
@@ -301,6 +303,16 @@ GEMINI_MODEL_LIVE = env("GEMINI_MODEL_LIVE", "gemini-3.1-flash-live-preview")
 GEMINI_MODEL_IMAGE = env("GEMINI_MODEL_IMAGE", "gemini-2.5-flash-image")
 AI_IMAGES_PER_DAY = int(env("AI_IMAGES_PER_DAY", "20"))
 RECIPE_IMAGE_MAX_SIDE = 1600
+# Tetto alla spesa (apps/ai/budget.py): chiamate riuscite a Gemini al giorno,
+# per utente e per tutta l'app, immagini comprese. La registrazione e' aperta
+# e THROTTLE_AI limita solo l'ora. I default stanno larghi per una famiglia:
+# il giorno piu' pesante (un ricettario PDF di 200 pagine letto e illustrato)
+# sta sotto le 300 chiamate. 0 = nessun tetto.
+AI_CALLS_PER_DAY = int(env("AI_CALLS_PER_DAY", "400"))
+AI_CALLS_PER_DAY_GLOBAL = int(env("AI_CALLS_PER_DAY_GLOBAL", "2000"))
+# Conversazioni a voce in tempo reale aperte al giorno per utente: una dura
+# fino a 15 minuti di audio e costa molto piu' di una chiamata di testo.
+AI_LIVE_SESSIONS_PER_DAY = int(env("AI_LIVE_SESSIONS_PER_DAY", "20"))
 
 # --- Lavori lunghi (apps/jobs) ---
 # Gemini accetta al massimo ~20 MB per richiesta: i limiti stanno sotto.
