@@ -8,6 +8,7 @@ import { Chip, ErrorBanner, Icon, IconButton, Skeleton, Stepper } from '../../co
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Recipe } from '../../lib/types'
 import { MEAL_OPTIONS, preferenceLabel } from '../profile/options'
+import { NutritionCard } from './NutritionCard'
 import { difficultyLabel, formatMinutes, formatQuantity } from './options'
 import { RecipeHeroImage } from './RecipeImage'
 import { ShareDialog } from './Sharing'
@@ -286,6 +287,8 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
             )}
           </section>
         </div>
+
+        <NutritionCard recipe={recipe} servings={servings} />
 
         {recipe.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">

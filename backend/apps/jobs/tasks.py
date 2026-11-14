@@ -134,6 +134,18 @@ def _ask(job: Job) -> None:
     job.result = result
 
 
+def _recipe_nutrition(job: Job) -> None:
+    from apps.recipes.models import Recipe
+    from apps.recipes.nutrition import estimate
+    from apps.recipes.serializers import RecipeSerializer
+
+    recipe = Recipe.objects.get(id=job.input["recipe"], owner=job.owner)
+    result = estimate(recipe, language=job.input.get("language", "it"))
+    job.model = result["model"]
+    recipe.refresh_from_db()
+    job.result = {"recipe": RecipeSerializer(recipe, context={}).data}
+
+
 RUNNERS = {
     Job.Kind.IMPORT_RECIPES: _import_recipes,
     Job.Kind.FRIDGE_SCAN: _fridge_scan,
@@ -143,6 +155,7 @@ RUNNERS = {
     Job.Kind.INTERVIEW: _interview,
     Job.Kind.MEAL_IDEAS: _meal_ideas,
     Job.Kind.ASK: _ask,
+    Job.Kind.RECIPE_NUTRITION: _recipe_nutrition,
 }
 
 

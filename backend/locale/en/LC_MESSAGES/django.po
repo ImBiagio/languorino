@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:56+0100\n"
+"POT-Creation-Date: 2026-11-14 14:00+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,28 +22,28 @@ msgstr ""
 msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
 msgstr "The AI's answer wasn't in the expected format."
 
-#: apps/ai/client.py:131 apps/ai/client.py:209
+#: apps/ai/client.py:135 apps/ai/client.py:218
 msgid ""
 "Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
 "riavvia."
 msgstr ""
 "Gemini key not configured: set GEMINI_API_KEY in the .env file and restart."
 
-#: apps/ai/client.py:170 apps/ai/client.py:242
+#: apps/ai/client.py:179 apps/ai/client.py:251
 msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
 msgstr "Gemini rejected the key: check GEMINI_API_KEY."
 
-#: apps/ai/client.py:174 apps/ai/client.py:244
+#: apps/ai/client.py:183 apps/ai/client.py:253
 #, python-format
 msgid "Gemini ha risposto con un errore (%(code)s)."
 msgstr "Gemini answered with an error (%(code)s)."
 
-#: apps/ai/client.py:177
+#: apps/ai/client.py:186
 #, python-format
 msgid "errore %(code)s"
 msgstr "error %(code)s"
 
-#: apps/ai/client.py:195
+#: apps/ai/client.py:204
 #, python-format
 msgid ""
 "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
@@ -52,7 +52,7 @@ msgstr ""
 "Gemini is overloaded right now (%(models)s; last: %(error)s). Try again in a "
 "few minutes."
 
-#: apps/ai/client.py:233
+#: apps/ai/client.py:242
 msgid ""
 "La chiave Gemini non ha quota per le immagini (piano gratuito): attiva la "
 "fatturazione su Google AI Studio."
@@ -60,15 +60,15 @@ msgstr ""
 "The Gemini key has no quota for images (free tier): enable billing in Google "
 "AI Studio."
 
-#: apps/ai/client.py:239
+#: apps/ai/client.py:248
 msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
 msgstr "Gemini is overloaded right now. Try again in a few minutes."
 
-#: apps/ai/client.py:250
+#: apps/ai/client.py:259
 msgid "Gemini non risponde. Riprova tra qualche minuto."
 msgstr "Gemini isn't answering. Try again in a few minutes."
 
-#: apps/ai/client.py:259
+#: apps/ai/client.py:268
 msgid "Gemini non ha disegnato niente questa volta. Riprova."
 msgstr "Gemini didn't draw anything this time. Try again."
 
@@ -142,23 +142,27 @@ msgstr "Ideas for a plan meal"
 msgid "Domanda su profilo e piano"
 msgstr "Question about profile and plan"
 
-#: apps/jobs/models.py:30 apps/recipes/models.py:155
+#: apps/jobs/models.py:28
+msgid "Calorie e macro della ricetta"
+msgstr "Recipe calories and macros"
+
+#: apps/jobs/models.py:31 apps/recipes/models.py:155
 msgid "In coda"
 msgstr "Queued"
 
-#: apps/jobs/models.py:31
+#: apps/jobs/models.py:32
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:32 apps/plans/models.py:113
+#: apps/jobs/models.py:33 apps/plans/models.py:113
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:33 apps/plans/models.py:114
+#: apps/jobs/models.py:34 apps/plans/models.py:114
 msgid "Confermato"
 msgstr "Confirmed"
 
-#: apps/jobs/models.py:34
+#: apps/jobs/models.py:35
 msgid "Non riuscito"
 msgstr "Failed"
 
@@ -170,16 +174,16 @@ msgstr "I couldn't find a meal plan in these files."
 msgid "Piano del nutrizionista"
 msgstr "Nutritionist's plan"
 
-#: apps/jobs/tasks.py:169
+#: apps/jobs/tasks.py:182
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:173 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
+#: apps/jobs/tasks.py:186 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
 #: apps/recipes/tasks.py:236
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
-#: apps/jobs/tasks.py:192
+#: apps/jobs/tasks.py:205
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
@@ -191,7 +195,8 @@ msgstr "Unknown job."
 #: apps/plans/views.py:261 apps/plans/views.py:346 apps/plans/views.py:383
 #: apps/profiles/live.py:160 apps/profiles/views.py:131
 #: apps/profiles/views.py:182 apps/recipes/views.py:233
-#: apps/recipes/views.py:395 apps/recipes/views.py:499
+#: apps/recipes/views.py:395 apps/recipes/views.py:433
+#: apps/recipes/views.py:528
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -686,19 +691,47 @@ msgstr "Drawn by AI"
 msgid "Dal ricettario PDF"
 msgstr "From the PDF cookbook"
 
+#: apps/recipes/models.py:271
+msgid "Non calcolati"
+msgstr "Not calculated"
+
+#: apps/recipes/models.py:272
+msgid "Dalla ricetta"
+msgstr "From the recipe"
+
+#: apps/recipes/models.py:273
+msgid "Stimati dall'AI"
+msgstr "Estimated by AI"
+
+#: apps/recipes/models.py:274
+msgid "Scritti a mano"
+msgstr "Entered by hand"
+
+#: apps/recipes/nutrition.py:100 apps/recipes/views.py:438
+msgid "Senza ingredienti non posso stimare calorie e macro."
+msgstr "I can't estimate calories and macros without ingredients."
+
+#: apps/recipes/nutrition.py:128
+msgid "Non sono riuscito a stimare i valori di questa ricetta."
+msgstr "I couldn't estimate the values for this recipe."
+
 #: apps/recipes/serializers.py:69
 msgid "Scegli o scrivi un ingrediente."
 msgstr "Pick or type an ingredient."
 
-#: apps/recipes/serializers.py:226
+#: apps/recipes/serializers.py:233
 msgid "Dai un nome alla ricetta."
 msgstr "Give the recipe a name."
 
-#: apps/recipes/serializers.py:261
+#: apps/recipes/serializers.py:255
+msgid "Fonte non valida."
+msgstr "Invalid source."
+
+#: apps/recipes/serializers.py:298
 msgid "Ingrediente non trovato."
 msgstr "Ingredient not found."
 
-#: apps/recipes/serializers.py:336
+#: apps/recipes/serializers.py:389
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
@@ -758,15 +791,15 @@ msgstr "It already has a real photo: remove it before having one drawn."
 msgid "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
 msgstr "You've used up today's images (%(n)d a day). Try again tomorrow."
 
-#: apps/recipes/views.py:478
+#: apps/recipes/views.py:507
 msgid "È già nel tuo ricettario."
 msgstr "It's already in your cookbook."
 
-#: apps/recipes/views.py:504
+#: apps/recipes/views.py:533
 msgid "Prima finisco di leggere il ricettario."
 msgstr "Let me finish reading the cookbook first."
 
-#: apps/recipes/views.py:510
+#: apps/recipes/views.py:539
 msgid "Ci sto già lavorando."
 msgstr "I'm already working on it."
 

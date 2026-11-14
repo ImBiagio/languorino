@@ -25,6 +25,7 @@ class Job(BaseModel):
         INTERVIEW = "interview", _("Intervista per il profilo")
         MEAL_IDEAS = "meal_ideas", _("Idee per un pasto del piano")
         ASK = "ask", _("Domanda su profilo e piano")
+        RECIPE_NUTRITION = "recipe_nutrition", _("Calorie e macro della ricetta")
 
     class Status(models.TextChoices):
         QUEUED = "queued", _("In coda")

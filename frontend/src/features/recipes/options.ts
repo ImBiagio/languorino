@@ -14,6 +14,16 @@ export function difficultyLabel(value: Difficulty): string {
   return DIFFICULTY_OPTIONS.find((option) => option.value === value)?.label ?? value
 }
 
+/** Etichette dei valori nutrizionali (ADR 0018), con l'unita'. */
+export function nutritionLabel(field: 'kcal' | 'protein_g' | 'carbs_g' | 'fat_g'): string {
+  return {
+    kcal: gettext('Calorie (kcal)'),
+    protein_g: gettext('Proteine (g)'),
+    carbs_g: gettext('Carboidrati (g)'),
+    fat_g: gettext('Grassi (g)'),
+  }[field]
+}
+
 export const CATEGORY_LABELS: Record<Category, string> = {
   produce: gettext('Frutta e verdura'),
   meat: gettext('Carne e salumi'),

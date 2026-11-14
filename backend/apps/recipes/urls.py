@@ -10,6 +10,7 @@ from .views import (
     RecipeImageDrawView,
     RecipeImageView,
     RecipeListView,
+    RecipeNutritionView,
     RecipeSaveView,
     RecipeShareView,
     SharedRecipeCopyView,
@@ -24,6 +25,7 @@ urlpatterns = [
     path("recipes/<uuid:pk>", RecipeDetailView.as_view(), name="recipe-detail"),
     path("recipes/<uuid:pk>/save", RecipeSaveView.as_view(), name="recipe-save"),
     path("recipes/<uuid:pk>/image", RecipeImageView.as_view(), name="recipe-image"),
+    path("recipes/<uuid:pk>/nutrition", RecipeNutritionView.as_view(), name="recipe-nutrition"),
     path("recipes/<uuid:pk>/share", RecipeShareView.as_view(), name="recipe-share"),
     path("shared/recipes/<str:token>", SharedRecipeView.as_view(), name="shared-recipe"),
     path(

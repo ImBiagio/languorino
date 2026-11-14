@@ -265,6 +265,26 @@ class Recipe(BaseModel):
     image_source = models.CharField(max_length=8, choices=ImageSource.choices, blank=True)
     # Link di condivisione /r/<token> (ADR 0012): vuoto = non condivisa.
     share_token = models.CharField(max_length=32, unique=True, null=True, blank=True)
+    class NutritionSource(models.TextChoices):
+        # ADR 0018: scritti nella ricetta letta, stimati dall'AI dagli
+        # ingredienti, o scritti a mano. Vuoto = non calcolati.
+        NONE = "", _("Non calcolati")
+        RECIPE = "recipe", _("Dalla ricetta")
+        AI = "ai", _("Stimati dall'AI")
+        MANUAL = "manual", _("Scritti a mano")
+
+    # Valori nutrizionali a porzione (servings): si moltiplicano per le
+    # porzioni scelte quando si guarda la ricetta.
+    kcal = models.PositiveIntegerField(null=True, blank=True, validators=[MaxValueValidator(20000)])
+    protein_g = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
+    carbs_g = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
+    fat_g = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
+    nutrition_source = models.CharField(
+        max_length=8, choices=NutritionSource.choices, default=NutritionSource.NONE, blank=True
+    )
+    # La stima ingrediente per ingrediente (per tutta la ricetta) e le
+    # ipotesi fatte: per mostrare da dove vengono i numeri.
+    nutrition_detail = models.JSONField(default=dict, blank=True)
     # La ricetta da cui e' stata copiata con "Copia nel mio ricettario".
     copied_from = models.ForeignKey(
         "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="copies"

@@ -16,6 +16,7 @@ import { useAuth } from '../../lib/auth'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Recipe } from '../../lib/types'
 import { ALLERGEN_OPTIONS } from '../profile/options'
+import { NutritionFacts } from './NutritionCard'
 import { difficultyLabel, formatMinutes, formatQuantity } from './options'
 
 export function shareUrl(token: string): string {
@@ -302,6 +303,12 @@ export function SharedRecipePage() {
                 </ol>
               </section>
             </div>
+            {(recipe.kcal !== null || recipe.protein_g !== null) && (
+              <section className="rounded-card bg-surface-container-low p-5">
+                <h2 className="mb-3 text-title-medium">{gettext('Calorie e macro')}</h2>
+                <NutritionFacts nutrition={recipe} servings={recipe.servings} />
+              </section>
+            )}
           </>
         )}
       </main>

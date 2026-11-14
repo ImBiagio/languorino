@@ -191,10 +191,17 @@ class RecipeSerializer(RecipeListSerializer):
             "source",
             "share_token",
             "copied_from",
+            "kcal",
+            "protein_g",
+            "carbs_g",
+            "fat_g",
+            "nutrition_source",
+            "nutrition_detail",
             "created_at",
         ]
         read_only_fields = [
             "id",
+            "nutrition_detail",
             "share_token",
             "copied_from",
             "image",
@@ -241,6 +248,36 @@ class RecipeSerializer(RecipeListSerializer):
     def validate_meal_slots(self, value: list[str]) -> list[str]:
         return sorted(set(value), key=MEAL_SLOT_ORDER.index)
 
+    def validate_nutrition_source(self, value: str) -> str:
+        # "ai" lo scrive solo la stima; il form puo' solo rimandarlo uguale.
+        current = self.instance.nutrition_source if self.instance else ""
+        if value == Recipe.NutritionSource.AI and current != value:
+            raise serializers.ValidationError(_("Fonte non valida."))
+        return value
+
+    def _settle_nutrition(self, recipe: Recipe, validated_data, old_values, old_signature):
+        """Chi ha scritto i valori (ADR 0018): cambiati a mano diventano
+        "scritti a mano"; una stima dell'AI con ingredienti o porzioni
+        cambiati non vale piu' e si toglie."""
+        from .nutrition import FIELDS, clear, ingredients_signature
+
+        values = {field: getattr(recipe, field) for field in FIELDS}
+        changed = values != old_values
+        if all(value is None for value in values.values()):
+            clear(recipe)
+        elif changed and validated_data.get("nutrition_source") in (None, "", "ai"):
+            recipe.nutrition_source = Recipe.NutritionSource.MANUAL
+            recipe.nutrition_detail = {}
+        elif (
+            not changed
+            and recipe.nutrition_source == Recipe.NutritionSource.AI
+            and old_signature is not None
+            and ingredients_signature(recipe) != old_signature
+        ):
+            clear(recipe)
+        if recipe.nutrition_source != Recipe.NutritionSource.AI:
+            recipe.nutrition_detail = {}
+
     def _save_relations(self, recipe: Recipe, tags, ingredients) -> None:
         owner = recipe.owner
         if tags is not None:
@@ -277,19 +314,35 @@ class RecipeSerializer(RecipeListSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        from .nutrition import FIELDS
+
         tags = validated_data.pop("tags", [])
         ingredients = validated_data.pop("ingredients", [])
         recipe = Recipe.objects.create(**validated_data)
         self._save_relations(recipe, tags, ingredients)
+        self._settle_nutrition(recipe, validated_data, dict.fromkeys(FIELDS), None)
+        recipe.save()
         return recipe
 
     @transaction.atomic
     def update(self, recipe: Recipe, validated_data):
+        from .nutrition import FIELDS, ingredients_signature
+
+        old_values = {field: getattr(recipe, field) for field in FIELDS}
+        old_signature = (
+            ingredients_signature(recipe)
+            if recipe.nutrition_source == Recipe.NutritionSource.AI
+            else None
+        )
         tags = validated_data.pop("tags", None)
         ingredients = validated_data.pop("ingredients", None)
         recipe = super().update(recipe, validated_data)
         self._save_relations(recipe, tags, ingredients)
-        recipe.save(update_fields=["updated_at"])
+        # Le righe appena salvate, non quelle prefetchate prima.
+        if hasattr(recipe, "_prefetched_objects_cache"):
+            recipe._prefetched_objects_cache.pop("ingredients", None)
+        self._settle_nutrition(recipe, validated_data, old_values, old_signature)
+        recipe.save()
         return recipe
 
 
@@ -364,6 +417,11 @@ class SharedRecipeSerializer(RecipeListSerializer):
             "allergens",
             "main_category",
             "ingredients",
+            "kcal",
+            "protein_g",
+            "carbs_g",
+            "fat_g",
+            "nutrition_source",
             "author",
             "is_mine",
         ]

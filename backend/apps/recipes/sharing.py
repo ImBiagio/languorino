@@ -67,6 +67,10 @@ def copy_recipe(recipe: Recipe, user) -> Recipe:
     serializer = RecipeSerializer(data=data, context={})
     serializer.is_valid(raise_exception=True)
     copy = serializer.save(owner=user, source=Recipe.Source.COPY, copied_from=recipe)
+    # Valori nutrizionali com'erano, stima compresa (ADR 0018).
+    for field in ("kcal", "protein_g", "carbs_g", "fat_g", "nutrition_source", "nutrition_detail"):
+        setattr(copy, field, getattr(recipe, field))
+    copy.save()
     if recipe.image:
         with recipe.image.open("rb") as handle:
             copy.image.save("image.webp", ContentFile(handle.read()), save=False)

@@ -698,6 +698,15 @@ export function useDrawRecipeImage() {
   })
 }
 
+/** Calorie e macro stimati dall'AI (ADR 0018): torna il job da seguire. */
+export function useEstimateNutrition() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<Job>(`/api/recipes/${id}/nutrition`),
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
 /* --------------------------------------------- condivisione delle ricette -- */
 
 export function useShareRecipe() {

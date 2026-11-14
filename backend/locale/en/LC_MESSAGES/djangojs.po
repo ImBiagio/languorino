@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:56+0100\n"
+"POT-Creation-Date: 2026-11-14 14:00+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -162,7 +162,9 @@ msgstr "New conversation"
 msgid ""
 "Chiedimi quello che vuoi sui tuoi pasti: grammature, cosa mangi o cucini e "
 "quando, cosa dice il piano del nutrizionista."
-msgstr "Ask me anything about your meals: amounts, what you eat or cook and when, what your nutritionist's plan says."
+msgstr ""
+"Ask me anything about your meals: amounts, what you eat or cook and when, "
+"what your nutritionist's plan says."
 
 msgid "Scrivi una domanda"
 msgstr "Write a question"
@@ -698,16 +700,21 @@ msgstr "How many new recipes?"
 msgid ""
 "Uso le tue ricette; ne scrivo di nuove solo se mancano per variare o per un "
 "pasto."
-msgstr "I use your recipes; I only write new ones when there aren't enough for variety or for a meal."
+msgstr ""
+"I use your recipes; I only write new ones when there aren't enough for "
+"variety or for a meal."
 
 msgid "Scrivo io tutte le ricette: le trovi nel piano e puoi salvarle."
-msgstr "I write all the recipes: you'll find them in the plan and can save them."
+msgstr ""
+"I write all the recipes: you'll find them in the plan and can save them."
 
 #, javascript-format
 msgid ""
 "Circa il %s dei pasti con ricette nuove scritte da me, il resto dalle tue. "
 "Le nuove le puoi salvare."
-msgstr "About %s of meals with new recipes written by me, the rest from yours. You can save the new ones."
+msgstr ""
+"About %s of meals with new recipes written by me, the rest from yours. You "
+"can save the new ones."
 
 msgid "Scegli almeno una fonte."
 msgstr "Choose at least one source."
@@ -1565,7 +1572,9 @@ msgstr[1] "Drawing the recipes without a photo: %s missing."
 msgid ""
 "Prendo le foto dei piatti dal PDF, se ci sono; le altre ricette le faccio "
 "disegnare in modo semplice."
-msgstr "I take the dish photos from the PDF, if there are any; the other recipes get a simple drawing."
+msgstr ""
+"I take the dish photos from the PDF, if there are any; the other recipes get "
+"a simple drawing."
 
 #, javascript-format
 msgid "Foto trovate nel PDF: %s. Senza immagine: %s ricetta."
@@ -1733,6 +1742,72 @@ msgid_plural "Aggiungi %s ricette"
 msgstr[0] "Add %s recipe"
 msgstr[1] "Add %s recipes"
 
+msgid "Proteine"
+msgstr "Protein"
+
+msgid "Carboidrati"
+msgstr "Carbs"
+
+msgid "Grassi"
+msgstr "Fat"
+
+msgid "Dalla ricetta"
+msgstr "From the recipe"
+
+msgid "Stima dell’AI dagli ingredienti"
+msgstr "AI estimate from the ingredients"
+
+msgid "Scritti a mano"
+msgstr "Entered by hand"
+
+msgid "kcal a porzione"
+msgstr "kcal per serving"
+
+#, javascript-format
+msgid "· %s kcal per %s porzione"
+msgid_plural "· %s kcal per %s porzioni"
+msgstr[0] "· %s kcal for %s serving"
+msgstr[1] "· %s kcal for %s servings"
+
+#, javascript-format
+msgid "%s g in tutto"
+msgstr "%s g in total"
+
+msgid "valori indicativi"
+msgstr "approximate values"
+
+msgid "Calorie e macro"
+msgstr "Calories and macros"
+
+msgid "Calcolo…"
+msgstr "Calculating…"
+
+msgid "Ricalcola con l’AI"
+msgstr "Recalculate with AI"
+
+msgid ""
+"La ricetta non li dice. L’AI li stima dagli ingredienti e dalle quantità; "
+"puoi anche scriverli a mano modificando la ricetta."
+msgstr "The recipe doesn't state them. AI estimates them from the ingredients and quantities; you can also enter them by hand by editing the recipe."
+
+msgid "Aggiungi gli ingredienti per poterli stimare."
+msgstr "Add the ingredients to estimate them."
+
+msgid "Calcola calorie e macro"
+msgstr "Calculate calories and macros"
+
+msgid "Come li ho stimati"
+msgstr "How I estimated them"
+
+#, javascript-format
+msgid "Ingrediente (per %s porzione)"
+msgid_plural "Ingrediente (per %s porzioni)"
+msgstr[0] "Ingredient (for %s serving)"
+msgstr[1] "Ingredient (for %s servings)"
+
+msgid "Non sono riuscito a stimarli. Riprova."
+msgstr "I couldn't estimate them. Try again."
+
 msgid "Condividi"
 msgstr "Share"
 
@@ -1878,6 +1953,19 @@ msgstr[1] "%s days"
 
 msgid "Si può congelare"
 msgstr "Can be frozen"
+
+msgid "A porzione, letti dalla ricetta."
+msgstr "Per serving, read from the recipe."
+
+msgid ""
+"A porzione, stimati dall’AI. Se cambi ingredienti o porzioni si tolgono: "
+"ricalcolali dalla ricetta."
+msgstr "Per serving, estimated by AI. If you change ingredients or servings they're removed: recalculate them from the recipe."
+
+msgid ""
+"Facoltativi, a porzione. Se li lasci vuoti puoi farli stimare all’AI dalla "
+"ricetta."
+msgstr "Optional, per serving. If you leave them empty you can have AI estimate them from the recipe."
 
 msgid ""
 "Per ritrovarla e per includerla o escluderla dal piano (es. “del cuore”, "
@@ -2090,6 +2178,18 @@ msgstr "Medium"
 
 msgid "Difficile"
 msgstr "Hard"
+
+msgid "Calorie (kcal)"
+msgstr "Calories (kcal)"
+
+msgid "Proteine (g)"
+msgstr "Protein (g)"
+
+msgid "Carboidrati (g)"
+msgstr "Carbs (g)"
+
+msgid "Grassi (g)"
+msgstr "Fat (g)"
 
 msgid "Frutta e verdura"
 msgstr "Fruit and vegetables"

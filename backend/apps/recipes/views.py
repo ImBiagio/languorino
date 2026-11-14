@@ -419,6 +419,35 @@ class RecipeImageDrawView(APIView):
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
 
 
+class RecipeNutritionView(APIView):
+    """Calorie e macro stimati da Gemini dagli ingredienti, in un job (ADR 0018)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: JobSerializer})
+    def post(self, request, pk):
+        recipe = get_object_or_404(recipes_of(request.user), pk=pk)
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if not recipe.ingredients.exists():
+            raise serializers.ValidationError(
+                {"detail": _("Senza ingredienti non posso stimare calorie e macro.")}
+            )
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.RECIPE_NUTRITION,
+                input={"recipe": str(recipe.id), "language": (get_language() or "it")[:2]},
+            )
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
 # --- condivisione (ADR 0012) ----------------------------------------------------------------
 
 
