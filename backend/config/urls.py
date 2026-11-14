@@ -1,11 +1,11 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpResponse
-from django.urls import include, path
+from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.core.i18n import CatalogView, LanguageView
+from apps.core.media import serve_public_media
 
 
 def health(request):
@@ -34,6 +34,12 @@ urlpatterns = [
 ]
 
 # In sviluppo i media li serve Django; in produzione il Caddy di ``web`` legge
-# lo stesso volume (deploy/Caddyfile).
+# lo stesso volume (deploy/Caddyfile). In entrambi i casi solo quelli pubblici.
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += [
+        re_path(
+            rf"^{settings.MEDIA_URL.lstrip('/')}(?P<path>.*)$",
+            serve_public_media,
+            name="media",
+        )
+    ]

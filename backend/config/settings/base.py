@@ -137,6 +137,11 @@ STORAGES = {
 }
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# Cartelle di MEDIA_ROOT mai servite via HTTP: PDF dei ricettari e file dei
+# lavori (piani del nutrizionista, foto del frigo). Il client non li scarica,
+# li legge solo il backend. In produzione le chiude Caddy (deploy/Caddyfile,
+# stesso elenco), in sviluppo apps/core/media.py.
+PRIVATE_MEDIA_PREFIXES = ("books", "jobs")
 
 # --- DRF ---
 REST_FRAMEWORK = {

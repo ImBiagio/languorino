@@ -48,6 +48,10 @@ dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
 - **Mail** dal worker Celery dopo il commit, con retry, testo + HTML su un solo
   layout (`backend/templates/emails/`). In produzione SMTP di **Brevo**, lo
   stesso account di tutti i progetti (mittente `messagg@inoo.it`).
+- **File caricati**: via `/media` si servono solo le immagini (ricette, avatar).
+  PDF dei ricettari (`books/`) e file dei lavori (`jobs/`, anche i piani del
+  nutrizionista) non si scaricano mai: 404 da Caddy in produzione e da Django in
+  sviluppo (`PRIVATE_MEDIA_PREFIXES`, `apps/core/media.py`).
 - **Soft delete + audit**: `BaseModel` (UUID, `deleted_at`) e `django-simple-history`.
 - **Material 3**: ruoli M3 mappati in Tailwind, Roboto Flex, Roboto Mono per i
   numeri, Material Symbols Rounded. Rail su desktop, bottom bar e FAB sotto i
