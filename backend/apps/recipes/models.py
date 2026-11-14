@@ -263,7 +263,18 @@ class Recipe(BaseModel):
     # Foto vera o generata (ADR 0011), sempre WebP; vuota = disegno per categoria.
     image = models.ImageField(upload_to=recipe_image_path, max_length=200, blank=True)
     image_source = models.CharField(max_length=8, choices=ImageSource.choices, blank=True)
-    # Link di condivisione /r/<token> (ADR 0012): vuoto = non condivisa.
+    class Visibility(models.TextChoices):
+        # ADR 0017: privata (solo mia), con il link (chi ha /r/<token>),
+        # pubblica (anche nel profilo pubblico dell'autore).
+        PRIVATE = "private", _("Privata")
+        UNLISTED = "unlisted", _("Con il link")
+        PUBLIC = "public", _("Pubblica")
+
+    visibility = models.CharField(
+        max_length=8, choices=Visibility.choices, default=Visibility.PRIVATE, db_index=True
+    )
+    # Link di condivisione /r/<token> (ADR 0012): vuoto = privata. Le ricette
+    # pubbliche hanno anche il link: e' la loro pagina.
     share_token = models.CharField(max_length=32, unique=True, null=True, blank=True)
     # La ricetta da cui e' stata copiata con "Copia nel mio ricettario".
     copied_from = models.ForeignKey(

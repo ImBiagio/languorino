@@ -190,12 +190,16 @@ class RecipeSerializer(RecipeListSerializer):
             "ingredients",
             "source",
             "share_token",
+            "visibility",
+            "rating",
+            "comment_count",
             "copied_from",
             "created_at",
         ]
         read_only_fields = [
             "id",
             "share_token",
+            "visibility",
             "copied_from",
             "image",
             "image_source",
@@ -211,6 +215,22 @@ class RecipeSerializer(RecipeListSerializer):
             "created_at",
             "updated_at",
         ]
+
+    rating = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+
+    def get_rating(self, recipe: Recipe) -> dict | None:
+        """Voti degli altri (ADR 0017), solo per le ricette condivise."""
+        if not recipe.share_token:
+            return None
+        from apps.community.services import rating_summary
+
+        return rating_summary(recipe)
+
+    def get_comment_count(self, recipe: Recipe) -> int:
+        if not recipe.share_token:
+            return 0
+        return recipe.comments.count()
 
     def to_representation(self, recipe: Recipe):
         data = super().to_representation(recipe)
@@ -365,9 +385,32 @@ class SharedRecipeSerializer(RecipeListSerializer):
             "main_category",
             "ingredients",
             "author",
+            "author_handle",
+            "visibility",
+            "rating",
+            "comment_count",
             "is_mine",
         ]
         read_only_fields = fields
+
+    author_handle = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
+
+    def get_author_handle(self, recipe: Recipe) -> str | None:
+        """Il link al profilo dell'autore, solo se il profilo e' pubblico."""
+        from apps.community.profiles import public_handle
+
+        return public_handle(recipe.owner)
+
+    def get_rating(self, recipe: Recipe) -> dict:
+        from apps.community.services import rating_summary
+
+        request = self.context.get("request")
+        return rating_summary(recipe, getattr(request, "user", None))
+
+    def get_comment_count(self, recipe: Recipe) -> int:
+        return recipe.comments.count()
 
     def get_ingredients(self, recipe: Recipe) -> list[dict]:
         return RecipeIngredientSerializer(

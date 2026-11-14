@@ -423,14 +423,25 @@ class RecipeImageDrawView(APIView):
 
 
 class RecipeShareView(APIView):
-    """Crea il link (POST, ``renew`` per un link nuovo che spegne il vecchio) o lo spegne."""
+    """Crea il link o cambia la visibilita' (POST ``visibility`` "unlisted" o
+    "public", ``renew`` per un link nuovo che spegne il vecchio); DELETE la
+    rende di nuovo privata (ADR 0017)."""
 
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses={200: RecipeSerializer})
     def post(self, request, pk):
         recipe = get_object_or_404(recipes_of(request.user), pk=pk)
-        share(recipe, renew=bool(request.data.get("renew")))
+        visibility = request.data.get("visibility") or None
+        if visibility not in (None, Recipe.Visibility.UNLISTED, Recipe.Visibility.PUBLIC):
+            raise serializers.ValidationError({"visibility": _("Visibilità non valida.")})
+        try:
+            share(recipe, renew=bool(request.data.get("renew")), visibility=visibility)
+        except ValueError as exc:
+            raise serializers.ValidationError(
+                {"visibility": _("Salvala nel tuo ricettario prima di pubblicarla.")}
+            ) from exc
+        recipe = recipes_of(request.user).get(pk=pk)
         return Response(RecipeSerializer(recipe, context={"request": request}).data)
 
     @extend_schema(responses={200: RecipeSerializer})

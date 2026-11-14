@@ -8,6 +8,7 @@ import { Chip, ErrorBanner, Icon, IconButton, Skeleton, Stepper } from '../../co
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Recipe } from '../../lib/types'
 import { MEAL_OPTIONS, preferenceLabel } from '../profile/options'
+import { CommentsSection, RatingLine } from './Community'
 import { difficultyLabel, formatMinutes, formatQuantity } from './options'
 import { RecipeHeroImage } from './RecipeImage'
 import { ShareDialog } from './Sharing'
@@ -300,6 +301,30 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
           {gettext('Modifica la ricetta')}
         </Link>
         <ErrorBanner error={remove.error} />
+
+        {recipe.share_token && (
+          <>
+            <section className="flex flex-wrap items-center gap-3 rounded-card bg-surface-container-low p-5">
+              <Icon
+                name={recipe.visibility === 'public' ? 'public' : 'link'}
+                size={22}
+                className="text-primary"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-body-large font-medium">
+                  {recipe.visibility === 'public'
+                    ? gettext('Pubblica nel tuo profilo')
+                    : gettext('Condivisa con il link')}
+                </p>
+                {recipe.rating && <RatingLine rating={recipe.rating} />}
+              </div>
+              <Link to={`/r/${recipe.share_token}`} className="btn-text btn-sm">
+                {gettext('Come la vedono gli altri')}
+              </Link>
+            </section>
+            <CommentsSection token={recipe.share_token} backTo={`/ricette/${recipe.id}`} />
+          </>
+        )}
       </div>
     </Page>
   )

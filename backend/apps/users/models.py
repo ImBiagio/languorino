@@ -40,6 +40,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     display_name = models.CharField(max_length=120, blank=True)
+    # Indirizzo del profilo pubblico /u/<handle>: nasce alla prima ricetta
+    # pubblicata (dal nome visibile) e si puo' cambiare dall'account.
+    handle = models.SlugField(max_length=40, unique=True, null=True, blank=True)
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

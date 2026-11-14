@@ -20,6 +20,7 @@ REST_FRAMEWORK = {
         "refresh": "10000/min",
         "ai": "10000/min",
         "public": "10000/min",
+        "comments": "10000/min",
     },
 }
 STORAGES = {
