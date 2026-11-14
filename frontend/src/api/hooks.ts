@@ -1,7 +1,14 @@
 // Hook di TanStack Query per l'API. Una sezione per area dell'app, con le
 // chiavi di cache tutte in `keys` cosi' le invalidazioni restano coerenti.
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  type QueryClient,
+  type QueryKey,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { api } from '../lib/api'
 import type {
@@ -370,10 +377,22 @@ export function useDeleteBook() {
     mutationFn: (id: UUID) => api.delete<void>(`/api/recipe-books/${id}`),
     onSuccess: (_data, id) => {
       client.removeQueries({ queryKey: keys.book(id) })
+      dropFromList(client, keys.books, id)
       void client.invalidateQueries({ queryKey: keys.books })
       void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
     },
   })
+}
+
+/**
+ * Toglie subito dalla lista in cache l'elemento appena cancellato.
+ *
+ * Le pagine /piano e /spesa reindirizzano al piano o alla lista "aperta"
+ * leggendo la cache: se il cancellato e' ancora li' (la lista nuova arriva
+ * dopo la navigazione) si torna proprio sul suo id, che non esiste piu'.
+ */
+function dropFromList(client: QueryClient, key: QueryKey, id: UUID) {
+  client.setQueryData<{ id: UUID }[]>(key, (items) => items?.filter((item) => item.id !== id))
 }
 
 /* ------------------------------------------------------- piano alimentare -- */
@@ -483,6 +502,10 @@ export function useDeletePlan() {
     mutationFn: (id: UUID) => api.delete<void>(`/api/plans/${id}`),
     onSuccess: (_data, id) => {
       client.removeQueries({ queryKey: keys.plan(id) })
+      dropFromList(client, keys.plans, id)
+      client.setQueryData<MealPlanDetail | null>(keys.currentPlan, (plan) =>
+        plan?.id === id ? null : plan,
+      )
       void client.invalidateQueries({ queryKey: keys.plans })
     },
   })
@@ -564,6 +587,7 @@ export function useDeleteShoppingList() {
     mutationFn: (id: UUID) => api.delete<void>(`/api/shopping/${id}`),
     onSuccess: (_data, id) => {
       client.removeQueries({ queryKey: keys.shoppingList(id) })
+      dropFromList(client, keys.shoppingLists, id)
       void client.invalidateQueries({ queryKey: keys.shoppingLists, exact: true })
     },
   })
@@ -732,7 +756,11 @@ export function useDeleteNutritionistPlan() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (id: UUID) => api.delete<void>(`/api/nutritionist-plans/${id}`),
-    onSuccess: () => client.invalidateQueries({ queryKey: keys.nutritionistPlans }),
+    onSuccess: (_data, id) => {
+      client.removeQueries({ queryKey: keys.nutritionistPlan(id) })
+      dropFromList(client, keys.nutritionistPlans, id)
+      void client.invalidateQueries({ queryKey: keys.nutritionistPlans })
+    },
   })
 }
 
