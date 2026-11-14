@@ -18,11 +18,22 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "email",
             "display_name",
+            "handle",
             "avatar",
             "email_verified_at",
             "language",
         ]
         read_only_fields = ["id", "email", "email_verified_at"]
+        extra_kwargs = {"handle": {"required": False, "allow_null": True}}
+
+    def validate_handle(self, value: str | None) -> str | None:
+        from apps.community.profiles import validate_handle
+
+        if not value:
+            # Senza indirizzo il profilo pubblico non si apre: se ci sono
+            # ricette pubbliche se ne crea uno nuovo alla prossima pubblicazione.
+            return None
+        return validate_handle(value, self.instance)
 
 
 class UserBriefSerializer(serializers.ModelSerializer):

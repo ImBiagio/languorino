@@ -11,10 +11,12 @@ import {
   useUnshareRecipe,
 } from '../../api/hooks'
 import { FoodPattern, RecipeCover } from '../../components/illustrations'
-import { Chip, ErrorBanner, Icon, Modal, Skeleton } from '../../components/ui'
+import { Chip, ErrorBanner, Icon, Modal, Segmented, Skeleton } from '../../components/ui'
+import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
-import type { Recipe } from '../../lib/types'
+import type { Recipe, User, Visibility } from '../../lib/types'
+import { CommentsSection, RateRecipe, RatingLine } from './Community'
 import { ALLERGEN_OPTIONS } from '../profile/options'
 import { difficultyLabel, formatMinutes, formatQuantity } from './options'
 
@@ -35,6 +37,7 @@ export function ShareDialog({
 }) {
   const share = useShareRecipe()
   const unshare = useUnshareRecipe()
+  const { user, setUser } = useAuth()
   const [copied, setCopied] = useState(false)
   const url = recipe.share_token ? shareUrl(recipe.share_token) : ''
   const busy = share.isPending || unshare.isPending
@@ -49,16 +52,54 @@ export function ShareDialog({
     }
   }
 
+  const choose = async (visibility: Visibility) => {
+    if (visibility === recipe.visibility) return
+    try {
+      if (visibility === 'private') {
+        await unshare.mutateAsync(recipe.id)
+      } else {
+        await share.mutateAsync({ id: recipe.id, visibility })
+        // Alla prima ricetta pubblica nasce l'indirizzo del profilo.
+        if (visibility === 'public' && !user?.handle) setUser(await api.get<User>('/api/me'))
+      }
+    } catch {
+      // Errore sotto.
+    }
+  }
+
+  const explain: Record<Visibility, string> = {
+    private: gettext('Solo tu la vedi.'),
+    unlisted: gettext(
+      'Chi ha il link la vede anche senza account, la vota, la commenta e la copia nel suo ricettario. Non compare nel tuo profilo pubblico.',
+    ),
+    public: gettext(
+      'Compare nel tuo profilo pubblico, che chiunque può aprire; si vota, si commenta e si copia come con il link.',
+    ),
+  }
+
   return (
     <Modal open={open} onClose={onClose} title={gettext('Condividi la ricetta')}>
       <div className="grid gap-4">
-        {recipe.share_token ? (
+        <Segmented<Visibility>
+          className="w-fit max-w-full flex-wrap"
+          value={recipe.visibility}
+          onChange={(value) => void choose(value)}
+          options={[
+            { value: 'private', label: gettext('Privata') },
+            { value: 'unlisted', label: gettext('Con il link') },
+            ...(recipe.in_cookbook || recipe.visibility === 'public'
+              ? [{ value: 'public' as const, label: gettext('Pubblica') }]
+              : []),
+          ]}
+        />
+        <p className="text-body-medium text-on-surface-variant">{explain[recipe.visibility]}</p>
+        {!recipe.in_cookbook && (
+          <p className="text-body-small text-on-surface-variant">
+            {gettext('Per pubblicarla nel tuo profilo salvala prima nel ricettario.')}
+          </p>
+        )}
+        {recipe.share_token && (
           <>
-            <p className="text-body-medium text-on-surface-variant">
-              {gettext(
-                'Chi ha il link vede la ricetta anche senza account; con un account la copia nel suo ricettario.',
-              )}
-            </p>
             <input
               className="field-input rounded-row bg-surface-container-high px-4 py-3"
               readOnly
@@ -84,7 +125,13 @@ export function ShareDialog({
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-3">
+            {recipe.visibility === 'public' && user?.handle && (
+              <Link to={`/u/${user.handle}`} className="btn-text btn-sm -ml-3 w-fit">
+                <Icon name="person" size={18} />
+                {gettext('Apri il tuo profilo pubblico')}
+              </Link>
+            )}
+            <div className="border-t border-outline-variant pt-3">
               <button
                 type="button"
                 className="btn-text btn-sm"
@@ -94,33 +141,7 @@ export function ShareDialog({
                 <Icon name="autorenew" size={18} />
                 {gettext('Nuovo link (spegne il vecchio)')}
               </button>
-              <button
-                type="button"
-                className="btn-text btn-sm text-error"
-                disabled={busy}
-                onClick={() => unshare.mutate(recipe.id)}
-              >
-                <Icon name="link_off" size={18} />
-                {gettext('Spegni il link')}
-              </button>
             </div>
-          </>
-        ) : (
-          <>
-            <p className="text-body-medium text-on-surface-variant">
-              {gettext(
-                'Crea un link da mandare a chi vuoi: vede la ricetta anche senza account e può copiarla nel suo ricettario. Puoi spegnerlo quando vuoi.',
-              )}
-            </p>
-            <button
-              type="button"
-              className="btn-filled justify-self-start"
-              disabled={busy}
-              onClick={() => share.mutate({ id: recipe.id })}
-            >
-              <Icon name="link" size={20} />
-              {gettext('Crea il link')}
-            </button>
           </>
         )}
         <ErrorBanner error={share.error ?? unshare.error} />
@@ -177,9 +198,21 @@ export function SharedRecipePage() {
               </h1>
               {recipe.author && (
                 <p className="mt-1 text-body-medium text-on-surface-variant">
-                  {interpolate(gettext('Condivisa da %s'), [recipe.author])}
+                  {recipe.author_handle ? (
+                    <>
+                      {gettext('Condivisa da')}{' '}
+                      <Link to={`/u/${recipe.author_handle}`} className="text-primary underline">
+                        {recipe.author}
+                      </Link>
+                    </>
+                  ) : (
+                    interpolate(gettext('Condivisa da %s'), [recipe.author])
+                  )}
                 </p>
               )}
+              <div className="mt-2">
+                <RatingLine rating={recipe.rating} />
+              </div>
               {recipe.description && (
                 <p className="mt-2 whitespace-pre-line text-body-large text-on-surface-variant">
                   {recipe.description}
@@ -263,6 +296,12 @@ export function SharedRecipePage() {
               )}
             </section>
             <ErrorBanner error={copy.error} />
+            {user && !recipe.is_mine && (
+              <section className="rounded-card bg-surface-container-low p-5">
+                <h2 className="mb-2 text-title-medium">{gettext('Il tuo voto')}</h2>
+                <RateRecipe token={token!} rating={recipe.rating} />
+              </section>
+            )}
 
             <div className="grid gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
               <section className="rounded-card bg-surface-container-low p-5">
@@ -302,6 +341,7 @@ export function SharedRecipePage() {
                 </ol>
               </section>
             </div>
+            <CommentsSection token={token!} backTo={back} />
           </>
         )}
       </main>

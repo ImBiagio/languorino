@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:56+0100\n"
+"POT-Creation-Date: 2026-11-14 13:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,28 +22,28 @@ msgstr ""
 msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
 msgstr "The AI's answer wasn't in the expected format."
 
-#: apps/ai/client.py:131 apps/ai/client.py:209
+#: apps/ai/client.py:135 apps/ai/client.py:218
 msgid ""
 "Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
 "riavvia."
 msgstr ""
 "Gemini key not configured: set GEMINI_API_KEY in the .env file and restart."
 
-#: apps/ai/client.py:170 apps/ai/client.py:242
+#: apps/ai/client.py:179 apps/ai/client.py:251
 msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
 msgstr "Gemini rejected the key: check GEMINI_API_KEY."
 
-#: apps/ai/client.py:174 apps/ai/client.py:244
+#: apps/ai/client.py:183 apps/ai/client.py:253
 #, python-format
 msgid "Gemini ha risposto con un errore (%(code)s)."
 msgstr "Gemini answered with an error (%(code)s)."
 
-#: apps/ai/client.py:177
+#: apps/ai/client.py:186
 #, python-format
 msgid "errore %(code)s"
 msgstr "error %(code)s"
 
-#: apps/ai/client.py:195
+#: apps/ai/client.py:204
 #, python-format
 msgid ""
 "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
@@ -52,7 +52,7 @@ msgstr ""
 "Gemini is overloaded right now (%(models)s; last: %(error)s). Try again in a "
 "few minutes."
 
-#: apps/ai/client.py:233
+#: apps/ai/client.py:242
 msgid ""
 "La chiave Gemini non ha quota per le immagini (piano gratuito): attiva la "
 "fatturazione su Google AI Studio."
@@ -60,17 +60,63 @@ msgstr ""
 "The Gemini key has no quota for images (free tier): enable billing in Google "
 "AI Studio."
 
-#: apps/ai/client.py:239
+#: apps/ai/client.py:248
 msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
 msgstr "Gemini is overloaded right now. Try again in a few minutes."
 
-#: apps/ai/client.py:250
+#: apps/ai/client.py:259
 msgid "Gemini non risponde. Riprova tra qualche minuto."
 msgstr "Gemini isn't answering. Try again in a few minutes."
 
-#: apps/ai/client.py:259
+#: apps/ai/client.py:268
 msgid "Gemini non ha disegnato niente questa volta. Riprova."
 msgstr "Gemini didn't draw anything this time. Try again."
+
+#: apps/community/profiles.py:26
+msgid "Da 3 a 40 caratteri: lettere minuscole, numeri e trattini."
+msgstr "3 to 40 characters: lowercase letters, numbers and hyphens."
+
+#: apps/community/profiles.py:29
+msgid "Questo nome non si può usare."
+msgstr "This name can't be used."
+
+#: apps/community/profiles.py:34
+msgid "Questo nome è già preso."
+msgstr "This name is already taken."
+
+#: apps/community/services.py:39
+msgid "Non puoi votare una tua ricetta."
+msgstr "You can't rate your own recipe."
+
+#: apps/community/services.py:41
+msgid "Da 1 a 5 stelle."
+msgstr "From 1 to 5 stars."
+
+#: apps/community/services.py:51
+#, python-format
+msgid "Al massimo %(n)d foto per commento."
+msgstr "At most %(n)d photos per comment."
+
+#: apps/community/services.py:57
+msgid "Servono foto JPEG, PNG o WebP."
+msgstr "Photos must be JPEG, PNG or WebP."
+
+#: apps/community/services.py:61 apps/recipes/views.py:365
+#, python-format
+msgid "Foto troppo grande (massimo %(mb)d MB)."
+msgstr "Photo too large (max %(mb)d MB)."
+
+#: apps/community/services.py:77
+msgid "Scrivi qualcosa o aggiungi una foto."
+msgstr "Write something or add a photo."
+
+#: apps/community/services.py:79
+msgid "Al massimo 2000 caratteri."
+msgstr "At most 2000 characters."
+
+#: apps/community/services.py:84
+msgid "Commento non trovato."
+msgstr "Comment not found."
 
 #: apps/jobs/files.py:50
 msgid "Questa registrazione non si riconosce come audio."
@@ -191,7 +237,7 @@ msgstr "Unknown job."
 #: apps/plans/views.py:261 apps/plans/views.py:346 apps/plans/views.py:383
 #: apps/profiles/live.py:160 apps/profiles/views.py:131
 #: apps/profiles/views.py:182 apps/recipes/views.py:233
-#: apps/recipes/views.py:395 apps/recipes/views.py:499
+#: apps/recipes/views.py:395 apps/recipes/views.py:510
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -686,19 +732,31 @@ msgstr "Drawn by AI"
 msgid "Dal ricettario PDF"
 msgstr "From the PDF cookbook"
 
+#: apps/recipes/models.py:269
+msgid "Privata"
+msgstr "Private"
+
+#: apps/recipes/models.py:270
+msgid "Con il link"
+msgstr "With the link"
+
+#: apps/recipes/models.py:271
+msgid "Pubblica"
+msgstr "Public"
+
 #: apps/recipes/serializers.py:69
 msgid "Scegli o scrivi un ingrediente."
 msgstr "Pick or type an ingredient."
 
-#: apps/recipes/serializers.py:226
+#: apps/recipes/serializers.py:246
 msgid "Dai un nome alla ricetta."
 msgstr "Give the recipe a name."
 
-#: apps/recipes/serializers.py:261
+#: apps/recipes/serializers.py:281
 msgid "Ingrediente non trovato."
 msgstr "Ingredient not found."
 
-#: apps/recipes/serializers.py:336
+#: apps/recipes/serializers.py:356
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
@@ -744,11 +802,6 @@ msgstr "Choose a photo."
 msgid "Serve una foto JPEG, PNG o WebP (le HEIC dell'iPhone non ancora)."
 msgstr "A JPEG, PNG or WebP photo is needed (iPhone HEIC not yet)."
 
-#: apps/recipes/views.py:365
-#, python-format
-msgid "Foto troppo grande (massimo %(mb)d MB)."
-msgstr "Photo too large (max %(mb)d MB)."
-
 #: apps/recipes/views.py:400
 msgid "Ha già una foto vera: toglila prima di farne disegnare una."
 msgstr "It already has a real photo: remove it before having one drawn."
@@ -758,15 +811,23 @@ msgstr "It already has a real photo: remove it before having one drawn."
 msgid "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
 msgstr "You've used up today's images (%(n)d a day). Try again tomorrow."
 
-#: apps/recipes/views.py:478
+#: apps/recipes/views.py:437
+msgid "Visibilità non valida."
+msgstr "Invalid visibility."
+
+#: apps/recipes/views.py:442
+msgid "Salvala nel tuo ricettario prima di pubblicarla."
+msgstr "Save it to your cookbook before publishing it."
+
+#: apps/recipes/views.py:489
 msgid "È già nel tuo ricettario."
 msgstr "It's already in your cookbook."
 
-#: apps/recipes/views.py:504
+#: apps/recipes/views.py:515
 msgid "Prima finisco di leggere il ricettario."
 msgstr "Let me finish reading the cookbook first."
 
-#: apps/recipes/views.py:510
+#: apps/recipes/views.py:521
 msgid "Ci sto già lavorando."
 msgstr "I'm already working on it."
 
@@ -853,7 +914,7 @@ msgstr ""
 "The link is valid for 2 hours and can be used once. If you didn't request "
 "it, just ignore this email: your password stays the same."
 
-#: apps/users/serializers.py:45
+#: apps/users/serializers.py:56
 msgid "Esiste gia' un account con questa email."
 msgstr "An account with this email already exists."
 

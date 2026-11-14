@@ -15,16 +15,32 @@ from apps.core.methods import random_token
 from .models import Recipe
 
 
-def share(recipe: Recipe, *, renew: bool = False) -> Recipe:
+def share(recipe: Recipe, *, renew: bool = False, visibility: str | None = None) -> Recipe:
+    """Link acceso (o nuovo con ``renew``) e visibilita' "con il link" o
+    "pubblica". Pubblica la ricetta solo se e' nel ricettario: quelle dei
+    ricettari PDF e del piano non sono dell'utente da mostrare."""
+    from apps.community.profiles import ensure_handle
+
+    visibility = visibility or (
+        recipe.visibility
+        if recipe.visibility != Recipe.Visibility.PRIVATE
+        else Recipe.Visibility.UNLISTED
+    )
+    if visibility == Recipe.Visibility.PUBLIC and not recipe.in_cookbook:
+        raise ValueError("not in cookbook")
     if renew or not recipe.share_token:
         recipe.share_token = random_token(12)
-        recipe.save(update_fields=["share_token", "updated_at"])
+    recipe.visibility = visibility
+    recipe.save(update_fields=["share_token", "visibility", "updated_at"])
+    if visibility == Recipe.Visibility.PUBLIC:
+        ensure_handle(recipe.owner)
     return recipe
 
 
 def unshare(recipe: Recipe) -> Recipe:
     recipe.share_token = None
-    recipe.save(update_fields=["share_token", "updated_at"])
+    recipe.visibility = Recipe.Visibility.PRIVATE
+    recipe.save(update_fields=["share_token", "visibility", "updated_at"])
     return recipe
 
 

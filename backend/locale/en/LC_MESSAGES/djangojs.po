@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-11 12:56+0100\n"
+"POT-Creation-Date: 2026-11-14 13:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -80,6 +80,21 @@ msgstr "Saved"
 
 msgid "Salva"
 msgstr "Save"
+
+msgid "Profilo pubblico"
+msgstr "Public profile"
+
+msgid ""
+"Le ricette che rendi pubbliche compaiono in una pagina con il tuo nome "
+"visibile, che chiunque può aprire. Senza ricette pubbliche la pagina non "
+"esiste."
+msgstr "The recipes you make public appear on a page with your display name that anyone can open. Without public recipes the page doesn't exist."
+
+msgid "Indirizzo"
+msgstr "Address"
+
+msgid "nasce alla prima ricetta pubblica"
+msgstr "created with your first public recipe"
 
 msgid "Email"
 msgstr "Email"
@@ -162,7 +177,9 @@ msgstr "New conversation"
 msgid ""
 "Chiedimi quello che vuoi sui tuoi pasti: grammature, cosa mangi o cucini e "
 "quando, cosa dice il piano del nutrizionista."
-msgstr "Ask me anything about your meals: amounts, what you eat or cook and when, what your nutritionist's plan says."
+msgstr ""
+"Ask me anything about your meals: amounts, what you eat or cook and when, "
+"what your nutritionist's plan says."
 
 msgid "Scrivi una domanda"
 msgstr "Write a question"
@@ -698,16 +715,21 @@ msgstr "How many new recipes?"
 msgid ""
 "Uso le tue ricette; ne scrivo di nuove solo se mancano per variare o per un "
 "pasto."
-msgstr "I use your recipes; I only write new ones when there aren't enough for variety or for a meal."
+msgstr ""
+"I use your recipes; I only write new ones when there aren't enough for "
+"variety or for a meal."
 
 msgid "Scrivo io tutte le ricette: le trovi nel piano e puoi salvarle."
-msgstr "I write all the recipes: you'll find them in the plan and can save them."
+msgstr ""
+"I write all the recipes: you'll find them in the plan and can save them."
 
 #, javascript-format
 msgid ""
 "Circa il %s dei pasti con ricette nuove scritte da me, il resto dalle tue. "
 "Le nuove le puoi salvare."
-msgstr "About %s of meals with new recipes written by me, the rest from yours. You can save the new ones."
+msgstr ""
+"About %s of meals with new recipes written by me, the rest from yours. You "
+"can save the new ones."
 
 msgid "Scegli almeno una fonte."
 msgstr "Choose at least one source."
@@ -1565,7 +1587,9 @@ msgstr[1] "Drawing the recipes without a photo: %s missing."
 msgid ""
 "Prendo le foto dei piatti dal PDF, se ci sono; le altre ricette le faccio "
 "disegnare in modo semplice."
-msgstr "I take the dish photos from the PDF, if there are any; the other recipes get a simple drawing."
+msgstr ""
+"I take the dish photos from the PDF, if there are any; the other recipes get "
+"a simple drawing."
 
 #, javascript-format
 msgid "Foto trovate nel PDF: %s. Senza immagine: %s ricetta."
@@ -1586,6 +1610,102 @@ msgstr "Try again"
 msgid "Rinomina il ricettario"
 msgstr "Rename the cookbook"
 
+msgid "Ancora nessun voto"
+msgstr "No ratings yet"
+
+#, javascript-format
+msgid "(%s voto)"
+msgid_plural "(%s voti)"
+msgstr[0] "(%s rating)"
+msgstr[1] "(%s ratings)"
+
+#, javascript-format
+msgid "%s stella"
+msgid_plural "%s stelle"
+msgstr[0] "%s star"
+msgstr[1] "%s stars"
+
+msgid "Il tuo voto. Tocca di nuovo la stessa stella per toglierlo."
+msgstr "Your rating. Tap the same star again to remove it."
+
+msgid "Tocca le stelle per votarla."
+msgstr "Tap the stars to rate it."
+
+#, javascript-format
+msgid "%s commento"
+msgid_plural "%s commenti"
+msgstr[0] "%s comment"
+msgstr[1] "%s comments"
+
+msgid "Commenti"
+msgstr "Comments"
+
+msgid "per votare e commentare."
+msgstr "to rate and comment."
+
+msgid "Nessun commento: l’hai provata? Racconta com’è venuta."
+msgstr "No comments yet: have you tried it? Tell how it turned out."
+
+msgid "Commento eliminato"
+msgstr "Comment deleted"
+
+msgid "Autore"
+msgstr "Author"
+
+msgid "Elimina il commento"
+msgstr "Delete comment"
+
+msgid "Eliminare il commento?"
+msgstr "Delete the comment?"
+
+msgid "Spariscono anche le foto."
+msgstr "Its photos go too."
+
+msgid "Rispondi"
+msgstr "Reply"
+
+msgid "Scrivi una risposta…"
+msgstr "Write a reply…"
+
+msgid "Com’è venuta? Un consiglio?"
+msgstr "How did it turn out? Any tips?"
+
+msgid "Risposta"
+msgstr "Reply"
+
+msgid "Commento"
+msgstr "Comment"
+
+msgid "Togli la foto"
+msgstr "Remove photo"
+
+msgid "Foto"
+msgstr "Photos"
+
+msgid "Pubblica"
+msgstr "Public"
+
+msgid "Questo profilo non è pubblico"
+msgstr "This profile isn't public"
+
+msgid "Un profilo si vede solo quando ha almeno una ricetta pubblica."
+msgstr "A profile is visible only when it has at least one public recipe."
+
+#, javascript-format
+msgid "%s ricetta pubblica"
+msgid_plural "%s ricette pubbliche"
+msgstr[0] "%s public recipe"
+msgstr[1] "%s public recipes"
+
+#, javascript-format
+msgid "su Languorino dal %s"
+msgstr "on Languorino since %s"
+
+msgid ""
+"È il tuo profilo pubblico: lo vede chiunque. Ci sono solo le ricette che hai "
+"reso pubbliche."
+msgstr "This is your public profile: anyone can see it. It only shows the recipes you made public."
+
 msgid "Importa ricette"
 msgstr "Import recipes"
 
@@ -1598,9 +1718,6 @@ msgid ""
 msgstr ""
 "Take photos of handwritten recipes: I read them, you check and confirm. A "
 "PDF becomes a cookbook to browse."
-
-msgid "Foto"
-msgstr "Photos"
 
 msgid "Scatta o scegli dalla galleria, anche più pagine"
 msgstr "Take or pick from your gallery, several pages too"
@@ -1800,6 +1917,15 @@ msgstr "No steps written."
 
 msgid "Modifica la ricetta"
 msgstr "Edit the recipe"
+
+msgid "Pubblica nel tuo profilo"
+msgstr "Public on your profile"
+
+msgid "Condivisa con il link"
+msgstr "Shared with the link"
+
+msgid "Come la vedono gli altri"
+msgstr "How others see it"
 
 msgid "Nome della ricetta"
 msgstr "Recipe name"
@@ -2014,15 +2140,30 @@ msgstr "Write it by hand"
 msgid "Ingredienti dal catalogo, passi, tag"
 msgstr "Ingredients from the catalogue, steps, tags"
 
+msgid "Solo tu la vedi."
+msgstr "Only you can see it."
+
+msgid ""
+"Chi ha il link la vede anche senza account, la vota, la commenta e la copia "
+"nel suo ricettario. Non compare nel tuo profilo pubblico."
+msgstr "Anyone with the link sees it, even without an account, and can rate it, comment on it and copy it into their cookbook. It doesn't appear on your public profile."
+
+msgid ""
+"Compare nel tuo profilo pubblico, che chiunque può aprire; si vota, si "
+"commenta e si copia come con il link."
+msgstr "It appears on your public profile, which anyone can open; it can be rated, commented on and copied just like with the link."
+
 msgid "Condividi la ricetta"
 msgstr "Share the recipe"
 
-msgid ""
-"Chi ha il link vede la ricetta anche senza account; con un account la copia "
-"nel suo ricettario."
-msgstr ""
-"Anyone with the link sees the recipe, even without an account; with an "
-"account they copy it into their cookbook."
+msgid "Privata"
+msgstr "Private"
+
+msgid "Con il link"
+msgstr "With the link"
+
+msgid "Per pubblicarla nel tuo profilo salvala prima nel ricettario."
+msgstr "To publish it on your profile, save it to your cookbook first."
 
 msgid "Link della ricetta"
 msgstr "Recipe link"
@@ -2036,27 +2177,20 @@ msgstr "Copy link"
 msgid "Invia…"
 msgstr "Send…"
 
+msgid "Apri il tuo profilo pubblico"
+msgstr "Open your public profile"
+
 msgid "Nuovo link (spegne il vecchio)"
 msgstr "New link (turns off the old one)"
-
-msgid "Spegni il link"
-msgstr "Turn off the link"
-
-msgid ""
-"Crea un link da mandare a chi vuoi: vede la ricetta anche senza account e "
-"può copiarla nel suo ricettario. Puoi spegnerlo quando vuoi."
-msgstr ""
-"Create a link to send to anyone: they see the recipe even without an account "
-"and can copy it into their cookbook. You can turn it off any time."
-
-msgid "Crea il link"
-msgstr "Create the link"
 
 msgid "Questo link non funziona più"
 msgstr "This link no longer works"
 
 msgid "Chi te l’ha mandato potrebbe averlo spento o sostituito con uno nuovo."
 msgstr "Whoever sent it may have turned it off or replaced it with a new one."
+
+msgid "Condivisa da"
+msgstr "Shared by"
 
 #, javascript-format
 msgid "Condivisa da %s"
@@ -2081,6 +2215,9 @@ msgid ""
 msgstr ""
 "With Languorino you copy it into your cookbook, build your weekly plan with "
 "it and do the shopping."
+
+msgid "Il tuo voto"
+msgstr "Your rating"
 
 msgid "Facile"
 msgstr "Easy"

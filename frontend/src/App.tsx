@@ -21,6 +21,7 @@ import { PlanHomePage, PlanPage } from './features/plans/PlanPages'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { BookPage, BooksPage } from './features/recipes/BooksPages'
 import { ImportJobPage, ImportPage } from './features/recipes/ImportPages'
+import { PublicProfilePage } from './features/recipes/Community'
 import { RecipeDetailPage } from './features/recipes/RecipeDetailPage'
 import { RecipeFormPage } from './features/recipes/RecipeFormPage'
 import { RecipesPage } from './features/recipes/RecipesPage'
@@ -61,6 +62,7 @@ export default function App() {
       <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
       {/* Ricetta condivisa (ADR 0012): si apre anche senza account. */}
       <Route path="/r/:token" element={<SharedRecipePage />} />
+      <Route path="/u/:handle" element={<PublicProfilePage />} />
       <Route
         path="/benvenuto"
         element={

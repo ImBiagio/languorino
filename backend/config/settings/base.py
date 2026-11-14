@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.plans",
     "apps.shopping",
     "apps.kitchen",
+    "apps.community",
 ]
 
 MIDDLEWARE = [
@@ -162,6 +163,8 @@ REST_FRAMEWORK = {
         "ai": env("THROTTLE_AI", "60/hour"),
         # Pagina pubblica delle ricette condivise (senza login) e copia.
         "public": env("THROTTLE_PUBLIC", "60/min"),
+        # Commenti alle ricette (con foto): contro lo spam, non contro chi scrive.
+        "comments": env("THROTTLE_COMMENTS", "30/hour"),
     },
 }
 

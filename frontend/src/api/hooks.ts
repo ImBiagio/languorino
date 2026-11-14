@@ -25,6 +25,10 @@ import type {
   RecipePayload,
   RecipeSummary,
   SharedRecipe,
+  PublicProfile,
+  RatingSummary,
+  RecipeComment,
+  Visibility,
   ShoppingItem,
   ShoppingList,
   ShoppingListDetail,
@@ -701,8 +705,9 @@ export function useDrawRecipeImage() {
 /* --------------------------------------------- condivisione delle ricette -- */
 
 export function useShareRecipe() {
-  return useRecipeImageMutation(({ id, renew }: { id: UUID; renew?: boolean }) =>
-    api.post<Recipe>(`/api/recipes/${id}/share`, { renew: Boolean(renew) }),
+  return useRecipeImageMutation(
+    ({ id, renew, visibility }: { id: UUID; renew?: boolean; visibility?: Visibility }) =>
+      api.post<Recipe>(`/api/recipes/${id}/share`, { renew: Boolean(renew), visibility }),
   )
 }
 
@@ -732,6 +737,68 @@ export function useCopySharedRecipe() {
       void client.invalidateQueries({ queryKey: [...keys.recipes, 'list'] })
       void client.invalidateQueries({ queryKey: keys.tags })
     },
+  })
+}
+
+/* ------------------------------- profili pubblici, voti, commenti -- */
+
+export function usePublicProfile(handle: string | undefined, viewer: string | undefined) {
+  return useQuery({
+    queryKey: ['public-profile', handle, viewer],
+    queryFn: () => api.get<PublicProfile>(`/api/public/profiles/${handle}`),
+    enabled: Boolean(handle && viewer),
+    retry: false,
+  })
+}
+
+const commentsKey = (token: string) => ['shared-recipe', token, 'comments'] as const
+
+export function useRecipeComments(token: string | null | undefined, viewer: string | undefined) {
+  return useQuery({
+    queryKey: [...commentsKey(token ?? ''), viewer],
+    queryFn: () => api.get<RecipeComment[]>(`/api/shared/recipes/${token}/comments`),
+    enabled: Boolean(token && viewer),
+  })
+}
+
+/** Commento o risposta, con foto: torna l'elenco aggiornato. */
+export function useAddComment(token: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ text, parent, images }: { text: string; parent?: UUID; images: File[] }) => {
+      const form = new FormData()
+      form.append('text', text)
+      if (parent) form.append('parent', parent)
+      images.forEach((file) => form.append('images', file))
+      return api.post<RecipeComment[]>(`/api/shared/recipes/${token}/comments`, form)
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['shared-recipe', token] })
+      void client.invalidateQueries({ queryKey: keys.recipes })
+    },
+  })
+}
+
+export function useDeleteComment(token: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.delete<void>(`/api/comments/${id}`),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['shared-recipe', token] })
+      void client.invalidateQueries({ queryKey: keys.recipes })
+    },
+  })
+}
+
+/** Stelle da 1 a 5; null toglie il voto. */
+export function useRateRecipe(token: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (stars: number | null) =>
+      stars === null
+        ? api.delete<RatingSummary>(`/api/shared/recipes/${token}/rating`)
+        : api.put<RatingSummary>(`/api/shared/recipes/${token}/rating`, { stars }),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ['shared-recipe', token] }),
   })
 }
 

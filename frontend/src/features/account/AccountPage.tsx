@@ -33,6 +33,7 @@ export function AccountPage() {
         </header>
 
         <ProfileSection user={user} />
+        <PublicProfileSection user={user} />
         <EmailSection user={user} />
         <PasswordSection user={user} />
         <LanguageSection />
@@ -87,6 +88,62 @@ function ProfileSection({ user }: { user: User }) {
           {saved ? gettext('Salvato') : gettext('Salva')}
         </button>
       </form>
+      <ErrorBanner error={error} />
+    </section>
+  )
+}
+
+/** Indirizzo del profilo pubblico (ADR 0017): nasce alla prima ricetta pubblica. */
+function PublicProfileSection({ user }: { user: User }) {
+  const { setUser } = useAuth()
+  const [handle, setHandle] = useState(user.handle ?? '')
+  const [error, setError] = useState<unknown>(null)
+  const [saved, setSaved] = useState(false)
+  const clean = handle.trim().toLowerCase()
+
+  return (
+    <section className="rounded-card bg-surface-container-low p-5">
+      <h2 className="text-body-large font-medium">{gettext('Profilo pubblico')}</h2>
+      <p className="mb-4 text-body-small text-on-surface-variant">
+        {gettext(
+          'Le ricette che rendi pubbliche compaiono in una pagina con il tuo nome visibile, che chiunque può aprire. Senza ricette pubbliche la pagina non esiste.',
+        )}
+      </p>
+      <form
+        className="flex flex-wrap items-end gap-3"
+        onSubmit={async (event) => {
+          event.preventDefault()
+          setError(null)
+          setSaved(false)
+          try {
+            setUser(await api.patch<User>('/api/me', { handle: clean || null }))
+            setSaved(true)
+          } catch (err) {
+            setError(err)
+          }
+        }}
+      >
+        <Field label={gettext('Indirizzo')} className="min-w-[220px] flex-1">
+          <input
+            className="field-input"
+            value={handle}
+            placeholder={gettext('nasce alla prima ricetta pubblica')}
+            onChange={(event) => {
+              setHandle(event.target.value)
+              setSaved(false)
+            }}
+          />
+        </Field>
+        <button className="btn-tonal" disabled={clean === (user.handle ?? '')}>
+          {saved ? gettext('Salvato') : gettext('Salva')}
+        </button>
+      </form>
+      {user.handle && (
+        <Link to={`/u/${user.handle}`} className="btn-text btn-sm -ml-3 mt-2 w-fit">
+          <Icon name="open_in_new" size={18} />
+          {`${window.location.host}/u/${user.handle}`}
+        </Link>
+      )}
       <ErrorBanner error={error} />
     </section>
   )

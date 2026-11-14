@@ -8,6 +8,8 @@ export interface User {
   id: UUID
   email: string
   display_name: string
+  /** Indirizzo del profilo pubblico `/u/<handle>` (ADR 0017). */
+  handle?: string | null
   avatar: string | null
   email_verified_at?: string | null
   /** Lingua dell'interfaccia e delle mail ('it' | 'en'). */
@@ -176,6 +178,11 @@ export interface Recipe extends RecipeSummary {
   source: string
   /** Link di condivisione `/r/<token>`, se acceso (ADR 0012). */
   share_token: string | null
+  /** Privata, con il link o pubblica nel profilo (ADR 0017). */
+  visibility: Visibility
+  /** Voti degli altri, solo se condivisa. */
+  rating: RatingSummary | null
+  comment_count: number
   copied_from: UUID | null
   created_at: string
 }
@@ -200,7 +207,49 @@ export interface SharedRecipe {
   main_category: Category
   ingredients: RecipeLine[]
   author: string
+  /** Profilo pubblico dell'autore, se ne ha uno. */
+  author_handle: string | null
+  visibility: Visibility
+  rating: RatingSummary
+  comment_count: number
   is_mine: boolean
+}
+
+export type Visibility = 'private' | 'unlisted' | 'public'
+
+export interface RatingSummary {
+  /** Media delle stelle (1-5), null senza voti. */
+  average: number | null
+  count: number
+  /** Il voto di chi guarda, se ha votato. */
+  mine?: number | null
+}
+
+export interface RecipeComment {
+  id: UUID
+  /** Null per un commento eliminato che tiene in piedi delle risposte. */
+  author: { name: string; handle: string | null; is_recipe_author: boolean } | null
+  text: string
+  /** `/media/...` WebP. */
+  images: string[]
+  /** Le stelle che l'autore del commento ha dato alla ricetta. */
+  stars: number | null
+  created_at: string
+  can_delete: boolean
+  is_deleted: boolean
+  replies: RecipeComment[]
+}
+
+export interface PublicProfile {
+  handle: string
+  name: string
+  since: string
+  is_me: boolean
+  recipes: (Omit<RecipeSummary, 'warnings'> & {
+    share_token: string
+    rating_average: number | null
+    rating_count: number
+  })[]
 }
 
 /** Una riga del form: dal catalogo (`ingredient_id`) o scritta a mano (`name`). */
