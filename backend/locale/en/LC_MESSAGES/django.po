@@ -8,10 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 14:59+0100\n"
-"POT-Creation-Date: 2026-11-14 13:49+0100\n"
-"POT-Creation-Date: 2026-11-14 14:00+0100\n"
-"POT-Creation-Date: 2026-11-14 14:06+0100\n"
+"POT-Creation-Date: 2026-11-14 20:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -39,14 +36,14 @@ msgstr "The whole app has used up today's AI requests. Try again tomorrow."
 msgid ""
 "Per oggi hai finito le conversazioni a voce (%(n)d al giorno). Riprova "
 "domani."
-msgstr "You've used up today's voice conversations (%(n)d a day). Try again tomorrow."
+msgstr ""
+"You've used up today's voice conversations (%(n)d a day). Try again tomorrow."
 
 #: apps/ai/client.py:117
 msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
 msgstr "The AI's answer wasn't in the expected format."
 
 #: apps/ai/client.py:149 apps/ai/client.py:233
-#: apps/ai/client.py:135 apps/ai/client.py:218
 msgid ""
 "Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
 "riavvia."
@@ -58,27 +55,16 @@ msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
 msgstr "Gemini rejected the key: check GEMINI_API_KEY."
 
 #: apps/ai/client.py:198 apps/ai/client.py:269
-#: apps/ai/client.py:179 apps/ai/client.py:251
-msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
-msgstr "Gemini rejected the key: check GEMINI_API_KEY."
-
-#: apps/ai/client.py:179 apps/ai/client.py:251
-msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
-msgstr "Gemini rejected the key: check GEMINI_API_KEY."
-
-#: apps/ai/client.py:183 apps/ai/client.py:253
 #, python-format
 msgid "Gemini ha risposto con un errore (%(code)s)."
 msgstr "Gemini answered with an error (%(code)s)."
 
 #: apps/ai/client.py:201
-#: apps/ai/client.py:186
 #, python-format
 msgid "errore %(code)s"
 msgstr "error %(code)s"
 
 #: apps/ai/client.py:219
-#: apps/ai/client.py:204
 #, python-format
 msgid ""
 "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
@@ -88,7 +74,6 @@ msgstr ""
 "few minutes."
 
 #: apps/ai/client.py:258
-#: apps/ai/client.py:242
 msgid ""
 "La chiave Gemini non ha quota per le immagini (piano gratuito): attiva la "
 "fatturazione su Google AI Studio."
@@ -105,31 +90,6 @@ msgid "Gemini non risponde. Riprova tra qualche minuto."
 msgstr "Gemini isn't answering. Try again in a few minutes."
 
 #: apps/ai/client.py:284
-#: apps/ai/client.py:248
-msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
-msgstr "Gemini is overloaded right now. Try again in a few minutes."
-
-#: apps/ai/client.py:259
-msgid "Gemini non risponde. Riprova tra qualche minuto."
-msgstr "Gemini isn't answering. Try again in a few minutes."
-
-#: apps/ai/client.py:248
-msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
-msgstr "Gemini is overloaded right now. Try again in a few minutes."
-
-#: apps/ai/client.py:259
-msgid "Gemini non risponde. Riprova tra qualche minuto."
-msgstr "Gemini isn't answering. Try again in a few minutes."
-
-#: apps/ai/client.py:248
-msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
-msgstr "Gemini is overloaded right now. Try again in a few minutes."
-
-#: apps/ai/client.py:259
-msgid "Gemini non risponde. Riprova tra qualche minuto."
-msgstr "Gemini isn't answering. Try again in a few minutes."
-
-#: apps/ai/client.py:268
 msgid "Gemini non ha disegnato niente questa volta. Riprova."
 msgstr "Gemini didn't draw anything this time. Try again."
 
@@ -261,16 +221,11 @@ msgstr "Queued"
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:33 apps/plans/models.py:113
+#: apps/jobs/models.py:33 apps/plans/models.py:114
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:34 apps/plans/models.py:114
-#: apps/jobs/models.py:32 apps/plans/models.py:114
-msgid "Da rivedere"
-msgstr "To review"
-
-#: apps/jobs/models.py:33 apps/plans/models.py:115
+#: apps/jobs/models.py:34 apps/plans/models.py:115
 msgid "Confermato"
 msgstr "Confirmed"
 
@@ -286,22 +241,16 @@ msgstr "I couldn't find a meal plan in these files."
 msgid "Piano del nutrizionista"
 msgstr "Nutritionist's plan"
 
-#: apps/jobs/tasks.py:184
+#: apps/jobs/tasks.py:197
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:188 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
-#: apps/jobs/tasks.py:182
-msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
-msgstr "It's taking too long: try again with fewer pages at a time."
-
-#: apps/jobs/tasks.py:186 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
+#: apps/jobs/tasks.py:201 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
 #: apps/recipes/tasks.py:236
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
-#: apps/jobs/tasks.py:207
-#: apps/jobs/tasks.py:205
+#: apps/jobs/tasks.py:220
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
@@ -309,19 +258,12 @@ msgstr "The job stopped. Try again."
 msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
-#: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:75
-#: apps/plans/views.py:261 apps/plans/views.py:345 apps/plans/views.py:376
-#: apps/plans/views.py:413 apps/profiles/live.py:161 apps/profiles/views.py:132
-#: apps/profiles/views.py:183 apps/recipes/views.py:233
-#: apps/recipes/views.py:395 apps/recipes/views.py:499
-#: apps/plans/views.py:261 apps/plans/views.py:346 apps/plans/views.py:383
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:77
-#: apps/plans/views.py:263 apps/plans/views.py:348 apps/plans/views.py:385
-#: apps/profiles/live.py:160 apps/profiles/views.py:131
-#: apps/profiles/views.py:182 apps/recipes/views.py:233
-#: apps/recipes/views.py:395 apps/recipes/views.py:510
+#: apps/plans/views.py:263 apps/plans/views.py:347 apps/plans/views.py:378
+#: apps/plans/views.py:415 apps/profiles/live.py:161 apps/profiles/views.py:132
+#: apps/profiles/views.py:183 apps/recipes/views.py:233
 #: apps/recipes/views.py:395 apps/recipes/views.py:433
-#: apps/recipes/views.py:528
+#: apps/recipes/views.py:539
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -453,7 +395,9 @@ msgstr "%(name)s is sharing their plan with you"
 msgid ""
 "%(name)s ha condiviso con te il suo piano alimentare su %(app)s: lo vedi "
 "così com'è, senza poterlo cambiare."
-msgstr "%(name)s shared their meal plan with you on %(app)s: you see it as it is, without being able to change it."
+msgstr ""
+"%(name)s shared their meal plan with you on %(app)s: you see it as it is, "
+"without being able to change it."
 
 #: apps/plans/sharing.py:55
 msgid "Guarda il piano"
@@ -487,12 +431,11 @@ msgstr "Free meal."
 msgid "Serve almeno un pasto con le sue opzioni."
 msgstr "At least one meal with its options is needed."
 
-#: apps/plans/views.py:350
+#: apps/plans/views.py:352
 msgid "I file di questo piano non ci sono più: caricalo di nuovo."
 msgstr "This plan's files are gone: upload it again."
 
-#: apps/plans/views.py:420
-#: apps/plans/views.py:392
+#: apps/plans/views.py:422
 msgid "Scrivi una domanda."
 msgstr "Write a question."
 
@@ -860,19 +803,20 @@ msgstr "With the link"
 #: apps/recipes/models.py:271
 msgid "Pubblica"
 msgstr "Public"
-#: apps/recipes/models.py:271
+
+#: apps/recipes/models.py:282
 msgid "Non calcolati"
 msgstr "Not calculated"
 
-#: apps/recipes/models.py:272
+#: apps/recipes/models.py:283
 msgid "Dalla ricetta"
 msgstr "From the recipe"
 
-#: apps/recipes/models.py:273
+#: apps/recipes/models.py:284
 msgid "Stimati dall'AI"
 msgstr "Estimated by AI"
 
-#: apps/recipes/models.py:274
+#: apps/recipes/models.py:285
 msgid "Scritti a mano"
 msgstr "Entered by hand"
 
@@ -888,28 +832,19 @@ msgstr "I couldn't estimate the values for this recipe."
 msgid "Scegli o scrivi un ingrediente."
 msgstr "Pick or type an ingredient."
 
-#: apps/recipes/serializers.py:246
+#: apps/recipes/serializers.py:253
 msgid "Dai un nome alla ricetta."
 msgstr "Give the recipe a name."
 
-#: apps/recipes/serializers.py:281
-msgid "Ingrediente non trovato."
-msgstr "Ingredient not found."
-
-#: apps/recipes/serializers.py:356
-#: apps/recipes/serializers.py:233
-msgid "Dai un nome alla ricetta."
-msgstr "Give the recipe a name."
-
-#: apps/recipes/serializers.py:255
+#: apps/recipes/serializers.py:275
 msgid "Fonte non valida."
 msgstr "Invalid source."
 
-#: apps/recipes/serializers.py:298
+#: apps/recipes/serializers.py:318
 msgid "Ingrediente non trovato."
 msgstr "Ingredient not found."
 
-#: apps/recipes/serializers.py:389
+#: apps/recipes/serializers.py:409
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
@@ -964,32 +899,23 @@ msgstr "It already has a real photo: remove it before having one drawn."
 msgid "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
 msgstr "You've used up today's images (%(n)d a day). Try again tomorrow."
 
-#: apps/recipes/views.py:437
+#: apps/recipes/views.py:466
 msgid "Visibilità non valida."
 msgstr "Invalid visibility."
 
-#: apps/recipes/views.py:442
+#: apps/recipes/views.py:471
 msgid "Salvala nel tuo ricettario prima di pubblicarla."
 msgstr "Save it to your cookbook before publishing it."
 
-#: apps/recipes/views.py:489
+#: apps/recipes/views.py:518
 msgid "È già nel tuo ricettario."
 msgstr "It's already in your cookbook."
 
-#: apps/recipes/views.py:515
+#: apps/recipes/views.py:544
 msgid "Prima finisco di leggere il ricettario."
 msgstr "Let me finish reading the cookbook first."
 
-#: apps/recipes/views.py:521
-#: apps/recipes/views.py:507
-msgid "È già nel tuo ricettario."
-msgstr "It's already in your cookbook."
-
-#: apps/recipes/views.py:533
-msgid "Prima finisco di leggere il ricettario."
-msgstr "Let me finish reading the cookbook first."
-
-#: apps/recipes/views.py:539
+#: apps/recipes/views.py:550
 msgid "Ci sto già lavorando."
 msgstr "I'm already working on it."
 
@@ -1076,12 +1002,11 @@ msgstr ""
 "The link is valid for 2 hours and can be used once. If you didn't request "
 "it, just ignore this email: your password stays the same."
 
-#: apps/users/serializers.py:59
+#: apps/users/serializers.py:70
 msgid "Codice di invito non valido."
 msgstr "Invalid invite code."
 
-#: apps/users/serializers.py:66
-#: apps/users/serializers.py:56
+#: apps/users/serializers.py:77
 msgid "Esiste gia' un account con questa email."
 msgstr "An account with this email already exists."
 
