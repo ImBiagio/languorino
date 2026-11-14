@@ -9,6 +9,7 @@ prep. "Cosa cucini" non e' un modello a parte: sono i pasti raggruppati per
 
 from __future__ import annotations
 
+import uuid
 from datetime import date, timedelta
 
 from django.conf import settings
@@ -137,3 +138,30 @@ class NutritionistPlan(BaseModel):
 
     def __str__(self) -> str:
         return self.title
+
+
+class PlanShare(models.Model):
+    """``owner`` fa vedere il suo piano a ``viewer`` (ADR 0019), in sola
+    lettura: ``viewer`` vede il piano di oggi di ``owner`` com'e' adesso, ma
+    non lo cambia e non lo usa; il suo piano se lo crea lui."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="plan_shares_given"
+    )
+    viewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="plan_shares_received"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint("owner", "viewer", name="one_plan_share_per_pair"),
+            models.CheckConstraint(
+                condition=~models.Q(owner=models.F("viewer")), name="plan_share_not_self"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.owner} → {self.viewer}"

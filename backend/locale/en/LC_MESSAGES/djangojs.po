@@ -11,6 +11,7 @@ msgstr ""
 "POT-Creation-Date: 2026-11-14 14:59+0100\n"
 "POT-Creation-Date: 2026-11-14 13:49+0100\n"
 "POT-Creation-Date: 2026-11-14 14:00+0100\n"
+"POT-Creation-Date: 2026-11-14 14:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1000,6 +1001,9 @@ msgstr[1] "%s servings"
 msgid "Fai la spesa"
 msgstr "Go shopping"
 
+msgid "Fallo vedere a qualcuno"
+msgstr "Share it with someone"
+
 msgid "Elimina il piano"
 msgstr "Delete the plan"
 
@@ -1141,6 +1145,88 @@ msgstr "Writing two recipes for this meal…"
 
 msgid "Questa volta niente di adatto: riprova, magari con un desiderio."
 msgstr "Nothing suitable this time: try again, maybe with a craving."
+
+msgid "Fai vedere il tuo piano"
+msgstr "Share your plan"
+
+msgid ""
+"Chi scegli vede il tuo piano di oggi e le sue ricette, sempre aggiornato, ma "
+"non può cambiarlo. Gli arriva una mail. Serve che abbia un account."
+msgstr "The people you choose see your current plan and its recipes, always up to date, but can't change it. They get an email. They need an account."
+
+msgid "Condividi"
+msgstr "Share"
+
+msgid "Lo vedono"
+msgstr "Shared with"
+
+msgid "Non farlo più vedere"
+msgstr "Stop sharing"
+
+#, javascript-format
+msgid "Non far più vedere il piano a %s?"
+msgstr "Stop sharing the plan with %s?"
+
+msgid "Puoi condividerlo di nuovo quando vuoi."
+msgstr "You can share it again whenever you like."
+
+msgid "Piani che ti fanno vedere"
+msgstr "Plans shared with you"
+
+#, javascript-format
+msgid "Il piano di %s"
+msgstr "%s's plan"
+
+msgid "Solo da guardare: il tuo resta tuo"
+msgstr "View only: yours stays yours"
+
+msgid "Per ora non ha un piano attivo"
+msgstr "No active plan for now"
+
+msgid "Questo piano non è più condiviso con te"
+msgstr "This plan is no longer shared with you"
+
+msgid "Torna al tuo piano"
+msgstr "Back to your plan"
+
+#, javascript-format
+msgid "%s non ha un piano attivo"
+msgstr "%s has no active plan"
+
+msgid "Quando ne attiva uno lo vedi qui."
+msgstr "When they activate one, you'll see it here."
+
+msgid "Togliere questo piano dal tuo elenco?"
+msgstr "Remove this plan from your list?"
+
+#, javascript-format
+msgid "Per rivederlo %s dovrà condividerlo di nuovo."
+msgstr "To see it again, %s will have to share it again."
+
+msgid "Non mostrarmelo più"
+msgstr "Stop showing it to me"
+
+#, javascript-format
+msgid "Il piano di %s · solo da guardare"
+msgstr "%s's plan · view only"
+
+msgid "Cosa mangia"
+msgstr "What they eat"
+
+msgid "Cosa cucina"
+msgstr "What they cook"
+
+msgid "Questa ricetta non è più nel piano"
+msgstr "This recipe is no longer in the plan"
+
+msgid "Torna al piano"
+msgstr "Back to the plan"
+
+msgid "Ingredienti"
+msgstr "Ingredients"
+
+msgid "Preparazione"
+msgstr "Method"
 
 msgid "Cucino al momento"
 msgstr "I cook on the day"
@@ -2023,17 +2109,11 @@ msgstr "Careful: it contains things you can't eat"
 msgid "Contiene cose che non ti piacciono: %s"
 msgstr "It contains things you don't like: %s"
 
-msgid "Ingredienti"
-msgstr "Ingredients"
-
 msgid "Nessun ingrediente scritto."
 msgstr "No ingredients written."
 
 msgid "facoltativo"
 msgstr "optional"
-
-msgid "Preparazione"
-msgstr "Method"
 
 msgid "Nessun passo scritto."
 msgstr "No steps written."

@@ -21,6 +21,7 @@ REST_FRAMEWORK = {
         "ai": "10000/min",
         "public": "10000/min",
         "comments": "10000/min",
+        "invites": "10000/min",
     },
 }
 STORAGES = {

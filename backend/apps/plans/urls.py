@@ -14,6 +14,10 @@ from .views import (
     PlannedMealView,
     PlanRegenerateView,
     PlanRetryView,
+    PlanShareDetailView,
+    PlanShareListView,
+    SharedPlanRecipeView,
+    SharedPlanView,
 )
 
 urlpatterns = [
@@ -34,6 +38,14 @@ urlpatterns = [
         "nutritionist-plans/<uuid:pk>/reread",
         NutritionistPlanRereadView.as_view(),
         name="nutritionist-plan-reread",
+    ),
+    path("plan-shares", PlanShareListView.as_view(), name="plan-shares"),
+    path("plan-shares/<uuid:pk>", PlanShareDetailView.as_view(), name="plan-share-detail"),
+    path("plan-shares/<uuid:pk>/plan", SharedPlanView.as_view(), name="shared-plan"),
+    path(
+        "plan-shares/<uuid:pk>/recipes/<uuid:recipe_id>",
+        SharedPlanRecipeView.as_view(),
+        name="shared-plan-recipe",
     ),
     path("nutritionist-plans", NutritionistPlanListView.as_view(), name="nutritionist-plans"),
     path(

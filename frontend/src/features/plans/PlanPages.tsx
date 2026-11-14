@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 
 import {
@@ -48,6 +48,7 @@ import type {
 import { MEAL_OPTIONS } from '../profile/options'
 import { formatMinutes, formatQuantity } from '../recipes/options'
 import { MakeShoppingDialog } from '../shopping/ShoppingPages'
+import { SharePlanDialog, SharedWithMe } from './SharedPlanPages'
 import {
   addDays,
   formatDayLong,
@@ -59,6 +60,12 @@ import {
 import { PREP_OPTIONS } from './options'
 
 const SLOT_ORDER = MEAL_OPTIONS.map((option) => option.value)
+
+/**
+ * Dove porta il titolo di una ricetta nel piano: il proprio dettaglio, o la
+ * ricetta vista dal piano condiviso di un altro (ADR 0019).
+ */
+export const RecipeLinkContext = createContext((id: string) => `/ricette/${id}`)
 
 /* -------------------------------------------------------------- /piano ---- */
 
@@ -92,6 +99,7 @@ export function PlanHomePage() {
         }
       />
       <NutritionistLink />
+      <SharedWithMe />
     </Page>
   )
 }
@@ -144,6 +152,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
   const remove = useDeletePlan()
   const [view, setView] = useState<'eat' | 'cook'>('eat')
   const [shopping, setShopping] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const today = todayIso()
   const days = useMemo(
     () => Array.from({ length: plan.days }, (_, offset) => addDays(plan.start_date, offset)),
@@ -209,6 +218,13 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
               />
             )}
             <IconButton
+              icon="group_add"
+              size="md"
+              inheritColor
+              label={gettext('Fallo vedere a qualcuno')}
+              onClick={() => setSharing(true)}
+            />
+            <IconButton
               icon="add"
               size="md"
               inheritColor
@@ -241,6 +257,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
 
       <ErrorBanner error={mutationError} />
       {shopping && <MakeShoppingDialog plan={plan} onClose={() => setShopping(false)} />}
+      <SharePlanDialog open={sharing} onClose={() => setSharing(false)} />
 
       {plan.status === 'generating' && <Generating plan={plan} />}
 
@@ -338,6 +355,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
         </>
       )}
       <NutritionistLink />
+      <SharedWithMe />
     </Page>
   )
 }
@@ -388,7 +406,18 @@ function mealsByDay(plan: MealPlanDetail) {
   return out
 }
 
-function EatView({ plan, days, today }: { plan: MealPlanDetail; days: string[]; today: string }) {
+export function EatView({
+  plan,
+  days,
+  today,
+  editable = true,
+}: {
+  plan: MealPlanDetail
+  days: string[]
+  today: string
+  /** Falso per il piano condiviso di un altro: si guarda e basta. */
+  editable?: boolean
+}) {
   const byDay = useMemo(() => mealsByDay(plan), [plan])
   const [editing, setEditing] = useState<PlannedMeal | null>(null)
   return (
@@ -411,7 +440,11 @@ function EatView({ plan, days, today }: { plan: MealPlanDetail; days: string[]; 
           </h2>
           <ul className="grid gap-2">
             {(byDay.get(day) ?? []).map((meal) => (
-              <MealRow key={meal.id} meal={meal} onEdit={() => setEditing(meal)} />
+              <MealRow
+                key={meal.id}
+                meal={meal}
+                onEdit={editable ? () => setEditing(meal) : undefined}
+              />
             ))}
           </ul>
         </section>
@@ -458,6 +491,7 @@ export function Portion({
 }
 
 export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => void }) {
+  const recipeLink = useContext(RecipeLinkContext)
   const slot = MEAL_OPTIONS.find((option) => option.value === meal.slot)
   const recipe = meal.recipe
   const restrictions = recipe?.warnings.filter((item) => item.kind !== 'dislike') ?? []
@@ -476,7 +510,7 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
         <p className="text-label-small text-on-surface-variant">{slot?.label}</p>
         {recipe ? (
           <Link
-            to={`/ricette/${recipe.id}`}
+            to={recipeLink(recipe.id)}
             className="block truncate text-body-large font-medium hover:underline"
           >
             {recipe.title}
@@ -518,7 +552,16 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
 
 /* ---------------------------------------------------------- cosa cucini ---- */
 
-function CookView({ plan, days, today }: { plan: MealPlanDetail; days: string[]; today: string }) {
+export function CookView({
+  plan,
+  days,
+  today,
+}: {
+  plan: MealPlanDetail
+  days: string[]
+  today: string
+}) {
+  const recipeLink = useContext(RecipeLinkContext)
   // Le sessioni: i pasti con una ricetta, raggruppati per giorno di cottura;
   // dentro, una riga per ricetta con le porzioni sommate.
   const sessions = useMemo(() => {
@@ -576,7 +619,7 @@ function CookView({ plan, days, today }: { plan: MealPlanDetail; days: string[];
                   </div>
                   <div className="min-w-0 flex-1">
                     <Link
-                      to={`/ricette/${item.meal.recipe!.id}`}
+                      to={recipeLink(item.meal.recipe!.id)}
                       className="block truncate text-body-large font-medium hover:underline"
                     >
                       {item.meal.recipe!.title}

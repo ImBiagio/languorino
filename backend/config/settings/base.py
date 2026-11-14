@@ -172,6 +172,8 @@ REST_FRAMEWORK = {
         "public": env("THROTTLE_PUBLIC", "60/min"),
         # Commenti alle ricette (con foto): contro lo spam, non contro chi scrive.
         "comments": env("THROTTLE_COMMENTS", "30/hour"),
+        # Condivisione del piano: ogni tentativo dice se un'email ha un account.
+        "invites": env("THROTTLE_INVITES", "20/hour"),
     },
 }
 
