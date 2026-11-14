@@ -11,14 +11,16 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from apps.ai.client import generate
-from apps.recipes.importing import LANGUAGES
-from apps.recipes.matching import normalize, variants
+from apps.recipes.importing import LANGUAGES, _parse_number
+from apps.recipes.matching import _word_variants, normalize, variants
 from apps.recipes.models import Recipe
 
 from .generation import SLOT_NAMES
@@ -294,3 +296,97 @@ def slot_options(rules: dict, slot: str) -> list[str]:
         if meal["slot"] == slot:
             return meal["options"]
     return []
+
+
+# --- sostituzioni calcolate (per la chat) ----------------------------------------------------
+
+# "80 g pasta", "100 gr di pane", "200 ml latte", "2 uova", "1/2 avocado"
+EQUIVALENT = re.compile(
+    r"^\s*(?P<qty>[\d.,/½¼¾]+)\s*(?P<unit>kg|gr|g|ml|l|pz)?\.?\s+(?:di\s+|d')?(?P<name>.+)$",
+    re.IGNORECASE,
+)
+UNIT_FAMILY = {"g": "g", "gr": "g", "kg": "g", "ml": "ml", "l": "ml", "pz": "pz", "": "pz"}
+UNIT_FACTOR = {"kg": 1000, "l": 1000}
+# Parole che non dicono quale alimento e': "petto di pollo" e' "pollo".
+STOP_WORDS = {"di", "del", "della", "al", "alla", "con", "e", "in", "a", "da"}
+
+
+def parse_equivalent(text: str) -> tuple[Decimal, str, str] | None:
+    """``(quantita', famiglia di unita', nome)`` di un equivalente della tabella."""
+    match = EQUIVALENT.match(text or "")
+    if not match:
+        return None
+    quantity = _parse_number(match["qty"])
+    if quantity is None or quantity <= 0:
+        return None
+    unit = (match["unit"] or "").lower()
+    quantity *= UNIT_FACTOR.get(unit, 1)
+    name = re.sub(r"\(.*?\)", "", match["name"]).strip()
+    return quantity, UNIT_FAMILY[unit], name
+
+
+def _words(text: str) -> set[str]:
+    words = set()
+    for word in normalize(text).replace("'", " ").split():
+        if word not in STOP_WORDS:
+            words.update(_word_variants(word))
+    return words
+
+
+def same_food(line_name: str, equivalent_name: str) -> bool:
+    """ "pasta integrale" e' "pasta", "petto di pollo" e' "pollo", "couscous" e'
+    "cous cous": tutte le parole dell'equivalente stanno nel nome del pasto."""
+    if normalize(line_name).replace(" ", "") == normalize(equivalent_name).replace(" ", ""):
+        return True
+    wanted = set(normalize(equivalent_name).replace("'", " ").split())
+    wanted -= STOP_WORDS
+    have = _words(line_name)
+    return bool(wanted) and all(set(_word_variants(word)) & have for word in wanted)
+
+
+def _amount(value: Decimal, family: str) -> str:
+    if family == "pz":
+        # Mezzo pezzo si', un terzo d'uovo no.
+        rounded = (value * 2).quantize(Decimal("1"), rounding=ROUND_HALF_UP) / 2
+        text = f"{rounded.normalize():f}"
+        return f"{text} pz"
+    rounded = value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    return f"{rounded} {family}"
+
+
+def swaps_for(line: dict, rules: dict) -> list[str]:
+    """Per una riga "a persona" di un pasto (``name``, ``quantity``, ``unit``,
+    ``approx``), gli equivalenti della tabella del nutrizionista con la
+    grammatura in proporzione: 50 g di pane con "80 g pasta = 100 g pane"
+    diventano 40 g di pasta. Il conto lo fa il codice, non la chat."""
+    unit = line.get("unit", "")
+    quantity = Decimal(str(line["quantity"]))
+    family = UNIT_FAMILY.get(unit)
+    if family is None and line.get("approx"):
+        quantity = Decimal(str(line["approx"]["quantity"]))
+        family = UNIT_FAMILY.get(line["approx"]["unit"])
+    if family is None:
+        return []
+    quantity *= UNIT_FACTOR.get(unit, 1)
+    out = []
+    for group in rules.get("substitutions", []):
+        parsed = [(text, parse_equivalent(text)) for text in group["equivalents"]]
+        base = next(
+            (eq for _, eq in parsed if eq and same_food(line["name"], eq[2])),
+            None,
+        )
+        if base is None:
+            continue
+        base_quantity, base_family, _name = base
+        if base_family != family:
+            continue
+        factor = quantity / base_quantity
+        others = [
+            f"{eq[2]} {_amount(eq[0] * factor, eq[1])}"
+            for _, eq in parsed
+            if eq and eq is not base and not same_food(line["name"], eq[2])
+        ]
+        if others:
+            note = f", {group['note']}" if group.get("note") else ""
+            out.append(f"{group['group']}{note}: " + ", ".join(others))
+    return out

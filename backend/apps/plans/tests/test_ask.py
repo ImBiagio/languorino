@@ -191,3 +191,99 @@ def test_sostituzioni_nella_chat(user):
     )
     assert nutritionist
     assert "Carboidrati: 80 g pasta = 100 g pane" in nutritionist_text(None, user)
+
+
+SWAPS = {
+    "substitutions": [
+        {
+            "group": "Carboidrati",
+            "equivalents": [
+                "80 g pasta",
+                "80 g riso",
+                "100 g pane",
+                "300 g patate",
+                "80 g cous cous",
+            ],
+            "note": "",
+        },
+        {
+            "group": "Proteine",
+            "equivalents": ["150 g pollo", "200 g merluzzo", "2 uova"],
+            "note": "",
+        },
+        {
+            "group": "Latticini",
+            "equivalents": ["200 ml latte", "125 g yogurt"],
+            "note": "a colazione",
+        },
+    ]
+}
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    [
+        # Il nome del pasto contiene quello della tabella.
+        (
+            {"name": "pasta integrale", "quantity": "80", "unit": "g"},
+            ["Carboidrati: riso 80 g, pane 100 g, patate 300 g, cous cous 80 g"],
+        ),
+        # In proporzione: 50 g di pane valgono meta' dei 100 g della tabella.
+        (
+            {"name": "pane", "quantity": "50", "unit": "g"},
+            ["Carboidrati: pasta 40 g, riso 40 g, patate 150 g, cous cous 40 g"],
+        ),
+        (
+            {"name": "petto di pollo", "quantity": "150", "unit": "g"},
+            ["Proteine: merluzzo 200 g, uova 2 pz"],
+        ),
+        ({"name": "uova", "quantity": "1", "unit": "pz"}, ["Proteine: pollo 75 g, merluzzo 100 g"]),
+        (
+            {"name": "couscous", "quantity": "80", "unit": "g"},
+            ["Carboidrati: pasta 80 g, riso 80 g, pane 100 g, patate 300 g"],
+        ),
+        (
+            {"name": "latte", "quantity": "0.2", "unit": "l"},
+            ["Latticini, a colazione: yogurt 125 g"],
+        ),
+        # Fuori tabella, o unita' che non si confrontano: niente.
+        ({"name": "basilico", "quantity": "20", "unit": "g"}, []),
+        ({"name": "pasta", "quantity": "2", "unit": "tbsp"}, []),
+    ],
+)
+def test_sostituti_calcolati_dalla_tabella(line, expected):
+    from apps.plans.nutritionist import swaps_for
+
+    assert swaps_for(line, SWAPS) == expected
+
+
+def test_sostituti_nel_piano_della_chat(user, plan):
+    text = plan_text(plan, TODAY, SWAPS)
+    assert "sostituti di pasta 80 g: Carboidrati: riso 80 g, pane 100 g" in text
+    # Senza piano del nutrizionista non ci sono.
+    assert "sostituti" not in plan_text(plan, TODAY)
+
+
+def test_stime_al_modello_principale(user, plan, monkeypatch):
+    calls = []
+
+    def fake(contents, schema, **kwargs):
+        calls.append(kwargs)
+        if kwargs.get("fast"):
+            # Il veloce fa la stima senza segnarla: la parola basta.
+            return AskReply(reply="Circa 190 g di gnocchi. È una mia stima."), "veloce"
+        return AskReply(reply="A pranzo 170 g di gnocchi. È una mia stima."), "principale"
+
+    monkeypatch.setattr("apps.plans.ask.generate", fake)
+    result = ask(user, [{"role": "user", "text": "Ho gli gnocchi, quanti?"}], today=TODAY)
+    assert result == {"reply": "A pranzo 170 g di gnocchi. È una mia stima.", "model": "principale"}
+    assert calls[0]["fast"] is True and not calls[1].get("fast")
+    assert calls[1]["feature"] == "ask_estimate"
+
+
+def test_senza_stima_resta_il_veloce(user, plan, gemini):
+    result = ask(user, [{"role": "user", "text": "Quanta pasta?"}], today=TODAY)
+    assert result["model"] == "finto"
+    assert len(gemini["prompts"]) == 1
+    prompt = gemini["prompts"][0]
+    assert "CATEGORICO" in prompt and "non del nutrizionista" in prompt

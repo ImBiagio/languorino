@@ -37,7 +37,26 @@ come un turno dell'intervista (ADR 0013, 0014). Il codice è in
   pranzo e cena, "questo" risolto dalla conversazione, risposta in inglese,
   rifiuto gentile su "posso mangiare più carboidrati?".
 
+**Aggiornamento del 2026-11-14 — quantità e alimenti diversi.** La chat si usa
+soprattutto per le quantità, quindi:
+- risponde in modo categorico, con il numero del piano nella prima frase
+  ("A pranzo 80 g di pasta."), senza "circa" né "dipende". A "posso
+  mangiarne 100 g?" risponde "No: il piano dice 80 g" e per cambiarlo
+  rimanda al nutrizionista;
+- con un alimento diverso da quello del pasto adatta la quantità. Sotto ogni
+  alimento che è nella tabella delle sostituzioni del nutrizionista, il codice
+  scrive già i sostituti in proporzione (`nutritionist.swaps_for`: 50 g di
+  pane con "80 g pasta = 100 g pane" → 40 g di pasta, 150 g di patate). Fuori
+  tabella il modello calcola lo stesso apporto (carboidrati o proteine) con
+  valori medi, scrive il conto e dice che è una sua stima;
+- le stime le fa il modello principale. Flash-lite sbagliava i conti
+  (gnocchi, tonno partendo dal peso sbagliato) o si rifiutava. Risponde prima
+  il veloce; se segna `estimate` o scrive "stima", la stessa domanda passa al
+  principale (`AiCall.feature = "ask_estimate"`). Tempi misurati: ~1 s per le
+  domande coperte dal piano o dalla tabella, 12–18 s per le stime.
+
 **Costo accettato:**
+- Le stime fuori tabella costano due chiamate e 12–18 secondi.
 - Domande su giorni fuori dalla finestra hanno come risposta "guarda la pagina
   del piano".
 - Il modello confondeva le porzioni del pasto con "cucina per" del profilo:
