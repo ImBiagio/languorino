@@ -68,6 +68,24 @@ Accanto al bottone di ogni funzione grande il frontend mostra `<AiCost>`
 (chi paga e la stima, con `count` per le azioni da più chiamate: settimane
 di piano, pezzi di ricettario, ricette da disegnare).
 
+Pannocchie e chiave nell'interfaccia (`frontend/src/components/Ai.tsx`):
+
+- `<CornCounter />` mostra le pannocchie 🌽 rimaste oggi (`GET
+  /api/ai/wallet` → `cornhub.wallet()`) e porta alla pagina AI di cornhub.
+  Sta nelle barre di navigazione: in fondo al rail su desktop, ultima voce
+  della barra in basso su mobile (in alto gli angoli hanno già i bottoni
+  delle pagine, es. il dettaglio ricetta). Si aggiorna ogni minuto e subito
+  quando un lavoro AI seguito col polling finisce (job, ricettario, piano) o
+  una conversazione a voce si chiude (`useRefreshAi()`).
+- I bottoni delle funzioni **grandi** hanno il simbolo della chiave
+  (`<AiKeyIcon />`) e restano spenti finché la stima di cornhub dice
+  `allowed: false` (`useAiGate(feature, { count, fast })`, stessi argomenti
+  dell'`AiCost` accanto, che dice perché e porta a cornhub). Vale anche per
+  le altre entrate della stessa funzione (PDF e voce in "Importa", "Rifai"
+  del piano, "Rileggi dai file"). La voce in tempo reale è solo Gemini:
+  senza una chiave Gemini il cerchio resta spento, l'intervista scritta
+  (piccola) resta disponibile.
+
 Errori, tradotti nelle eccezioni di sempre:
 
 - `overloaded` → `AIOverloaded`: i lavori lunghi (ricettari, piano,

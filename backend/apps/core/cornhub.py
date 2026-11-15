@@ -323,6 +323,21 @@ def live_token(feature: str, config: dict, *, user=None) -> tuple[str, AIResult]
     return payload["token"], _meta(payload)
 
 
+def wallet(*, user=None) -> dict:
+    """Pannocchie rimaste oggi e chiavi dell'utente, per l'intestazione
+    dell'app. Se cornhub non risponde: ``{}`` (il contatore si nasconde)."""
+    try:
+        response = httpx.get(
+            _internal("/internal/ai/wallet"),
+            params={"user": _sub(user) or ""},
+            headers=_headers(),
+            timeout=5,
+        )
+    except httpx.HTTPError:
+        return {}
+    return response.json() if response.status_code == 200 else {}
+
+
 def quote(features: list[str] | dict[str, int], *, user=None, fast: bool = False) -> dict:
     """Stima per l'interfaccia: chi paga e quanto, prima di premere il bottone."""
     items = features.items() if isinstance(features, dict) else ((f, 1) for f in features)
@@ -335,5 +350,5 @@ def quote(features: list[str] | dict[str, int], *, user=None, fast: bool = False
 __all__ = [
     "AIError", "AIOverloaded", "AIResult", "SSOError", "authorize_url", "exchange_code",
     "file_part", "generate", "image", "is_enabled", "live_token", "logout_url",
-    "new_login", "quote", "user_status",
+    "new_login", "quote", "user_status", "wallet",
 ]

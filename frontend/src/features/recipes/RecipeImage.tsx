@@ -11,6 +11,7 @@ import {
   useRemoveRecipeImage,
   useUploadRecipeImage,
 } from '../../api/hooks'
+import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
 import { RecipeCover } from '../../components/illustrations'
 import { Icon, IconButton, Modal } from '../../components/ui'
@@ -108,14 +109,11 @@ export function RecipeHeroImage({ recipe }: { recipe: Recipe }) {
             hint={gettext('Il piatto vero, scattato o dalla galleria: vince sempre')}
             onClick={() => close(() => input.current?.click())}
           />
-          {recipe.image_source !== 'photo' && (
-            <Action
-              icon="auto_awesome"
-              tone="bg-tertiary-container text-on-tertiary-container"
+          {open && recipe.image_source !== 'photo' && (
+            <DrawAction
               title={
                 recipe.image ? gettext('Fallo ridisegnare') : gettext('Fallo disegnare all’AI')
               }
-              hint={gettext('Un’immagine del piatto creata dall’AI, in meno di un minuto')}
               onClick={() =>
                 close(async () => {
                   try {
@@ -148,24 +146,49 @@ export function RecipeHeroImage({ recipe }: { recipe: Recipe }) {
   )
 }
 
+/**
+ * "Fallo disegnare": funzione grande (immagine, chiave dell'utente). Sta in un
+ * componente a parte cosi' la stima si chiede solo a finestra aperta.
+ */
+function DrawAction({ title, onClick }: { title: string; onClick: () => void }) {
+  const gate = useAiGate('recipe_image')
+  return (
+    <Action
+      icon="auto_awesome"
+      tone="bg-tertiary-container text-on-tertiary-container"
+      title={title}
+      hint={gettext('Un’immagine del piatto creata dall’AI, in meno di un minuto')}
+      onClick={onClick}
+      disabled={!gate.allowed}
+      aiKey={gate.large}
+    />
+  )
+}
+
 function Action({
   icon,
   tone,
   title,
   hint,
   onClick,
+  disabled,
+  aiKey,
 }: {
   icon: string
   tone: string
   title: string
   hint: string
   onClick: () => void
+  disabled?: boolean
+  /** Funzione AI grande: il simbolo della chiave accanto al titolo. */
+  aiKey?: boolean
 }) {
   return (
     <button
       type="button"
-      className="state flex items-center gap-4 rounded-row bg-surface-container-low p-4 text-left"
+      className="state flex items-center gap-4 rounded-row bg-surface-container-low p-4 text-left disabled:cursor-not-allowed disabled:opacity-40"
       onClick={onClick}
+      disabled={disabled}
     >
       <span
         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] ${tone}`}
@@ -173,7 +196,10 @@ function Action({
         <Icon name={icon} size={24} />
       </span>
       <span>
-        <span className="block text-body-large font-medium">{title}</span>
+        <span className="flex items-center gap-1.5 text-body-large font-medium">
+          {title}
+          {aiKey && <AiKeyIcon />}
+        </span>
         <span className="block text-body-small text-on-surface-variant">{hint}</span>
       </span>
     </button>

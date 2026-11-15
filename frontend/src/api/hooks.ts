@@ -13,6 +13,7 @@ import {
 import { api } from '../lib/api'
 import type {
   AiQuote,
+  AiWallet,
   AuthConfig,
   CookSuggestions,
   FoodPreference,
@@ -50,6 +51,7 @@ import type {
 export const keys = {
   authConfig: ['auth-config'] as const,
   aiQuote: (features: string[], fast: boolean) => ['ai-quote', fast, ...features] as const,
+  aiWallet: ['ai-wallet'] as const,
   profile: ['profile'] as const,
   recipes: ['recipes'] as const,
   recipeList: (filters: RecipeFilters) => ['recipes', 'list', filters] as const,
@@ -90,6 +92,44 @@ export function useAiQuote(features: string[], fast = false, enabled = true) {
     staleTime: 60_000,
     retry: false,
   })
+}
+
+/** Pannocchie rimaste oggi e chiavi dell'utente (contatore nella barra dell'app). */
+export function useAiWallet() {
+  return useQuery({
+    queryKey: keys.aiWallet,
+    queryFn: () => api.get<AiWallet>('/api/ai/wallet'),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+  })
+}
+
+function refreshAi(client: QueryClient) {
+  void client.invalidateQueries({ queryKey: keys.aiWallet })
+  void client.invalidateQueries({ queryKey: ['ai-quote'] })
+}
+
+/** Dopo una chiamata AI: contatore e stime si aggiornano subito. */
+export function useRefreshAi() {
+  const client = useQueryClient()
+  return () => refreshAi(client)
+}
+
+/**
+ * Per i lavori AI seguiti col polling (job, ricettari, piani): quando il
+ * lavoro finisce il conto e' fatto, quindi contatore e stime si aggiornano.
+ */
+async function watchAi<T>(
+  client: QueryClient,
+  key: QueryKey,
+  load: () => Promise<T>,
+  working: (data: T) => boolean,
+) {
+  const before = client.getQueryData<T>(key)
+  const data = await load()
+  if (before !== undefined && working(before) && !working(data)) refreshAi(client)
+  return data
 }
 
 /* ------------------------------------------------------ profilo alimentare -- */
@@ -253,9 +293,16 @@ export function useJobs(statuses: JobStatus[], kind?: Job['kind']) {
 const CHATTY: Job['kind'][] = ['interview', 'ask']
 
 export function useJob(id: UUID | undefined) {
+  const client = useQueryClient()
   return useQuery({
     queryKey: keys.job(id!),
-    queryFn: () => api.get<Job>(`/api/jobs/${id}`),
+    queryFn: () =>
+      watchAi(
+        client,
+        keys.job(id!),
+        () => api.get<Job>(`/api/jobs/${id}`),
+        (job) => WORKING.includes(job.status),
+      ),
     enabled: Boolean(id),
     // Intervista e chat sono conversazioni: si controlla piu' spesso.
     refetchInterval: (query) =>
@@ -333,9 +380,17 @@ export function useBooks() {
 }
 
 export function useBook(id: UUID | undefined) {
+  const client = useQueryClient()
   return useQuery({
     queryKey: keys.book(id!),
-    queryFn: () => api.get<RecipeBook>(`/api/recipe-books/${id}`),
+    queryFn: () =>
+      watchAi(
+        client,
+        keys.book(id!),
+        () => api.get<RecipeBook>(`/api/recipe-books/${id}`),
+        (book) =>
+          READING.includes(book.status) || ['searching', 'drawing'].includes(book.images_status),
+      ),
     enabled: Boolean(id),
     refetchInterval: (query) =>
       query.state.data &&
@@ -466,9 +521,16 @@ export function useSharedPlanRecipe(share: UUID | undefined, recipe: UUID | unde
 }
 
 export function usePlan(id: UUID | undefined) {
+  const client = useQueryClient()
   return useQuery({
     queryKey: keys.plan(id!),
-    queryFn: () => api.get<MealPlanDetail>(`/api/plans/${id}`),
+    queryFn: () =>
+      watchAi(
+        client,
+        keys.plan(id!),
+        () => api.get<MealPlanDetail>(`/api/plans/${id}`),
+        (plan) => plan.status === 'generating',
+      ),
     enabled: Boolean(id),
     refetchInterval: (query) => (query.state.data?.status === 'generating' ? 3000 : false),
   })

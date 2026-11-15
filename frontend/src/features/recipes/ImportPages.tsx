@@ -13,6 +13,7 @@ import {
   useRetryJob,
   useStartImport,
 } from '../../api/hooks'
+import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
@@ -33,6 +34,9 @@ const MAX_FILES = 8
 export function ImportPage() {
   const navigate = useNavigate()
   const start = useStartImport()
+  const gate = useAiGate('import_recipes')
+  // Il PDF e' un ricettario: un'altra funzione grande (ADR 0006).
+  const bookGate = useAiGate('book_read')
   const [files, setFiles] = useState<File[]>([])
   const photos = useRef<HTMLInputElement>(null)
   // Un PDF diventa un ricettario da sfogliare (ADR 0006), non una revisione.
@@ -100,15 +104,18 @@ export function ImportPage() {
           </button>
           <button
             type="button"
-            className="state flex items-center gap-4 rounded-card bg-surface-container-low p-5 text-left"
+            className="state flex items-center gap-4 rounded-card bg-surface-container-low p-5 text-left disabled:cursor-not-allowed disabled:opacity-40"
             onClick={uploader.open}
-            disabled={uploader.upload.isPending}
+            disabled={!bookGate.allowed || uploader.upload.isPending}
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-accent text-white">
               <Icon name="picture_as_pdf" size={26} />
             </span>
             <span>
-              <span className="block text-body-large font-medium">{gettext('PDF')}</span>
+              <span className="flex items-center gap-1.5 text-body-large font-medium">
+                {gettext('PDF')}
+                {bookGate.large && <AiKeyIcon />}
+              </span>
               <span className="block text-body-small text-on-surface-variant">
                 {uploader.upload.isPending
                   ? gettext('Carico…')
@@ -120,13 +127,14 @@ export function ImportPage() {
             <button
               type="button"
               className={clsx(
-                'state flex items-center gap-4 rounded-card p-5 text-left',
+                'state flex items-center gap-4 rounded-card p-5 text-left disabled:cursor-not-allowed disabled:opacity-40',
                 recorder.recording
                   ? 'bg-error-container text-on-error-container'
                   : 'bg-surface-container-low',
               )}
               onClick={() => (recorder.recording ? recorder.stop() : recorder.start())}
-              disabled={start.isPending}
+              // A voce e' la stessa lettura delle foto: senza chiave non parte.
+              disabled={start.isPending || (!recorder.recording && !gate.allowed)}
             >
               <span
                 className={clsx(
@@ -137,10 +145,11 @@ export function ImportPage() {
                 <Icon name={recorder.recording ? 'stop' : 'mic'} size={26} />
               </span>
               <span>
-                <span className="block text-body-large font-medium">
+                <span className="flex items-center gap-1.5 text-body-large font-medium">
                   {recorder.recording
                     ? interpolate(gettext('Ti ascolto… %s'), [formatSeconds(recorder.seconds)])
                     : gettext('A voce')}
+                  {!recorder.recording && gate.large && <AiKeyIcon />}
                 </span>
                 <span className="block text-body-small opacity-80">
                   {recorder.recording
@@ -200,7 +209,7 @@ export function ImportPage() {
           <button
             type="button"
             className="btn-filled"
-            disabled={!files.length || start.isPending}
+            disabled={!gate.allowed || !files.length || start.isPending}
             onClick={async () => {
               try {
                 const job = await start.mutateAsync(files)
@@ -212,6 +221,7 @@ export function ImportPage() {
           >
             <Icon name="auto_awesome" size={20} />
             {start.isPending ? gettext('Carico…') : gettext('Leggi le ricette')}
+            {gate.large && <AiKeyIcon />}
           </button>
         </div>
       </div>

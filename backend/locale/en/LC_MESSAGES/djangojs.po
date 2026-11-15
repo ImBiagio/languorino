@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 12:45+0100\n"
+"POT-Creation-Date: 2026-11-15 17:15+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#, javascript-format
+msgid ""
+"Pannocchie rimaste oggi: %s su %s. Quota gratuita per le funzioni AI piccole."
+msgstr ""
+"Corn cobs left today: %s of %s. Free quota for small AI features."
+
+msgid "Usa la tua chiave API"
+msgstr "Uses your API key"
 
 msgid "Apri cornhub"
 msgstr "Open cornhub"
@@ -80,7 +89,9 @@ msgstr "Sign out"
 msgid ""
 "Nome, email e password sono dell'account della suite ino: valgono per tutte "
 "le app e si cambiano su cornhub."
-msgstr "Name, email and password belong to your ino suite account: they apply to every app and are changed on cornhub."
+msgstr ""
+"Name, email and password belong to your ino suite account: they apply to "
+"every app and are changed on cornhub."
 
 msgid "Account della suite"
 msgstr "Suite account"
@@ -1559,7 +1570,8 @@ msgstr "Upload a PDF"
 
 msgid ""
 "Ogni 4 pagine. Poi foto dal PDF e disegni per le ricette che non ne hanno."
-msgstr "Every 4 pages. Then photos from the PDF and drawings for recipes without one."
+msgstr ""
+"Every 4 pages. Then photos from the PDF and drawings for recipes without one."
 
 msgid "Ancora nessun ricettario"
 msgstr "No cookbooks yet"
@@ -1609,10 +1621,6 @@ msgstr ""
 msgid "La lettura si è interrotta."
 msgstr "Reading stopped."
 
-#, javascript-format
-msgid "Riprendi da pagina %s"
-msgstr "Resume from page %s"
-
 msgid "Cerca in questo ricettario"
 msgstr "Search this cookbook"
 
@@ -1624,6 +1632,10 @@ msgstr "No recipes found"
 
 msgid "Non ho trovato ricette in questo PDF"
 msgstr "I found no recipes in this PDF"
+
+#, javascript-format
+msgid "Riprendi da pagina %s"
+msgstr "Resume from page %s"
 
 msgid "Immagini delle ricette"
 msgstr "Recipe images"
@@ -2202,14 +2214,14 @@ msgstr "Have it redrawn"
 msgid "Fallo disegnare all’AI"
 msgstr "Have the AI draw it"
 
-msgid "Un’immagine del piatto creata dall’AI, in meno di un minuto"
-msgstr "An image of the dish made by AI, in under a minute"
-
 msgid "Togli l’immagine"
 msgstr "Remove the image"
 
 msgid "Torna il disegno della categoria"
 msgstr "Back to the category drawing"
+
+msgid "Un’immagine del piatto creata dall’AI, in meno di un minuto"
+msgstr "An image of the dish made by AI, in under a minute"
 
 #, javascript-format
 msgid "%s ricetta nel ricettario"

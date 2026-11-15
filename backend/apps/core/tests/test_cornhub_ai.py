@@ -50,3 +50,24 @@ def test_overloaded_is_retryable(monkeypatch):
     with pytest.raises(cornhub.AIOverloaded) as exc:
         cornhub.generate("demo", ["x"])
     assert exc.value.retry_later
+
+
+def test_wallet_hides_when_cornhub_is_down(monkeypatch, user):
+    def down(*args, **kwargs):
+        raise httpx.ConnectError("giu'")
+
+    monkeypatch.setattr(cornhub.httpx, "get", down)
+    assert cornhub.wallet(user=user) == {}
+
+
+def test_wallet_passes_the_user(monkeypatch, user):
+    seen = {}
+    user.cornhub_sub = "2b6f5a8e-0000-4000-8000-000000000001"
+
+    def get(url, params=None, headers=None, timeout=None):
+        seen.update(url=url, params=params)
+        return httpx.Response(200, json={"pannocchie_left": 7}, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(cornhub.httpx, "get", get)
+    assert cornhub.wallet(user=user)["pannocchie_left"] == 7
+    assert seen["url"].endswith("/internal/ai/wallet") and seen["params"]["user"].endswith("0001")

@@ -16,6 +16,7 @@ import {
   useRetryBook,
   useUploadBook,
 } from '../../api/hooks'
+import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page, PageHeader } from '../../components/Layout'
@@ -101,6 +102,7 @@ export function useBookUploader() {
 export function BooksPage() {
   const { data: books, error, isPending } = useBooks()
   const uploader = useBookUploader()
+  const gate = useAiGate('book_read')
 
   return (
     <Page>
@@ -125,11 +127,12 @@ export function BooksPage() {
             <button
               type="button"
               className="btn-filled mt-4"
-              disabled={uploader.upload.isPending}
+              disabled={!gate.allowed || uploader.upload.isPending}
               onClick={uploader.open}
             >
               <Icon name="upload_file" size={20} />
               {uploader.upload.isPending ? gettext('Carico…') : gettext('Carica un PDF')}
+              {gate.large && <AiKeyIcon />}
             </button>
             {/* Le pagine non si sanno prima di caricarlo: la stima e' per 4 pagine. */}
             <div className="mt-2">
@@ -236,7 +239,6 @@ export function BookPage() {
   const navigate = useNavigate()
   const confirm = useConfirm()
   const { data: book, error } = useBook(bookId)
-  const retry = useRetryBook()
   const remove = useDeleteBook()
   const [renaming, setRenaming] = useState(false)
   const [text, setText] = useState('')
@@ -302,22 +304,7 @@ export function BookPage() {
           {book.status === 'failed' && (
             <div className="mt-3 grid gap-3">
               <ErrorBanner error={book.error || gettext('La lettura si è interrotta.')} />
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  className="btn-filled w-fit"
-                  disabled={retry.isPending}
-                  onClick={() => retry.mutate(book.id)}
-                >
-                  <Icon name="refresh" size={20} />
-                  {interpolate(gettext('Riprendi da pagina %s'), [book.pages_done + 1])}
-                </button>
-                <AiCost
-                  feature="book_read"
-                  count={Math.ceil((book.page_count - book.pages_done) / BOOK_PAGES_PER_CALL)}
-                />
-              </div>
-              <ErrorBanner error={retry.error} />
+              <ResumeReading book={book} />
             </div>
           )}
         </section>
@@ -361,11 +348,42 @@ export function BookPage() {
 }
 
 /** Foto delle ricette dal PDF e illustrazioni per le altre (ADR 0015). */
+/** "Riprendi da pagina N" di una lettura interrotta: le pagine che restano. */
+function ResumeReading({ book }: { book: RecipeBook }) {
+  const retry = useRetryBook()
+  const count = Math.ceil((book.page_count - book.pages_done) / BOOK_PAGES_PER_CALL)
+  const gate = useAiGate('book_read', { count })
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          className="btn-filled w-fit"
+          disabled={!gate.allowed || retry.isPending}
+          onClick={() => retry.mutate(book.id)}
+        >
+          <Icon name="refresh" size={20} />
+          {interpolate(gettext('Riprendi da pagina %s'), [book.pages_done + 1])}
+          {gate.large && <AiKeyIcon />}
+        </button>
+        <AiCost feature="book_read" count={count} />
+      </div>
+      <ErrorBanner error={retry.error} />
+    </>
+  )
+}
+
 function BookImages({ book }: { book: RecipeBook }) {
   const start = useBookImages()
   const status = book.images_status
   const working = status === 'searching' || status === 'drawing'
   const missing = book.without_image
+  const pages = Math.ceil(book.page_count / BOOK_PAGES_PER_CALL)
+  // Due funzioni grandi: le pagine riguardate per le foto e i disegni che mancano.
+  const offered = !working && (status === '' || status === 'failed' || missing > 0)
+  const photosGate = useAiGate('book_photos', { count: pages, enabled: offered })
+  const drawGate = useAiGate('recipe_image', { count: missing, enabled: offered && missing > 0 })
+  const allowed = photosGate.allowed && drawGate.allowed
   return (
     <section className="grid gap-3 rounded-card bg-surface-container-low p-4">
       <div className="flex items-start gap-3">
@@ -423,22 +441,20 @@ function BookImages({ book }: { book: RecipeBook }) {
           {book.images_error}
         </p>
       )}
-      {!working && (status === '' || status === 'failed' || missing > 0) && (
+      {offered && (
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             className="btn-tonal w-fit"
-            disabled={start.isPending}
+            disabled={!allowed || start.isPending}
             onClick={() => start.mutate(book.id)}
           >
             <Icon name={status === '' ? 'imagesmode' : 'refresh'} size={20} />
             {status === '' ? gettext('Cerca le foto e disegna le altre') : gettext('Riprova')}
+            {(photosGate.large || drawGate.large) && <AiKeyIcon />}
           </button>
           {/* Due costi: le pagine riguardate per le foto e i disegni delle altre. */}
-          <AiCost
-            feature="book_photos"
-            count={Math.ceil(book.page_count / BOOK_PAGES_PER_CALL)}
-          />
+          <AiCost feature="book_photos" count={pages} />
           {missing > 0 && <AiCost feature="recipe_image" count={missing} />}
         </div>
       )}

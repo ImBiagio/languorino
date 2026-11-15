@@ -16,6 +16,7 @@ import {
   useRetryPlan,
   useUpdateMeal,
 } from '../../api/hooks'
+import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
@@ -151,6 +152,15 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
   const regenerate = useRegeneratePlan()
   const retry = useRetryPlan()
   const remove = useDeletePlan()
+  // Riprendere o rifare il piano scrive le settimane: funzione grande.
+  const resumeGate = useAiGate('plan_week', {
+    count: plan.weeks_total - plan.weeks_done,
+    enabled: plan.status === 'failed',
+  })
+  const redoGate = useAiGate('plan_week', {
+    count: plan.weeks_total,
+    enabled: plan.status === 'failed' || plan.status === 'draft',
+  })
   const [view, setView] = useState<'eat' | 'cook'>('eat')
   const [shopping, setShopping] = useState(false)
   const [sharing, setSharing] = useState(false)
@@ -269,19 +279,21 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
             <button
               type="button"
               className="btn-filled"
-              disabled={retry.isPending}
+              disabled={!resumeGate.allowed || retry.isPending}
               onClick={() => retry.mutate(plan.id)}
             >
               <Icon name="refresh" size={20} />
               {gettext('Riprendi')}
+              {resumeGate.large && <AiKeyIcon />}
             </button>
             <button
               type="button"
               className="btn-outlined"
-              disabled={regenerate.isPending}
+              disabled={!redoGate.allowed || regenerate.isPending}
               onClick={() => regenerate.mutate(plan.id)}
             >
               {gettext('Rifai da capo')}
+              {redoGate.large && <AiKeyIcon />}
             </button>
             <AiCost feature="plan_week" count={plan.weeks_total - plan.weeks_done} />
           </div>
@@ -299,7 +311,8 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
           <button
             type="button"
             className="btn-outlined btn-sm"
-            disabled={regenerate.isPending}
+            disabled={!redoGate.allowed || regenerate.isPending}
+            title={redoGate.message || undefined}
             onClick={async () => {
               const ok = await confirm({
                 title: gettext('Rifare il piano?'),
@@ -312,6 +325,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
           >
             <Icon name="refresh" size={18} />
             {gettext('Rifai')}
+            {redoGate.large && <AiKeyIcon size={16} />}
           </button>
           <button
             type="button"

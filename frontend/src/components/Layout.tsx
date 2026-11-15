@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { gettext } from '../lib/i18n'
+import { CornCounter } from './Ai'
 import { Icon } from './ui'
 
 interface Destination {
@@ -48,6 +49,10 @@ export function AppLayout() {
             />
           ))}
         </div>
+        {/* Le pannocchie del giorno, in fondo al rail. */}
+        <div className="mt-auto">
+          <CornCounter />
+        </div>
       </nav>
 
       {/* Su mobile lo spazio in fondo supera barra e FAB, che sta a 104px + 56px. */}
@@ -68,6 +73,11 @@ export function AppLayout() {
             grow
           />
         ))}
+        {/* Su mobile le pannocchie sono l'ultima voce della barra: in alto gli
+            angoli hanno i bottoni delle pagine (es. dettaglio ricetta). */}
+        <div className="pr-1">
+          <CornCounter />
+        </div>
       </nav>
     </div>
   )

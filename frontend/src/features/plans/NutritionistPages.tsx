@@ -19,6 +19,7 @@ import {
   useRereadNutritionistPlan,
   useUpdateNutritionistPlan,
 } from '../../api/hooks'
+import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
@@ -71,6 +72,7 @@ export function NutritionistHomePage() {
   const navigate = useNavigate()
   const { data: plans } = useNutritionistPlans()
   const read = useReadNutritionistPlan()
+  const gate = useAiGate('nutritionist_plan')
   const [files, setFiles] = useState<File[]>([])
   const [jobId, setJobId] = useState<string>()
   const { data: job } = useJob(jobId)
@@ -201,7 +203,7 @@ export function NutritionistHomePage() {
             <button
               type="button"
               className="btn-filled"
-              disabled={!files.length || reading}
+              disabled={!gate.allowed || !files.length || reading}
               onClick={async () => {
                 try {
                   const created = await read.mutateAsync(files)
@@ -214,6 +216,7 @@ export function NutritionistHomePage() {
             >
               <Icon name="auto_awesome" size={20} />
               {gettext('Leggi il piano')}
+              {gate.large && <AiKeyIcon />}
             </button>
           </div>
         </section>
@@ -673,6 +676,8 @@ function Reread({ plan }: { plan: NutritionistPlan }) {
   const client = useQueryClient()
   const confirm = useConfirm()
   const reread = useRereadNutritionistPlan()
+  // Rileggere i file e' la stessa lettura grande del primo caricamento.
+  const gate = useAiGate('nutritionist_plan')
   const [jobId, setJobId] = useState<string>()
   const { data: job } = useJob(jobId)
   const working = reread.isPending || job?.status === 'queued' || job?.status === 'running'
@@ -688,7 +693,8 @@ function Reread({ plan }: { plan: NutritionistPlan }) {
       <button
         type="button"
         className="btn-outlined btn-sm justify-self-start"
-        disabled={working}
+        disabled={!gate.allowed || working}
+        title={gate.message || undefined}
         onClick={async () => {
           const ok = await confirm({
             title: gettext('Rileggere il piano dai file?'),
@@ -708,6 +714,7 @@ function Reread({ plan }: { plan: NutritionistPlan }) {
       >
         <Icon name="refresh" size={18} />
         {working ? gettext('Rileggo…') : gettext('Rileggi dai file')}
+        {gate.large && <AiKeyIcon size={16} />}
       </button>
       {job?.status === 'ready' && job.result.problem && (
         <p className="text-body-small text-error">{job.result.problem}</p>

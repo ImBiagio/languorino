@@ -10,6 +10,7 @@ import {
   useRecipes,
   useTags,
 } from '../../api/hooks'
+import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
 import { Page } from '../../components/Layout'
 import { FoodPattern } from '../../components/illustrations'
@@ -90,6 +91,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
       follow(chosen)
     }
   })
+  const gate = useAiGate('plan_week', { count: Math.ceil(plan.days / 7) })
   const errors = create.error instanceof ApiError ? create.error.fieldErrors() : {}
   const readyBooks = (books ?? []).filter((book) => book.recipe_count > 0)
   const recipeCount = cookbook?.count ?? 0
@@ -385,7 +387,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           <button
             type="button"
             className="btn-filled"
-            disabled={create.isPending || !plan.slots.length || noSource}
+            disabled={!gate.allowed || create.isPending || !plan.slots.length || noSource}
             onClick={async () => {
               try {
                 const created = await create.mutateAsync(plan)
@@ -397,6 +399,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           >
             <Icon name="auto_awesome" size={20} />
             {gettext('Crea il piano')}
+            {gate.large && <AiKeyIcon />}
           </button>
         </div>
       </div>

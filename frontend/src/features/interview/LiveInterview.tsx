@@ -9,7 +9,8 @@ import type { LiveServerMessage, Session } from '@google/genai'
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 
-import { cleanLiveCall, useStartLiveInterview } from '../../api/hooks'
+import { cleanLiveCall, useRefreshAi, useStartLiveInterview } from '../../api/hooks'
+import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
 import { ErrorBanner, Icon, IconButton } from '../../components/ui'
 import { gettext } from '../../lib/i18n'
@@ -30,6 +31,10 @@ export function canTalkLive(): boolean {
 
 export function LiveInterview({ proposals }: { proposals: Proposals }) {
   const start = useStartLiveInterview()
+  // Solo Gemini: senza una chiave Gemini su cornhub la stima dice "non
+  // disponibile" e il cerchio resta spento (il motivo lo dice AiCost sotto).
+  const gate = useAiGate('interview_live')
+  const refreshAi = useRefreshAi()
   const [phase, setPhase] = useState<Phase>('idle')
   const [speaking, setSpeaking] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -65,6 +70,8 @@ export function LiveInterview({ proposals }: { proposals: Proposals }) {
     setSpeaking(false)
     setLines((current) => current.map((line) => ({ ...line, open: false })))
     setPhase((current) => (current === 'idle' ? current : 'ended'))
+    // A chiamata chiusa cornhub ha il conto: contatore e stime si aggiornano.
+    refreshAi()
   }
 
   const onMessage = async (message: LiveServerMessage) => {
@@ -162,14 +169,20 @@ export function LiveInterview({ proposals }: { proposals: Proposals }) {
         <button
           type="button"
           onClick={live ? stop : begin}
-          disabled={phase === 'connecting'}
+          disabled={phase === 'connecting' || (!live && !gate.allowed)}
           aria-label={live ? gettext('Termina la conversazione') : gettext('Inizia a parlare')}
           className={clsx(
             'relative flex h-32 w-32 items-center justify-center rounded-pill text-white transition',
             live ? (speaking ? 'bg-tertiary' : 'bg-primary') : 'bg-primary',
             phase === 'connecting' && 'opacity-70',
+            !live && !gate.allowed && 'cursor-not-allowed opacity-40',
           )}
         >
+          {!live && gate.large && (
+            <span className="absolute bottom-1 right-1 flex h-9 w-9 items-center justify-center rounded-pill bg-tertiary-container text-on-tertiary-container shadow-sm">
+              <AiKeyIcon />
+            </span>
+          )}
           {live && (
             <span
               className={clsx(

@@ -31,3 +31,12 @@ class AiQuoteView(APIView):
         except cornhub.AIError as exc:
             return Response({"detail": exc.message, "code": exc.code},
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class AiWalletView(APIView):
+    """Pannocchie del giorno e chiavi dell'utente (contatore nell'intestazione)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(cornhub.wallet(user=request.user))
