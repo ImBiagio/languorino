@@ -26,6 +26,17 @@ def _split(name: str) -> tuple[str, str]:
     return first, last.strip()
 
 
+def _last_seen(user):
+    """L'ultimo accesso vero: il login JWT non aggiorna ``last_login``, ma
+    ogni login e ogni rinnovo della sessione emette un refresh token. Su
+    cornhub serve a far vincere la password dell'app usata per ultima."""
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+    token = OutstandingToken.objects.filter(user=user).order_by("-created_at").first()
+    seen = [d for d in (user.last_login, token.created_at if token else None) if d]
+    return max(seen).isoformat() if seen else None
+
+
 class Command(BaseCommand):
     help = "Stampa in JSON gli utenti da importare su cornhub."
 
@@ -51,6 +62,6 @@ class Command(BaseCommand):
                 "email_verified": user.email_verified_at is not None,
                 "is_active": user.is_active,
                 "date_joined": user.date_joined.isoformat(),
-                "last_login": user.last_login.isoformat() if user.last_login else None,
+                "last_login": _last_seen(user),
             })
         self.stdout.write(json.dumps(out, ensure_ascii=False, indent=1))
