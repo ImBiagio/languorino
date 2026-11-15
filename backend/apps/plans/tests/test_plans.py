@@ -183,7 +183,7 @@ def gemini(monkeypatch):
     state = {"prompts": [], "new": [], "overloaded": 0, "pick": None}
 
     def fake_generate(contents, schema, **kwargs):
-        prompt = contents(None)[0]
+        prompt = contents[0]
         state["prompts"].append(prompt)
         if schema is ImportedRecipe:
             title = re.search(r'ricetta "([^"]+)"', prompt).group(1)
@@ -218,7 +218,7 @@ def gemini(monkeypatch):
 
 
 def _create(api, user, capture, **extra):
-    with override_settings(GEMINI_API_KEY="k"), capture(execute=True):
+    with capture(execute=True):
         return api(user).post(PLANS, _settings(**extra), format="json")
 
 
@@ -382,11 +382,11 @@ def test_senza_ricette_le_inventa(user, api, gemini, django_capture_on_commit_ca
     ],
 )
 def test_scelte_rifiutate(user, api, extra):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         assert api(user).post(PLANS, _settings(**extra), format="json").status_code == 400
 
 
-@override_settings(GEMINI_API_KEY="")
+@override_settings(CORNHUB_APP_TOKEN="")
 def test_senza_chiave(user, api):
     assert api(user).post(PLANS, _settings(), format="json").status_code == 503
 
@@ -432,7 +432,7 @@ def test_rifare_e_eliminare(user, api, cookbook, gemini, django_capture_on_commi
     gemini["pick"] = lambda c, slot, day, wait: "Zucchine ripiene"
     plan_id = _create(api, user, django_capture_on_commit_callbacks).data["id"]
     gemini["pick"] = lambda c, slot, day, wait: c["Frittata"]
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         assert api(user).post(f"{PLANS}/{plan_id}/regenerate").status_code == 202
     plan = MealPlan.objects.get()
     assert set(plan.meals.values_list("recipe__title", flat=True)) == {"Frittata"}
@@ -490,13 +490,7 @@ def reading(monkeypatch, settings, tmp_path):
     state = {"result": None, "prompts": []}
 
     def fake_generate(contents, schema, **kwargs):
-        class Types:
-            class Part:
-                @staticmethod
-                def from_bytes(data, mime_type):
-                    return mime_type
-
-        state["prompts"].append(contents(Types)[-1])
+        state["prompts"].append(contents[-1])
         return state["result"] or NutritionistReading(
             title="Piano di novembre",
             valid_from="2026-11-01",
@@ -522,7 +516,7 @@ def reading(monkeypatch, settings, tmp_path):
 
 
 def _upload(api, user, capture):
-    with override_settings(GEMINI_API_KEY="k"), capture(execute=True):
+    with capture(execute=True):
         return api(user).post(NUTRITIONIST, {"files": [_photo()]}, format="multipart")
 
 
@@ -796,7 +790,7 @@ def test_percentuale_di_ricette_nuove(
 
 
 def test_percentuale_non_ammessa(user, api):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         response = api(user).post(PLANS, _settings(new_share=33), format="json")
     assert response.status_code == 400
 
@@ -826,7 +820,7 @@ def test_idee_per_un_pasto(
     prompts = []
 
     def fake(contents, schema, **kwargs):
-        prompts.append((contents(None)[0], kwargs))
+        prompts.append((contents[0], kwargs))
         return ImportedRecipes(
             recipes=[
                 ImportedRecipe(
@@ -846,7 +840,7 @@ def test_idee_per_un_pasto(
 
     monkeypatch.setattr("apps.plans.swap.generate", fake)
     url = f"{PLANS}/{plan_id}/meals/{meal.id}/ideas"
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         response = api(user).post(url, {"hint": "  qualcosa  col pesce "}, format="json")
     assert response.status_code == 202, response.data
     job = Job.objects.get(id=response.data["id"])
@@ -872,7 +866,7 @@ def test_idee_per_un_pasto_degli_altri(
     gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
     plan_id = _create(api, user, django_capture_on_commit_callbacks).data["id"]
     meal = PlannedMeal.objects.filter(plan_id=plan_id).first()
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         response = api(other_user).post(
             f"{PLANS}/{plan_id}/meals/{meal.id}/ideas", {}, format="json"
         )
@@ -929,7 +923,7 @@ def test_rileggere_dai_file(user, api, reading, django_capture_on_commit_callbac
         substitutions=[SubstitutionGroup(group="Proteine", equivalents=["150 g pollo", "2 uova"])],
     )
     url = f"{NUTRITIONIST}/{plan.id}/reread"
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         response = api(user).post(url)
     assert response.status_code == 202, response.data
     plan.refresh_from_db()
@@ -940,5 +934,5 @@ def test_rileggere_dai_file(user, api, reading, django_capture_on_commit_callbac
     # Gli altri no.
     from apps.conftest import UserFactory
 
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         assert api(UserFactory()).post(url).status_code == 404

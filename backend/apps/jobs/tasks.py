@@ -192,6 +192,13 @@ def run_job(job_id: str) -> None:
         except AIError as exc:
             job.status = Job.Status.FAILED
             job.error = str(exc)[:500]
+            # Chiave mancante o limite di spesa su cornhub (ADR 0021): il
+            # frontend mette accanto al messaggio il link per sistemarlo.
+            job.result = (
+                {"error_code": exc.code, "account_url": exc.account_url}
+                if exc.account_url
+                else {}
+            )
         except SoftTimeLimitExceeded:
             job.status = Job.Status.FAILED
             job.error = _("Ci sta mettendo troppo: riprova con meno pagine alla volta.")

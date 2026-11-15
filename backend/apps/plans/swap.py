@@ -71,7 +71,7 @@ def meal_ideas(plan: MealPlan, meal: PlannedMeal, hint: str = "", language: str 
         already=", ".join(dict.fromkeys(week)) or "niente",
     )
     result, _model = generate(
-        lambda types: [prompt],
+        [prompt],
         ImportedRecipes,
         feature="meal_ideas",
         user=plan.owner,

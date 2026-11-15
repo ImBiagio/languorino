@@ -31,13 +31,9 @@ def gemini(monkeypatch):
     state = {"prompts": [], "parts": [], "turn": None}
 
     def fake(contents, schema, **kwargs):
-        class Types:
-            class Part:
-                @staticmethod
-                def from_bytes(data, mime_type):
-                    return mime_type
-
-        parts = contents(Types)
+        parts = [p["mime"] if isinstance(p, dict) else p for p in contents]
+        # Con la registrazione la funzione su cornhub e' un'altra (ADR 0021).
+        assert kwargs["feature"] == ("interview_audio" if parts[:-1] else "interview")
         state["parts"].append(parts[:-1])
         state["prompts"].append(parts[-1])
         return state["turn"] or InterviewTurn(
@@ -62,7 +58,7 @@ def gemini(monkeypatch):
 
 
 def _turn(api, user, capture, data, fmt="json"):
-    with override_settings(GEMINI_API_KEY="k"), capture(execute=True):
+    with capture(execute=True):
         return api(user).post(URL, data, format=fmt)
 
 
@@ -133,6 +129,7 @@ def test_turni_rifiutati(user, api, gemini, django_capture_on_commit_callbacks):
     assert not gemini["prompts"]
 
 
+@override_settings(CORNHUB_APP_TOKEN="")
 def test_senza_chiave(user, api):
     data = {"messages": [{"role": "user", "text": "ciao"}]}
     assert api(user).post(URL, data, format="json").status_code == 503

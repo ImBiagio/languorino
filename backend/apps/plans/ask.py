@@ -288,7 +288,7 @@ def ask(user, messages: list[dict], *, language: str = "it", today: date | None 
         history=_history(messages),
     )
     answer, model = generate(
-        lambda types: [prompt],
+        [prompt],
         AskReply,
         feature="ask",
         fast=True,
@@ -299,7 +299,7 @@ def ask(user, messages: list[dict], *, language: str = "it", today: date | None 
     if needs_estimate(answer):
         # Una stima di equivalenza: il modello che ragiona fa il conto giusto.
         answer, model = generate(
-            lambda types: [prompt],
+            [prompt],
             AskReply,
             feature="ask_estimate",
             user=user,

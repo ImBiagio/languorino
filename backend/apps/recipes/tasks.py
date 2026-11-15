@@ -59,9 +59,11 @@ def _save_recipes(book: RecipeBook, drafts: list[dict]) -> int:
 
 # Un pezzo che non avanza da cosi' tanto e' stato perso (worker riavviato da un
 # deploy o dall'autoreload): lo riprende resume_stalled_books.
-# Piu' lungo della pausa massima di un pezzo che aspetta Gemini (8 minuti).
+# Piu' lungo della pausa massima di un pezzo che aspetta l'AI (8 minuti).
 STALLED_AFTER = timedelta(minutes=15)
-# Gemini sovraccarico: il pezzo riprova da solo, con pause crescenti.
+# AI sovraccarica (cornhub ``overloaded``): il pezzo riprova da solo, con
+# pause crescenti. Chiave mancante o limite di spesa invece fermano il
+# ricettario col messaggio di cornhub (ADR 0021): aspettare non basta.
 OVERLOAD_RETRIES = 4
 OVERLOAD_PAUSE = 120  # secondi, moltiplicati per il numero del tentativo
 
@@ -100,6 +102,7 @@ def read_book_chunk(self, book_id: str) -> None:
                 user=book.owner,
                 language=book.language,
                 extra_instructions=chunk_instructions(start, end, book.page_count, with_context),
+                feature="book_read",
             )
             with transaction.atomic():
                 _save_recipes(book, result["recipes"])
@@ -109,7 +112,7 @@ def read_book_chunk(self, book_id: str) -> None:
                     book.status = RecipeBook.Status.READY
                     book.finished_at = timezone.now()
                 # Solo i campi della lettura: il libro e' stato caricato prima
-                # della chiamata a Gemini (decine di secondi) e un save() intero
+                # della chiamata all'AI (decine di secondi) e un save() intero
                 # riscriverebbe il titolo cambiato nel frattempo dall'utente.
                 book.save(
                     update_fields=["pages_done", "error", "status", "finished_at", "updated_at"]
@@ -237,10 +240,10 @@ def find_book_images(self, book_id: str) -> None:
     _book_update(book_id, images_status=RecipeBook.ImagesStatus.FAILED, images_error=error[:300])
 
 
-@shared_task(bind=True, soft_time_limit=150, time_limit=180, acks_late=True)
+@shared_task(bind=True, soft_time_limit=200, time_limit=230, acks_late=True)
 def draw_book_image(self, book_id: str) -> None:
-    """Un'illustrazione per task, nel tetto del giorno; il resto domani."""
-    from .book_images import daily_left, next_to_draw
+    """Un'illustrazione per task, poi la ricetta dopo."""
+    from .book_images import next_to_draw
     from .images import draw_image
 
     book = (
@@ -254,25 +257,28 @@ def draw_book_image(self, book_id: str) -> None:
     if recipe is None:
         _book_update(book_id, images_status=RecipeBook.ImagesStatus.DONE, images_error="")
         return
-    if daily_left(book.owner) <= 0:
-        # Resta "drawing": resume_book_images riparte domani mattina.
-        _book_update(book_id, images_error=_("Per oggi ho finito le immagini: continuo domani."))
-        return
     with override(book.language):
         try:
             draw_image(recipe, book.owner, style="illustration")
-        except AIOverloaded as exc:
-            _book_update(book_id, images_error=str(exc)[:300])
-            raise self.retry(countdown=IMAGES_RETRY_PAUSE, max_retries=3) from exc
         except AINoImage as exc:
             # Senza immagine per caso: si riprova; poi la ricetta si salta.
             if self.request.retries < NO_IMAGE_RETRIES:
                 raise self.retry(countdown=NO_IMAGE_PAUSE, max_retries=NO_IMAGE_RETRIES) from exc
-            _book_update(book_id, images_skipped=[*(book.images_skipped or []), str(recipe.id)])
-            draw_book_image.delay(book_id)
+            _skip(book, recipe)
+            return
+        except AIOverloaded as exc:
+            # cornhub segnala cosi' anche "non ha disegnato niente": si
+            # riprova piu' tardi, poi la ricetta si salta e si va avanti.
+            if self.request.retries < OVERLOAD_RETRIES:
+                _book_update(book_id, images_error=str(exc)[:300])
+                raise self.retry(
+                    countdown=IMAGES_RETRY_PAUSE, max_retries=OVERLOAD_RETRIES
+                ) from exc
+            _skip(book, recipe)
             return
         except AIError as exc:
-            # Senza quota per le immagini (piano gratuito) non serve insistere.
+            # Serve la chiave dell'utente o il limite di spesa e' raggiunto
+            # (ADR 0021): aspettare non basta, ci si ferma con il messaggio.
             _book_update(
                 book_id, images_status=RecipeBook.ImagesStatus.FAILED, images_error=str(exc)[:300]
             )
@@ -281,19 +287,23 @@ def draw_book_image(self, book_id: str) -> None:
     draw_book_image.delay(book_id)
 
 
+def _skip(book: RecipeBook, recipe: Recipe) -> None:
+    _book_update(
+        str(book.id), images_skipped=[*(book.images_skipped or []), str(recipe.id)]
+    )
+    draw_book_image.delay(str(book.id))
+
+
 @shared_task
 def resume_book_images() -> int:
-    """Ogni mattina: riprende i disegni fermi per il tetto del giorno e le
-    ricerche di foto rimaste appese (worker riavviato)."""
+    """Riprende foto e illustrazioni rimaste appese (worker riavviato). Non
+    c'e' piu' il tetto del giorno da aspettare: i limiti stanno su cornhub."""
     count = 0
-    for book in RecipeBook.objects.filter(images_status=RecipeBook.ImagesStatus.DRAWING):
+    stalled = RecipeBook.objects.filter(updated_at__lt=timezone.now() - STALLED_AFTER)
+    for book in stalled.filter(images_status=RecipeBook.ImagesStatus.DRAWING):
         draw_book_image.delay(str(book.id))
         count += 1
-    stalled = RecipeBook.objects.filter(
-        images_status=RecipeBook.ImagesStatus.SEARCHING,
-        updated_at__lt=timezone.now() - STALLED_AFTER,
-    )
-    for book in stalled:
+    for book in stalled.filter(images_status=RecipeBook.ImagesStatus.SEARCHING):
         find_book_images.delay(str(book.id))
         count += 1
     return count

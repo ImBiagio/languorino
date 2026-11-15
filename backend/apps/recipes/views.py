@@ -21,7 +21,7 @@ from apps.jobs.serializers import JobSerializer
 from apps.jobs.views import enqueue_job
 
 from .books import BookRejected, page_count
-from .images import ImageRejected, clear_image, images_today, set_image
+from .images import ImageRejected, clear_image, set_image
 from .matching import normalize, variants
 from .models import Recipe, RecipeBook, RecipeIngredient, Tag
 from .serializers import (
@@ -382,7 +382,8 @@ class RecipeImageView(APIView):
 
 
 class RecipeImageDrawView(APIView):
-    """Gemini disegna l'immagine della ricetta, in un job (ADR 0011)."""
+    """L'AI disegna l'immagine della ricetta, in un job (ADR 0011). Quante se
+    ne possono disegnare lo decide cornhub (limiti di spesa, ADR 0021)."""
 
     permission_classes = [IsAuthenticated]
     throttle_scope = "ai"
@@ -398,15 +399,6 @@ class RecipeImageDrawView(APIView):
         if recipe.image_source == Recipe.ImageSource.PHOTO:
             raise serializers.ValidationError(
                 {"detail": _("Ha già una foto vera: toglila prima di farne disegnare una.")}
-            )
-        if images_today(request.user) >= settings.AI_IMAGES_PER_DAY:
-            raise serializers.ValidationError(
-                {
-                    "detail": _(
-                        "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
-                    )
-                    % {"n": settings.AI_IMAGES_PER_DAY}
-                }
             )
         with transaction.atomic():
             job = Job.objects.create(

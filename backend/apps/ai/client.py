@@ -1,125 +1,89 @@
-"""L'unico punto d'accesso a Gemini (progettazione, principio 5; ADR 0005).
+"""L'unico punto d'accesso all'intelligenza artificiale (ADR 0005, 0021).
 
-Lo schema e' quello di soldino, gia' provato in produzione: risposta JSON
-vincolata a un modello pydantic, API ``v1beta`` esplicita (google-genai 3
-passava a ``v1`` e ogni modello rispondeva 404), un modello principale e delle
-riserve. Un modello che risponde "sovraccarico" resta giu' per qualche minuto
-nella cache condivisa, cosi' anche gli altri worker partono da quello che va.
+Languorino non chiama piu' Gemini: chiede tutto a cornhub
+(``apps.core.cornhub``), che sceglie modello, riserve e chi paga (la chiave
+di casa per le funzioni piccole, quella dell'utente per le grandi) e tiene i
+limiti di spesa. Questo modulo e' un adattatore sottile: tiene le firme e le
+eccezioni di sempre, cosi' chi chiama cambia solo come passa i file.
 
-Le altre app non chiamano Gemini: chiamano ``generate`` con i loro contenuti e
-il loro schema, e qui si registra ogni chiamata in ``AiCall``.
+- ``generate(parts, Schema, feature=..., user=...)`` -> ``(Schema, modello)``;
+  ``parts`` sono stringhe e ``file_part(byte, mime)``.
+- ``generate_image(prompt, feature=..., user=...)`` -> ``(byte, mime, modello)``.
+
+Errori di cornhub tradotti:
+
+- ``overloaded`` -> ``AIOverloaded``: passa da solo, i lavori lunghi
+  riprovano piu' tardi come prima;
+- ``needs_key``, ``limit``, ``house_empty`` -> ``AIBudgetExceeded``: serve
+  la chiave dell'utente o un limite piu' alto, aspettare non basta (i
+  ricettari si fermano col messaggio, niente riprova all'infinito);
+- tutto il resto -> ``AIError``.
+
+Il messaggio va mostrato cosi' com'e'; ``account_url`` porta alla pagina di
+cornhub dove si aggiunge la chiave o si alza il limite.
 """
 
 from __future__ import annotations
 
-import logging
-import time
-from collections.abc import Callable
-from typing import Any
-
-from celery.exceptions import SoftTimeLimitExceeded
-from django.conf import settings
-from django.core.cache import cache
-from django.utils.translation import gettext as _
 from pydantic import BaseModel
 
-from .models import AiCall
+from apps.core import cornhub
 
-logger = logging.getLogger(__name__)
-
-API_VERSION = "v1beta"
-# 429 troppe richieste, 500/503 sovraccarico, 504 timeout di Google: passano da soli.
-TRANSIENT_CODES = {429, 500, 503, 504}
-RETRY_PAUSES = (4, 12)
+# Errori che non passano aspettando qualche minuto: serve fare qualcosa su cornhub.
+STOP_CODES = {"needs_key", "limit", "house_empty"}
 
 
 class AIError(Exception):
     """Errore da mostrare all'utente cosi' com'e' (finisce in ``Job.error``)."""
 
+    def __init__(self, message: str = "", code: str = "error", account_url: str = ""):
+        super().__init__(message)
+        self.message = message
+        self.code = code
+        self.account_url = account_url
+
 
 class AIOverloaded(AIError):
-    """Tutti i modelli sovraccarichi o irraggiungibili: passa da solo, si puo'
-    riprovare piu' tardi (i ricettari PDF lo fanno senza fermarsi)."""
+    """L'AI non risponde (tutti i modelli e i provider provati da cornhub):
+    passa da solo, si puo' riprovare piu' tardi."""
 
 
 class AIBudgetExceeded(AIError):
-    """Tetto giornaliero delle chiamate finito (``apps/ai/budget.py``): non si
-    chiama Gemini e non si riprova, passa da solo a mezzanotte."""
+    """Serve la chiave API dell'utente, il limite di spesa e' raggiunto o la
+    quota di casa e' finita: ci si ferma con il messaggio e il link a cornhub."""
 
 
-class AINoImage(AIError):
-    """Il modello ha risposto senza immagine: capita ogni tanto, riprovando
-    di solito va (provato il 2026-11-11 sulla piadina con hummus)."""
+class AINoImage(AIOverloaded):
+    """Il modello non ha disegnato niente. cornhub lo segnala come
+    ``overloaded`` (riprovando di solito va): resta per chi lo distingue."""
 
 
 def is_enabled() -> bool:
-    return bool(settings.GEMINI_API_KEY)
+    return cornhub.is_enabled()
 
 
-def _down_key(model: str) -> str:
-    return f"gemini:down:{model}"
+def file_part(data: bytes, mime: str) -> dict:
+    """Un file (foto, PDF, audio) da mettere tra le ``parts``."""
+    return cornhub.file_part(data, mime)
 
 
-def mark_down(model: str, seconds: int | None = None) -> None:
-    cache.set(_down_key(model), True, seconds or settings.GEMINI_MODEL_COOLDOWN)
+def _translate(exc: cornhub.AIError) -> AIError:
+    if isinstance(exc, cornhub.AIOverloaded) or exc.code == "overloaded":
+        kind: type[AIError] = AIOverloaded
+    elif exc.code in STOP_CODES:
+        kind = AIBudgetExceeded
+    else:
+        kind = AIError
+    return kind(exc.message, exc.code, exc.account_url)
 
 
-def models_in_order(fast: bool = False) -> list[str]:
-    """Principale e riserve; quelli segnati giu' in fondo (non tolti: se sono
-    giu' tutti si riprova comunque). ``fast`` mette davanti il modello veloce."""
-    main = [settings.GEMINI_MODEL, *settings.GEMINI_FALLBACK_MODELS]
-    if fast:
-        main = [settings.GEMINI_MODEL_FAST, *main]
-    models = list(dict.fromkeys(main))
-    return sorted(models, key=lambda model: bool(cache.get(_down_key(model))))
-
-
-def check_budget(user=None, *, live: bool = False) -> None:
-    """Ferma la chiamata se il tetto di oggi e' finito (anche dentro Celery)."""
-    from .budget import exhausted
-
-    message = exhausted(user, live=live)
-    if message:
-        raise AIBudgetExceeded(message)
-
-
-def _served_tier(response) -> str:
-    headers = getattr(getattr(response, "sdk_http_response", None), "headers", None) or {}
-    try:
-        return str(headers.get("x-gemini-service-tier", "") or "")[:20]
-    except AttributeError:
-        return ""
-
-
-def _log(user, feature: str, model: str, started: float, response=None, error: str = "") -> None:
-    usage = getattr(response, "usage_metadata", None)
-    AiCall.objects.create(
-        user=user if getattr(user, "is_authenticated", False) else None,
-        feature=feature,
-        model=model,
-        input_tokens=getattr(usage, "prompt_token_count", 0) or 0,
-        output_tokens=getattr(usage, "candidates_token_count", 0) or 0,
-        duration_ms=int((time.monotonic() - started) * 1000),
-        ok=not error,
-        error=error[:200],
-        service_tier=_served_tier(response),
-    )
-
-
-def _parse[Schema: BaseModel](response, schema: type[Schema]) -> Schema:
-    parsed = getattr(response, "parsed", None)
-    if isinstance(parsed, schema):
-        return parsed
-    try:
-        return schema.model_validate_json(response.text or "")
-    except Exception as exc:
-        raise AIError(
-            _("La risposta dell'intelligenza artificiale non è nel formato atteso.")
-        ) from exc
+def _seconds(timeout_ms: int) -> int:
+    # cornhub prova piu' modelli in fila: almeno il suo tempo di default.
+    return max(150, timeout_ms // 1000)
 
 
 def generate[Schema: BaseModel](
-    contents: Callable[[Any], list],
+    parts: list[str | dict],
     schema: type[Schema],
     *,
     feature: str,
@@ -129,156 +93,48 @@ def generate[Schema: BaseModel](
     fast: bool = False,
     media_resolution: str = "",
 ) -> tuple[Schema, str]:
-    """Chiama Gemini e restituisce ``(risposta validata, modello usato)``.
+    """Chiede a cornhub e restituisce ``(risposta validata, modello usato)``.
 
-    ``contents`` riceve il modulo ``google.genai.types`` e restituisce le parti
-    della richiesta (testo, ``Part.from_bytes`` per immagini e PDF): cosi' chi
-    chiama non importa l'SDK. Errori temporanei passano al modello successivo;
-    finito il giro si aspetta e si riprova. Chiave rifiutata o richiesta non
-    valida non dipendono dal modello e si fermano subito.
-
-    ``fast``: per chi aspetta la risposta guardando lo schermo (intervista,
-    frigo). Parte dal modello veloce, che non "pensa" prima di rispondere:
-    misurato il 2026-11-11, 2,6-3 s contro 15-75 s del principale (ADR 0014).
-
+    ``feature``: il nome nel listino di cornhub (``apps/ai/features.py`` di
+    cornhub). ``user``: chi la chiede, decide chi paga. ``fast``: per chi
+    aspetta guardando lo schermo (intervista, frigo; ADR 0014).
     ``media_resolution``: "high" per leggere testo piccolo o scritto a mano
-    nelle foto e nei PDF (piu' token in ingresso, cifre leggibili).
+    nelle foto e nei PDF.
     """
-    if not is_enabled():
-        raise AIError(
-            _("Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e riavvia.")
+    try:
+        result = cornhub.generate(
+            feature,
+            parts,
+            schema,
+            user=user,
+            fast=fast,
+            temperature=temperature,
+            media_resolution=media_resolution,
+            timeout=_seconds(timeout_ms),
         )
-    check_budget(user)
-
-    from google import genai
-    from google.genai import errors, types
-
-    client = genai.Client(
-        api_key=settings.GEMINI_API_KEY,
-        http_options=types.HttpOptions(timeout=timeout_ms, api_version=API_VERSION),
-    )
-    # Priority inference (ADR 0014): solo per chi aspetta guardando lo schermo,
-    # se acceso. Sui progetti sotto il livello 2 Google la serve come standard.
-    priority = {"service_tier": "priority"} if fast and settings.GEMINI_PRIORITY else {}
-    config = types.GenerateContentConfig(
-        response_mime_type="application/json",
-        response_schema=schema,
-        temperature=temperature,
-        **priority,
-        **(
-            {"media_resolution": f"MEDIA_RESOLUTION_{media_resolution.upper()}"}
-            if media_resolution
-            else {}
-        ),
-    )
-    parts = contents(types)
-
-    tried: list[str] = []
-    last_error = ""
-    for pause in (*RETRY_PAUSES, None):
-        for model in models_in_order(fast):
-            started = time.monotonic()
-            try:
-                response = client.models.generate_content(
-                    model=model, contents=parts, config=config
-                )
-            except errors.APIError as exc:
-                _log(user, feature, model, started, error=f"{exc.code} {exc.message or ''}")
-                if exc.code == 404:
-                    # Modello inesistente per questa chiave: inutile riprovarlo oggi.
-                    mark_down(model, 24 * 60 * 60)
-                elif exc.code in TRANSIENT_CODES:
-                    mark_down(model)
-                elif exc.code in (401, 403):
-                    raise AIError(
-                        _("Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY.")
-                    ) from exc
-                else:
-                    raise AIError(
-                        _("Gemini ha risposto con un errore (%(code)s).") % {"code": exc.code}
-                    ) from exc
-                tried.append(model)
-                last_error = _("errore %(code)s") % {"code": exc.code}
-                continue
-            except SoftTimeLimitExceeded:
-                raise
-            except Exception as exc:  # rete, timeout
-                _log(user, feature, model, started, error=str(exc) or type(exc).__name__)
-                mark_down(model)
-                tried.append(model)
-                last_error = str(exc)[:120] or type(exc).__name__
-                continue
-            _log(user, feature, model, started, response=response)
-            cache.delete(_down_key(model))
-            return _parse(response, schema), model
-        if pause is not None:
-            time.sleep(pause)
-
-    raise AIOverloaded(
-        _(
-            "Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
-            "Riprova tra qualche minuto."
-        )
-        % {"models": ", ".join(dict.fromkeys(tried)), "error": last_error}
-    )
+    except cornhub.AIError as exc:
+        raise _translate(exc) from exc
+    return result.data, result.model
 
 
 def generate_image(
     prompt: str, *, feature: str, user=None, timeout_ms: int = 120_000
 ) -> tuple[bytes, str, str]:
-    """Un'immagine da un testo: ``(byte, tipo, modello)``. Un solo modello,
-    senza riserve: le immagini non sono urgenti e costano."""
-    if not is_enabled():
-        raise AIError(
-            _("Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e riavvia.")
-        )
-    check_budget(user)
-
-    from google import genai
-    from google.genai import errors, types
-
-    client = genai.Client(
-        api_key=settings.GEMINI_API_KEY,
-        http_options=types.HttpOptions(timeout=timeout_ms, api_version=API_VERSION),
-    )
-    model = settings.GEMINI_MODEL_IMAGE
-    started = time.monotonic()
+    """Un'immagine da un testo: ``(byte, tipo, modello)``."""
     try:
-        response = client.models.generate_content(
-            model=model,
-            contents=[prompt],
-            config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
-        )
-    except errors.APIError as exc:
-        _log(user, feature, model, started, error=f"{exc.code} {exc.message or ''}")
-        if exc.code == 429 and "limit: 0" in str(exc):
-            # Piano gratuito: per le immagini la quota e' zero, non passa aspettando.
-            raise AIError(
-                _(
-                    "La chiave Gemini non ha quota per le immagini (piano gratuito): "
-                    "attiva la fatturazione su Google AI Studio."
-                )
-            ) from exc
-        if exc.code in TRANSIENT_CODES:
-            raise AIOverloaded(
-                _("Gemini è sovraccarico in questo momento. Riprova tra qualche minuto.")
-            ) from exc
-        if exc.code in (401, 403):
-            raise AIError(_("Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY.")) from exc
-        raise AIError(
-            _("Gemini ha risposto con un errore (%(code)s).") % {"code": exc.code}
-        ) from exc
-    except SoftTimeLimitExceeded:
-        raise
-    except Exception as exc:  # rete, timeout
-        _log(user, feature, model, started, error=str(exc) or type(exc).__name__)
-        raise AIOverloaded(_("Gemini non risponde. Riprova tra qualche minuto.")) from exc
-    for candidate in response.candidates or []:
-        for part in getattr(candidate.content, "parts", None) or []:
-            inline = getattr(part, "inline_data", None)
-            if inline is not None and inline.data:
-                _log(user, feature, model, started, response=response)
-                return inline.data, inline.mime_type or "image/png", model
-    # Registrata come non riuscita: non conta nel tetto delle immagini del giorno.
-    _log(user, feature, model, started, response=response, error="nessuna immagine")
-    raise AINoImage(_("Gemini non ha disegnato niente questa volta. Riprova."))
+        data, mime, result = cornhub.image(feature, prompt, user=user, timeout=_seconds(timeout_ms))
+    except cornhub.AIError as exc:
+        raise _translate(exc) from exc
+    except KeyError as exc:  # risposta senza immagine
+        message = "Non e' stato disegnato niente questa volta. Riprova."
+        raise AINoImage(message, "overloaded") from exc
+    return data, mime, result.model
+
+
+def live_token(feature: str, config: dict, *, user=None) -> dict:
+    """Token monouso di Gemini Live per il browser: ``{"token", "model"}``."""
+    try:
+        token, result = cornhub.live_token(feature, config, user=user)
+    except cornhub.AIError as exc:
+        raise _translate(exc) from exc
+    return {"token": token, "model": result.model}

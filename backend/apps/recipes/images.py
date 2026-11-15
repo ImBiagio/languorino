@@ -1,8 +1,8 @@
 """Immagini delle ricette (progettazione 4.6, ADR 0011).
 
 Senza immagine la ricetta mostra il disegno della sua categoria. Una foto vera
-si carica a mano e vince sempre; altrimenti, su richiesta, Gemini ne disegna
-una. Tutto diventa WebP ridotto, senza EXIF.
+si carica a mano e vince sempre; altrimenti, su richiesta, l'AI ne disegna
+una (via cornhub, funzione ``recipe_image``). Tutto diventa WebP ridotto, senza EXIF.
 """
 
 from __future__ import annotations
@@ -11,12 +11,10 @@ import io
 
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.utils import timezone
 from django.utils.translation import gettext as _
 from PIL import Image, ImageOps
 
 from apps.ai.client import generate_image
-from apps.ai.models import AiCall
 
 from .models import Recipe
 
@@ -72,12 +70,6 @@ def clear_image(recipe: Recipe) -> None:
     recipe.save(update_fields=["image", "image_source", "updated_at"])
 
 
-def images_today(user) -> int:
-    """Le immagini davvero disegnate oggi: i tentativi a vuoto non contano."""
-    start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
-    return AiCall.objects.filter(user=user, feature=FEATURE, created_at__gte=start, ok=True).count()
-
-
 def image_prompt(recipe: Recipe, style: str = "photo") -> str:
     """Solo titolo, descrizione e ingredienti: niente del profilo."""
     names = [
@@ -94,7 +86,7 @@ def image_prompt(recipe: Recipe, style: str = "photo") -> str:
 
 
 def draw_image(recipe: Recipe, user, style: str = "photo") -> str:
-    """Fa disegnare l'immagine a Gemini e la salva; restituisce il modello usato."""
+    """Fa disegnare l'immagine all'AI e la salva; restituisce il modello usato."""
     data, _mime, model = generate_image(image_prompt(recipe, style), feature=FEATURE, user=user)
     set_image(recipe, data, Recipe.ImageSource.AI)
     return model

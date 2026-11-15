@@ -85,7 +85,9 @@ def gemini(monkeypatch):
     """Ogni pezzo "legge" le ricette che il test mette in ``by_start[pagina iniziale]``."""
     state = {"calls": [], "by_start": {}, "fail_at": None}
 
-    def fake_read(files, *, user, language, extra_instructions=""):
+    def fake_read(files, *, user, language, extra_instructions="", feature=""):
+        # Ogni pezzo del ricettario si conta su cornhub come "book_read".
+        assert feature == "book_read"
         start = int(re.search(r"pagine da (\d+) a (\d+)", extra_instructions).group(1))
         pages = len(PdfReader(io.BytesIO(files[0][0])).pages)
         state["calls"].append((start, pages))
@@ -98,7 +100,7 @@ def gemini(monkeypatch):
 
 
 def _start(api, user, capture, pages=9):
-    with override_settings(GEMINI_API_KEY="k", BOOK_PAGES_PER_CHUNK=4), capture(execute=True):
+    with override_settings(BOOK_PAGES_PER_CHUNK=4), capture(execute=True):
         return api(user).post(BOOKS, {"file": _upload(pages)}, format="multipart")
 
 
@@ -112,7 +114,7 @@ def test_pezzi_con_pagina_di_contesto():
     assert len(PdfReader(io.BytesIO(extract_pages(data, 8, 9, False))).pages) == 1
 
 
-@override_settings(GEMINI_API_KEY="")
+@override_settings(CORNHUB_APP_TOKEN="")
 def test_senza_chiave_503(user, api):
     assert api(user).post(BOOKS, {"file": _upload()}, format="multipart").status_code == 503
 
@@ -127,14 +129,14 @@ def test_senza_chiave_503(user, api):
     ],
 )
 def test_file_rifiutati(user, api, upload):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         response = api(user).post(BOOKS, {"file": upload}, format="multipart")
     assert response.status_code == 400
     assert not RecipeBook.objects.exists()
 
 
 def test_troppe_pagine(user, api):
-    with override_settings(GEMINI_API_KEY="k", BOOK_MAX_PAGES=5):
+    with override_settings(BOOK_MAX_PAGES=5):
         response = api(user).post(BOOKS, {"file": _upload(9)}, format="multipart")
     assert response.status_code == 400
 
@@ -205,7 +207,7 @@ def test_errore_a_meta_e_ripresa(user, api, gemini, django_capture_on_commit_cal
     gemini["fail_at"] = None
     gemini["calls"].clear()
     with (
-        override_settings(GEMINI_API_KEY="k", BOOK_PAGES_PER_CHUNK=4),
+        override_settings(BOOK_PAGES_PER_CHUNK=4),
         django_capture_on_commit_callbacks(execute=True),
     ):
         assert api(user).post(f"{BOOKS}/{book.id}/retry").status_code == 202
@@ -252,7 +254,7 @@ def test_letture_ferme_riprese(user, api, gemini, django_capture_on_commit_callb
     from apps.recipes.tasks import resume_stalled_books
 
     gemini["by_start"] = {5: [_draft("Vellutata", "zucca")]}
-    with override_settings(GEMINI_API_KEY="k", BOOK_PAGES_PER_CHUNK=4):
+    with override_settings(BOOK_PAGES_PER_CHUNK=4):
         # Senza on_commit eseguiti: il libro resta in coda.
         api(user).post(BOOKS, {"file": _upload(9)}, format="multipart")
     book = RecipeBook.objects.get()

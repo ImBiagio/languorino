@@ -10,7 +10,6 @@ from django.test import override_settings
 from PIL import Image, ImageDraw
 
 from apps.ai.client import AIError
-from apps.ai.models import AiCall
 from apps.recipes import book_images
 from apps.recipes.book_images import BookPhoto, BookPhotos, crop
 from apps.recipes.models import Recipe, RecipeBook
@@ -61,13 +60,7 @@ def test_foto_ritagliata_dal_pdf(user, monkeypatch):
     calls = []
 
     def fake(contents, schema, **kwargs):
-        class Types:
-            class Part:
-                @staticmethod
-                def from_bytes(data, mime_type):
-                    return mime_type
-
-        calls.append(contents(Types)[-1])
+        calls.append(contents[-1])
         return BookPhotos(
             photos=[
                 # Riquadro della foto rossa a pagina 2 (in millesimi della pagina).
@@ -100,14 +93,13 @@ def test_flusso_completo_con_illustrazioni(
 
     def fake_image(prompt, **kwargs):
         drawn.append(prompt)
-        AiCall.objects.create(user=kwargs["user"], feature=kwargs["feature"], model="finto")
         buffer = io.BytesIO()
         Image.new("RGB", (64, 64), "orange").save(buffer, "PNG")
         return buffer.getvalue(), "image/png", "finto"
 
     monkeypatch.setattr("apps.recipes.images.generate_image", fake_image)
     url = f"/api/recipe-books/{book.id}/images"
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         response = api(user).post(url)
     assert response.status_code == 202, response.data
     book.refresh_from_db()
@@ -118,30 +110,30 @@ def test_flusso_completo_con_illustrazioni(
     assert (listed["without_image"], listed["images_status"]) == (0, "done")
 
 
-@override_settings(AI_IMAGES_PER_DAY=1)
-def test_tetto_del_giorno_e_ripresa(user, monkeypatch, django_capture_on_commit_callbacks):
+def test_limite_di_spesa_ferma_le_illustrazioni(
+    user, monkeypatch, django_capture_on_commit_callbacks
+):
+    """Chiave mancante o limite raggiunto su cornhub: ci si ferma col suo
+    messaggio, senza riprovare all'infinito (ADR 0021)."""
+    from apps.ai.client import AIBudgetExceeded
     from apps.recipes.tasks import resume_book_images, start_book_images
 
     book = _book(user)
     monkeypatch.setattr(book_images, "generate", lambda *a, **k: (BookPhotos(), "finto"))
+    calls = []
 
-    def fake_image(prompt, **kwargs):
-        AiCall.objects.create(user=kwargs["user"], feature=kwargs["feature"], model="finto")
-        buffer = io.BytesIO()
-        Image.new("RGB", (64, 64), "orange").save(buffer, "PNG")
-        return buffer.getvalue(), "image/png", "finto"
+    def over_limit(prompt, **kwargs):
+        calls.append(prompt)
+        raise AIBudgetExceeded("Hai raggiunto il limite di spesa di oggi.", "limit")
 
-    monkeypatch.setattr("apps.recipes.images.generate_image", fake_image)
+    monkeypatch.setattr("apps.recipes.images.generate_image", over_limit)
     with django_capture_on_commit_callbacks(execute=True):
         start_book_images(book)
     book.refresh_from_db()
-    assert book.images_status == "drawing" and "domani" in book.images_error
-    assert Recipe.objects.exclude(image="").count() == 1
-    # Il giorno dopo (tetto azzerato) la ripresa del mattino finisce il lavoro.
-    AiCall.objects.all().delete()
-    resume_book_images()
-    book.refresh_from_db()
-    assert book.images_status == "done"
+    assert book.images_status == "failed" and "limite di spesa" in book.images_error
+    assert len(calls) == 1
+    # La ripresa dei lavori appesi non tocca un ricettario fermo.
+    assert resume_book_images() == 0
 
 
 def test_senza_quota_per_le_immagini(user, monkeypatch, django_capture_on_commit_callbacks):
@@ -184,7 +176,7 @@ def test_titolo_cambiato_durante_la_ricerca(
 def test_solo_ricettari_letti(user, api):
     book = _book(user)
     RecipeBook.objects.filter(id=book.id).update(status="reading")
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         assert api(user).post(f"/api/recipe-books/{book.id}/images").status_code == 400
 
 
@@ -197,13 +189,7 @@ def test_tutti_i_titoli_e_un_riquadro_una_ricetta(user, monkeypatch):
     prompts = []
 
     def fake(contents, schema, **kwargs):
-        class Types:
-            class Part:
-                @staticmethod
-                def from_bytes(data, mime_type):
-                    return mime_type
-
-        prompts.append(contents(Types)[-1])
+        prompts.append(contents[-1])
         box = [353, 250, 706, 750]
         return BookPhotos(
             photos=[
@@ -236,7 +222,6 @@ def test_ricetta_senza_immagine_saltata(user, monkeypatch, django_capture_on_com
         attempts.append(prompt.split('"')[1])
         if "Pasta e fagioli" in prompt:
             raise AINoImage("Gemini non ha disegnato niente questa volta.")
-        AiCall.objects.create(user=kwargs["user"], feature=kwargs["feature"], model="finto")
         buffer = io.BytesIO()
         Image.new("RGB", (64, 64), "orange").save(buffer, "PNG")
         return buffer.getvalue(), "image/png", "finto"

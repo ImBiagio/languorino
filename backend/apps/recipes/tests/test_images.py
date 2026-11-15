@@ -9,7 +9,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from PIL import Image
 
-from apps.ai.models import AiCall
 from apps.jobs.models import Job
 from apps.recipes.models import Recipe
 from apps.recipes.serializers import RecipeSerializer
@@ -101,7 +100,7 @@ def drawer(monkeypatch):
 
     def fake(prompt, **kwargs):
         state["prompts"].append(prompt)
-        AiCall.objects.create(user=kwargs.get("user"), feature=kwargs["feature"], model="finto")
+        state["features"] = kwargs["feature"]
         return _png_bytes(), "image/png", "finto"
 
     monkeypatch.setattr("apps.recipes.images.generate_image", fake)
@@ -109,7 +108,7 @@ def drawer(monkeypatch):
 
 
 def _draw(api, user, recipe, capture):
-    with override_settings(GEMINI_API_KEY="k"), capture(execute=True):
+    with capture(execute=True):
         return api(user).post(f"/api/recipes/{recipe.id}/image/draw")
 
 
@@ -126,6 +125,7 @@ def test_disegnata_da_gemini(user, api, drawer, django_capture_on_commit_callbac
     # Titolo e ingredienti principali, non i basilari; niente dati dell'utente.
     assert "Pasta e zucchine" in prompt and "zucchin" in prompt and "sale" not in prompt
     assert user.email not in prompt
+    assert drawer["features"] == "recipe_image"
 
 
 def test_la_foto_vera_vince(user, api, drawer, django_capture_on_commit_callbacks):
@@ -135,21 +135,21 @@ def test_la_foto_vera_vince(user, api, drawer, django_capture_on_commit_callback
     assert not drawer["prompts"]
 
 
-@override_settings(AI_IMAGES_PER_DAY=1)
-def test_tetto_giornaliero(user, api, drawer, django_capture_on_commit_callbacks):
-    recipe = _recipe(user)
-    assert _draw(api, user, recipe, django_capture_on_commit_callbacks).status_code == 202
-    assert _draw(api, user, recipe, django_capture_on_commit_callbacks).status_code == 400
+def test_limite_di_cornhub_nel_job(user, api, monkeypatch, django_capture_on_commit_callbacks):
+    """I tetti stanno su cornhub (ADR 0021): il suo messaggio finisce nel job."""
+    from apps.ai.client import AIBudgetExceeded
+
+    def refused(prompt, **kwargs):
+        raise AIBudgetExceeded("Questa funzione costa di piu': usa la tua chiave API.", "needs_key")
+
+    monkeypatch.setattr("apps.recipes.images.generate_image", refused)
+    response = _draw(api, user, _recipe(user), django_capture_on_commit_callbacks)
+    job = Job.objects.get(id=response.data["id"])
+    assert job.status == Job.Status.FAILED and "tua chiave" in job.error
 
 
+@override_settings(CORNHUB_APP_TOKEN="")
 def test_senza_chiave(user, api):
     recipe = _recipe(user)
     assert api(user).post(f"/api/recipes/{recipe.id}/image/draw").status_code == 503
 
-
-def test_nel_tetto_contano_solo_le_immagini_riuscite(user):
-    from apps.recipes.images import FEATURE, images_today
-
-    AiCall.objects.create(user=user, feature=FEATURE, model="m", ok=True)
-    AiCall.objects.create(user=user, feature=FEATURE, model="m", ok=False, error="nessuna immagine")
-    assert images_today(user) == 1

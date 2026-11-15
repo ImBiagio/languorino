@@ -14,8 +14,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.ai.budget import BudgetThrottled
-from apps.ai.client import AIBudgetExceeded, AIError, is_enabled
+from apps.ai.client import AIError, is_enabled
 from apps.jobs.files import FileRejected, prepare_audio
 from apps.jobs.models import Job
 from apps.jobs.serializers import JobSerializer
@@ -185,10 +184,13 @@ class InterviewLiveView(APIView):
             )
         try:
             session = live_token(request.user, (get_language() or "it")[:2])
-        except AIBudgetExceeded as exc:
-            raise BudgetThrottled(str(exc)) from exc
         except AIError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+            # ``code`` e ``account_url``: il frontend mostra il messaggio di
+            # cornhub e il link per aggiungere la chiave o alzare il limite.
+            return Response(
+                {"detail": str(exc), "code": exc.code, "account_url": exc.account_url},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
         return Response(session)
 
 

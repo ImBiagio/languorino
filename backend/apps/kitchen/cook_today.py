@@ -14,7 +14,7 @@ from __future__ import annotations
 from django.db.models import Prefetch, Q
 from pydantic import BaseModel, Field
 
-from apps.ai.client import generate
+from apps.ai.client import file_part, generate
 from apps.plans.generation import SLOT_NAMES, user_profile_summary
 from apps.profiles.models import FoodPreference, MealSlot
 from apps.recipes.generated import save_generated
@@ -62,8 +62,8 @@ def read_fridge(files: list[tuple[bytes, str]], *, user, language: str = "it") -
         language=LANGUAGES.get(language[:2], "italiano"), limit=MAX_INGREDIENTS
     )
     result, model = generate(
-        lambda types: [
-            *[types.Part.from_bytes(data=data, mime_type=mime) for data, mime in files],
+        [
+            *[file_part(data, mime) for data, mime in files],
             prompt,
         ],
         FridgeContents,
@@ -212,7 +212,7 @@ def write_ideas(
         language=LANGUAGES.get(language[:2], "italiano"),
     )
     result, _model = generate(
-        lambda types: [prompt],
+        [prompt],
         ImportedRecipes,
         feature="cook_ideas",
         fast=True,

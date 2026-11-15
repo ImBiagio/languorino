@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import io
 from datetime import timedelta
 
@@ -74,13 +75,10 @@ def gemini(monkeypatch):
         if state["error"]:
             raise state["error"]
 
-        class Types:
-            class Part:
-                @staticmethod
-                def from_bytes(data, mime_type):
-                    return (mime_type, len(data))
-
-        state["files"] = contents(Types)
+        state["files"] = [
+            (p["mime"], len(base64.b64decode(p["data"]))) if isinstance(p, dict) else p
+            for p in contents
+        ]
         return state["result"], "gemini-finto"
 
     monkeypatch.setattr("apps.recipes.importing.generate", fake_generate)
@@ -88,7 +86,7 @@ def gemini(monkeypatch):
 
 
 def _start(api, user, files, capture):
-    with override_settings(GEMINI_API_KEY="k"), capture(execute=True):
+    with capture(execute=True):
         response = api(user).post(
             JOBS, {"kind": "import_recipes", "files": files}, format="multipart"
         )
@@ -99,7 +97,7 @@ def test_serve_il_login(api):
     assert api().get(JOBS).status_code == 401
 
 
-@override_settings(GEMINI_API_KEY="")
+@override_settings(CORNHUB_APP_TOKEN="")
 def test_senza_chiave_503(user, api):
     response = api(user).post(
         JOBS, {"kind": "import_recipes", "files": [_pdf()]}, format="multipart"
@@ -165,7 +163,7 @@ def test_pdf_troppo_grande(user, api, gemini, django_capture_on_commit_callbacks
 
 
 def test_lavoro_sconosciuto(user, api):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         response = api(user).post(JOBS, {"kind": "boh", "files": [_pdf()]}, format="multipart")
     assert response.status_code == 400
 
@@ -178,7 +176,7 @@ def test_errore_dell_llm_e_riprova(user, api, gemini, django_capture_on_commit_c
     assert "sovraccarico" in data["error"]
 
     gemini["error"] = None
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         assert api(user).post(f"{JOBS}/{job_id}/retry").status_code == 202
     assert api(user).get(f"{JOBS}/{job_id}").data["status"] == "ready"
     # Un lavoro riuscito non si "riprova".

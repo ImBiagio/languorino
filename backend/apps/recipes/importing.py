@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from apps.ai.client import generate
+from apps.ai.client import file_part, generate
 from apps.profiles.models import MEAL_SLOT_ORDER
 
 from .models import Difficulty, Unit
@@ -355,20 +355,24 @@ def read_recipes(
     user,
     language: str = "it",
     extra_instructions: str = "",
+    feature: str = "import_recipes",
 ) -> dict:
     """Legge le ricette dai file ``(contenuto, mime type)``.
+
+    ``feature``: il nome su cornhub. ``book_read`` per i pezzi di un
+    ricettario PDF (ADR 0006), che si contano a parte.
 
     Restituisce ``{"recipes": [bozze], "problem": str, "model": str}``.
     """
     # extra_instructions: per i ricettari a pezzi, quale parte si sta leggendo.
     prompt = PROMPT.format(language=LANGUAGES.get(language[:2], "italiano")) + extra_instructions
     result, model = generate(
-        lambda types: [
-            *[types.Part.from_bytes(data=data, mime_type=mime) for data, mime in files],
+        [
+            *[file_part(data, mime) for data, mime in files],
             prompt,
         ],
         ImportedRecipes,
-        feature="import_recipes",
+        feature=feature,
         user=user,
         timeout_ms=180_000,
         temperature=0.1,

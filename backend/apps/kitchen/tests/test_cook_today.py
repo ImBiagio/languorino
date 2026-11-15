@@ -102,13 +102,7 @@ def gemini(monkeypatch):
     state = {"prompts": [], "ideas": None}
 
     def fake_generate(contents, schema, **kwargs):
-        class Types:
-            class Part:
-                @staticmethod
-                def from_bytes(data, mime_type):
-                    return mime_type
-
-        parts = contents(Types)
+        parts = contents
         state["prompts"].append(parts[-1])
         if schema is FridgeContents:
             return FridgeContents(
@@ -142,7 +136,7 @@ def _photo():
 
 
 def test_foto_del_frigo(user, api, gemini, django_capture_on_commit_callbacks):
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         response = api(user).post(SCAN, {"files": [_photo()]}, format="multipart")
     assert response.status_code == 202, response.data
     job = api(user).get(f"/api/jobs/{response.data['id']}").data
@@ -151,7 +145,7 @@ def test_foto_del_frigo(user, api, gemini, django_capture_on_commit_callbacks):
 
 
 def test_foto_rifiutate(user, api):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         pdf = SimpleUploadedFile("x.pdf", b"%PDF-1.4 x", content_type="application/pdf")
         assert api(user).post(SCAN, {"files": [pdf]}, format="multipart").status_code == 400
         assert (
@@ -160,12 +154,12 @@ def test_foto_rifiutate(user, api):
             .status_code
             == 400
         )
-    with override_settings(GEMINI_API_KEY=""):
+    with override_settings(CORNHUB_APP_TOKEN=""):
         assert api(user).post(SCAN, {"files": [_photo()]}, format="multipart").status_code == 503
 
 
 def test_suggerimenti_e_idee(user, api, cookbook, gemini, django_capture_on_commit_callbacks):
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         response = api(user).post(
             SUGGEST,
             {"ingredients": ["uova", " zucchine ", ""], "slot": "dinner", "servings": 3},
@@ -190,7 +184,7 @@ def test_suggerimenti_e_idee(user, api, cookbook, gemini, django_capture_on_comm
 def test_idea_con_allergene_scartata(user, api, gemini, django_capture_on_commit_callbacks):
     profile = Profile.objects.create(user=user)
     FoodPreference.objects.create(profile=profile, kind="allergy", label="eggs", allergen="eggs")
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         data = api(user).post(SUGGEST, {"ingredients": ["zucchine"]}, format="json").data
     ideas = api(user).get(f"/api/jobs/{data['job']['id']}").data["result"]["ideas"]
     assert [idea["title"] for idea in ideas] == ["Zucchine ripiene"]
@@ -199,10 +193,10 @@ def test_idea_con_allergene_scartata(user, api, gemini, django_capture_on_commit
 
 
 def test_senza_idee_o_senza_chiave(user, api, cookbook):
-    with override_settings(GEMINI_API_KEY=""):
+    with override_settings(CORNHUB_APP_TOKEN=""):
         data = api(user).post(SUGGEST, {"ingredients": ["uova"]}, format="json").data
     assert data["job"] is None and data["matches"]
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         data = (
             api(user).post(SUGGEST, {"ingredients": ["uova"], "ideas": False}, format="json").data
         )
@@ -219,7 +213,7 @@ def test_richieste_rifiutate(user, api, payload):
 
 
 def test_lavori_generici_solo_import(user, api):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         response = api(user).post(
             "/api/jobs", {"kind": "cook_ideas", "files": [_photo()]}, format="multipart"
         )

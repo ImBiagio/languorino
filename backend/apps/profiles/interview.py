@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from apps.ai.client import generate
+from apps.ai.client import file_part, generate
 from apps.recipes.importing import LANGUAGES
 
 from .models import FoodPreference, Profile
@@ -205,12 +205,14 @@ def interview_turn(
         ),
     )
     turn, model = generate(
-        lambda types: [
-            *[types.Part.from_bytes(data=data, mime_type=mime) for data, mime in audio],
+        [
+            *[file_part(data, mime) for data, mime in audio],
             prompt,
         ],
         InterviewTurn,
-        feature="interview",
+        # Con la registrazione la richiesta e' audio: costa di piu' e non
+        # tutti i provider la leggono, quindi e' una funzione a parte su cornhub.
+        feature="interview_audio" if audio else "interview",
         fast=True,
         user=user,
         timeout_ms=60_000,

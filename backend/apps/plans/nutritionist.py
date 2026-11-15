@@ -18,7 +18,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from apps.ai.client import generate
+from apps.ai.client import file_part, generate
 from apps.recipes.importing import LANGUAGES, _parse_number
 from apps.recipes.matching import _word_variants, normalize, variants
 from apps.recipes.models import Recipe
@@ -170,8 +170,8 @@ def _date(raw: str | None) -> date | None:
 def read_plan(files: list[tuple[bytes, str]], *, user, language: str = "it") -> dict:
     prompt = PROMPT.format(language=LANGUAGES.get(language[:2], "italiano"))
     result, model = generate(
-        lambda types: [
-            *[types.Part.from_bytes(data=data, mime_type=mime) for data, mime in files],
+        [
+            *[file_part(data, mime) for data, mime in files],
             prompt,
         ],
         NutritionistReading,

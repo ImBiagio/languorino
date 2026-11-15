@@ -1,11 +1,12 @@
 """Intervista a voce in tempo reale (ADR 0014).
 
 Il browser parla direttamente con Gemini Live (audio in e out in streaming):
-passare dal backend aggiungerebbe ritardo a ogni sillaba. Il backend pero'
-resta il solo a conoscere la chiave e decide tutto della sessione: crea un
-token temporaneo, monouso, legato al modello, alle istruzioni (con il
-profilo gia' noto, senza nome ne' data di nascita) e agli strumenti. Il
-browser non puo' cambiarli.
+passare dal backend aggiungerebbe ritardo a ogni sillaba. La chiave pero' non
+la vede ne' il browser ne' Languorino: il backend decide tutto della sessione
+(istruzioni con il profilo gia' noto, senza nome ne' data di nascita, e
+strumenti) e chiede a cornhub un token temporaneo e monouso che la chiude
+dentro (funzione ``interview_live``, ADR 0021). Il browser non puo' cambiarla;
+il modello lo sceglie cornhub e torna insieme al token.
 
 Quando capisce qualcosa Gemini chiama ``segna_preferenza`` o
 ``segna_profilo``: il browser manda la chiamata a ``clean_call`` (le stesse
@@ -21,15 +22,10 @@ regola in cima, gemini-3.1-flash-live-preview li chiama in 1,3 s.
 from __future__ import annotations
 
 import re
-import time
-from datetime import timedelta
 
-from django.conf import settings
-from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from apps.ai.budget import LIVE_FEATURE
-from apps.ai.client import AIError, _log, check_budget, is_enabled
+from apps.ai import client as ai
 from apps.recipes.importing import LANGUAGES
 
 from .interview import (
@@ -40,9 +36,7 @@ from .interview import (
     clean_updates,
 )
 
-FEATURE = LIVE_FEATURE
-# Una sessione solo audio di Gemini Live dura al massimo 15 minuti.
-SESSION_MINUTES = 15
+FEATURE = "interview_live"
 
 INSTRUCTIONS = """REGOLA PRINCIPALE: tu NON ricordi niente da solo. Ogni volta che la
 persona dice un'allergia, un'intolleranza, un cibo che le piace o no, o un
@@ -156,37 +150,11 @@ def session_config(user, language: str = "it") -> dict:
 
 
 def live_token(user, language: str = "it") -> dict:
-    """Un token monouso per una sessione: va aperta entro un minuto."""
-    if not is_enabled():
-        raise AIError(_("La lettura con l'intelligenza artificiale non è configurata."))
-    # Qui il registro conta le sessioni, non i token: una sessione vale fino a
-    # 15 minuti di audio, quindi ha anche un tetto suo al giorno.
-    check_budget(user, live=True)
-    from google import genai
-
-    client = genai.Client(api_key=settings.GEMINI_API_KEY, http_options={"api_version": "v1alpha"})
-    now = timezone.now()
-    model = settings.GEMINI_MODEL_LIVE
-    started = time.monotonic()
-    try:
-        token = client.auth_tokens.create(
-            config={
-                "uses": 1,
-                "expire_time": now + timedelta(minutes=SESSION_MINUTES + 1),
-                "new_session_expire_time": now + timedelta(minutes=1),
-                "live_connect_constraints": {
-                    "model": model,
-                    "config": session_config(user, language),
-                },
-                "http_options": {"api_version": "v1alpha"},
-            }
-        )
-    except Exception as exc:
-        _log(user, FEATURE, model, started, error=str(exc) or type(exc).__name__)
-        raise AIError(_("Gemini non ha aperto la conversazione. Riprova tra poco.")) from exc
-    # Il registro conta le sessioni aperte: i token audio non arrivano qui.
-    _log(user, FEATURE, model, started)
-    return {"token": token.name, "model": model}
+    """Un token monouso per una sessione (va aperta entro un minuto, dura al
+    massimo 15): ``{"token", "model"}``. Chi paga e i limiti li decide cornhub."""
+    if not ai.is_enabled():
+        raise ai.AIError(_("La lettura con l'intelligenza artificiale non è configurata."))
+    return ai.live_token(FEATURE, session_config(user, language), user=user)
 
 
 def _value(field: str, raw: str):

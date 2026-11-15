@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 from django.test import override_settings
 
-from apps.ai.models import AiCall
+from apps.core import cornhub
 from apps.profiles.live import clean_call, session_config
 from apps.profiles.models import FoodPreference, Profile
 
@@ -77,30 +78,35 @@ def test_endpoint_della_proposta(user, api):
 
 
 def test_token_della_sessione(user, api, monkeypatch):
-    seen = {}
+    """Il token lo crea cornhub (ADR 0021) con la configurazione decisa qui."""
+    seen = []
 
-    class Tokens:
-        def create(self, config):
-            seen.update(config)
+    def post(url, json=None, headers=None, timeout=None):
+        seen.append((url, json))
+        payload = {"token": "auth_tokens/finto", "model": "live-model", "billed_to": "user"}
+        return httpx.Response(200, json=payload, request=httpx.Request("POST", url))
 
-            class Token:
-                name = "auth_tokens/finto"
-
-            return Token()
-
-    class Client:
-        def __init__(self, **kwargs):
-            self.auth_tokens = Tokens()
-
-    monkeypatch.setattr("google.genai.Client", Client)
-    with override_settings(GEMINI_API_KEY="k", GEMINI_MODEL_LIVE="live-model"):
-        response = api(user).post("/api/profile/interview/live")
+    monkeypatch.setattr(cornhub.httpx, "post", post)
+    response = api(user).post("/api/profile/interview/live")
     assert response.data == {"token": "auth_tokens/finto", "model": "live-model"}
-    assert seen["uses"] == 1
-    assert seen["live_connect_constraints"]["model"] == "live-model"
-    assert "REGOLA PRINCIPALE" in seen["live_connect_constraints"]["config"]["system_instruction"]
-    assert AiCall.objects.get().feature == "interview_live"
+    url, body = seen[0]
+    assert url.endswith("/internal/ai/live-token") and body["feature"] == "interview_live"
+    assert body["config"]["system_instruction"].startswith("REGOLA PRINCIPALE")
 
 
+def test_limite_di_cornhub(user, api, monkeypatch):
+    def post(url, json=None, headers=None, timeout=None):
+        payload = {"code": "needs_key", "detail": "Usa la tua chiave API.",
+                   "account_url": "https://cornhub.test/account/ai/"}
+        return httpx.Response(402, json=payload, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(cornhub.httpx, "post", post)
+    response = api(user).post("/api/profile/interview/live")
+    assert response.status_code == 502
+    assert response.data["code"] == "needs_key"
+    assert response.data["account_url"].endswith("/account/ai/")
+
+
+@override_settings(CORNHUB_APP_TOKEN="")
 def test_senza_chiave(user, api):
     assert api(user).post("/api/profile/interview/live").status_code == 503

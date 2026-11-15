@@ -9,19 +9,18 @@
    intestazioni ripetute e disegni di ingredienti sparsi non contano: il primo
    PDF vero aveva in ogni pagina la stessa testata di legumi disegnati.
 2. **Illustrazione AI.** Le ricette rimaste senza immagine si fanno disegnare
-   (stile semplice, un po' illustrativo), una alla volta e nel tetto
-   giornaliero; il giorno dopo si riprende. Senza quota per le immagini (piano
-   gratuito) ci si ferma con un messaggio chiaro.
+   (stile semplice, un po' illustrativo), una alla volta. Se cornhub dice che
+   serve la chiave dell'utente o che il limite di spesa e' raggiunto ci si
+   ferma con il suo messaggio (ADR 0021): si riprende a mano dal ricettario.
 """
 
 from __future__ import annotations
 
 import io
 
-from django.conf import settings
 from pydantic import BaseModel, Field
 
-from apps.ai.client import generate
+from apps.ai.client import file_part, generate
 
 from .images import set_image
 from .matching import normalize
@@ -109,8 +108,8 @@ def find_photos(book: RecipeBook, data: bytes, start: int, end: int) -> int:
     titles = "\n".join(f"- {recipe.title}" for recipe in recipes[:MAX_TITLES])
     part = extract_pages(data, start, end, with_context=False)
     result, _model = generate(
-        lambda types: [
-            types.Part.from_bytes(data=part, mime_type="application/pdf"),
+        [
+            file_part(part, "application/pdf"),
             PROMPT.format(titles=titles),
         ],
         BookPhotos,
@@ -160,8 +159,3 @@ def next_to_draw(book: RecipeBook) -> Recipe | None:
 def missing_count(book: RecipeBook) -> int:
     return book.recipes.filter(image="").count()
 
-
-def daily_left(user) -> int:
-    from .images import images_today
-
-    return max(0, settings.AI_IMAGES_PER_DAY - images_today(user))

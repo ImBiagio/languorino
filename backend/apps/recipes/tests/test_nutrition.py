@@ -49,7 +49,7 @@ def gemini(monkeypatch):
     seen = {}
 
     def fake_generate(contents, schema, **kwargs):
-        seen["prompt"] = contents(None)[0]
+        seen["prompt"] = contents[0]
         return STIMA, "gemini-finto"
 
     monkeypatch.setattr("apps.recipes.nutrition.generate", fake_generate)
@@ -57,7 +57,7 @@ def gemini(monkeypatch):
 
 
 def _estimate(api, user, recipe, capture):
-    with override_settings(GEMINI_API_KEY="k"), capture(execute=True):
+    with capture(execute=True):
         response = api(user).post(f"/api/recipes/{recipe.id}/nutrition")
     assert response.status_code == 202, response.data
     return Job.objects.get(pk=response.data["id"])
@@ -81,14 +81,14 @@ def test_stima_a_porzione(user, api, recipe, gemini, django_capture_on_commit_ca
 
 
 def test_senza_chiave_e_senza_ingredienti(user, api, recipe):
-    assert api(user).post(f"/api/recipes/{recipe.id}/nutrition").status_code == 503
+    with override_settings(CORNHUB_APP_TOKEN=""):
+        assert api(user).post(f"/api/recipes/{recipe.id}/nutrition").status_code == 503
     recipe.ingredients.all().delete()
-    with override_settings(GEMINI_API_KEY="k"):
-        assert api(user).post(f"/api/recipes/{recipe.id}/nutrition").status_code == 400
+    assert api(user).post(f"/api/recipes/{recipe.id}/nutrition").status_code == 400
 
 
 def test_stima_degli_altri_no(user, other_user, api, recipe):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         assert api(other_user).post(f"/api/recipes/{recipe.id}/nutrition").status_code == 404
 
 

@@ -105,7 +105,7 @@ def estimate(recipe: Recipe, *, language: str = "it") -> dict:
         language=LANGUAGES.get(language[:2], "italiano"),
     )
     result, model = generate(
-        lambda types: [prompt],
+        [prompt],
         NutritionEstimate,
         feature="recipe_nutrition",
         user=recipe.owner,

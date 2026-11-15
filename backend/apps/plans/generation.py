@@ -330,7 +330,7 @@ def write_recipe(
         nutritionist=extra,
     )
     written, _model = generate(
-        lambda types: [prompt],
+        [prompt],
         ImportedRecipe,
         feature="plan_recipe",
         user=plan.owner,
@@ -513,7 +513,7 @@ def generate_week(plan: MealPlan, week: int) -> None:
         ),
     )
     choices, _model = generate(
-        lambda types: [prompt],
+        [prompt],
         WeekChoices,
         feature="plan_week",
         user=plan.owner,

@@ -1,186 +1,88 @@
-"""Client Gemini: riserve, modelli giu', errori, registro delle chiamate.
+"""Adattatore verso cornhub: richiesta, risposta e traduzione degli errori.
 
-Nessuna richiesta vera: ``genai.Client`` e' finto.
+Nessuna richiesta vera: ``httpx.post`` del client di cornhub e' finto.
 """
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-
+import httpx
 import pytest
-from django.core.cache import cache
-from django.test import override_settings
-from google.genai import errors
 from pydantic import BaseModel
 
 from apps.ai import client as ai
-from apps.ai.models import AiCall
-
-pytestmark = pytest.mark.django_db
+from apps.core import cornhub
 
 
 class Answer(BaseModel):
     text: str
 
 
-def _response(text='{"text": "ciao"}'):
-    return SimpleNamespace(
-        parsed=None,
-        text=text,
-        usage_metadata=SimpleNamespace(prompt_token_count=120, candidates_token_count=30),
+@pytest.fixture
+def fake_post(monkeypatch):
+    state = {"status": 200, "payload": {"data": {"text": "ciao"}, "model": "m1"}, "seen": []}
+
+    def post(url, json=None, headers=None, timeout=None):
+        state["seen"].append((url, json, timeout))
+        return httpx.Response(
+            state["status"], json=state["payload"], request=httpx.Request("POST", url)
+        )
+
+    monkeypatch.setattr(cornhub.httpx, "post", post)
+    return state
+
+
+def test_generate_manda_parti_e_feature(fake_post, user):
+    user.cornhub_sub = "2b6f5a8e-0000-4000-8000-000000000001"
+    answer, model = ai.generate(
+        ["leggi", ai.file_part(b"pdf", "application/pdf")],
+        Answer,
+        feature="import_recipes",
+        user=user,
+        fast=True,
+        media_resolution="high",
+        timeout_ms=180_000,
     )
+    assert answer == Answer(text="ciao") and model == "m1"
+    url, body, timeout = fake_post["seen"][0]
+    assert url.endswith("/internal/ai/generate") and timeout == 180
+    assert body["feature"] == "import_recipes" and body["fast"] is True
+    assert body["media_resolution"] == "high" and body["user"].endswith("0001")
+    assert body["parts"][0] == {"text": "leggi"}
+    assert body["parts"][1]["mime"] == "application/pdf"
 
 
-@pytest.fixture
-def fake_gemini(monkeypatch):
-    """``behaviour[model]``: una risposta o un'eccezione da alzare."""
-    behaviour: dict = {}
-    calls: list[str] = []
-
-    class FakeModels:
-        def generate_content(self, *, model, contents, config):
-            calls.append(model)
-            outcome = behaviour.get(model, _response())
-            if isinstance(outcome, Exception):
-                raise outcome
-            return outcome
-
-    class FakeClient:
-        def __init__(self, **kwargs):
-            self.models = FakeModels()
-
-    monkeypatch.setattr("google.genai.Client", FakeClient)
-    monkeypatch.setattr(ai.time, "sleep", lambda seconds: None)
-    cache.clear()
-    return behaviour, calls
-
-
-def _ask(user=None):
-    return ai.generate(lambda types: ["ciao"], Answer, feature="test", user=user)
+@pytest.mark.parametrize(
+    ("status", "code", "kind"),
+    [
+        (503, "overloaded", ai.AIOverloaded),
+        (402, "needs_key", ai.AIBudgetExceeded),
+        (402, "limit", ai.AIBudgetExceeded),
+        (402, "house_empty", ai.AIBudgetExceeded),
+        (400, "bad_request", ai.AIError),
+    ],
+)
+def test_errori_tradotti(fake_post, status, code, kind):
+    fake_post["status"] = status
+    fake_post["payload"] = {
+        "code": code, "detail": "Messaggio", "account_url": "https://cornhub.test/account/ai/"
+    }
+    with pytest.raises(kind) as exc:
+        ai.generate(["x"], Answer, feature="ask")
+    assert str(exc.value) == "Messaggio" and exc.value.code == code
+    assert exc.value.account_url.endswith("/account/ai/")
+    # Solo un sovraccarico e' da riprovare; gli altri fermano il lavoro.
+    assert isinstance(exc.value, ai.AIOverloaded) == (code == "overloaded")
 
 
-@override_settings(GEMINI_API_KEY="")
-def test_senza_chiave():
-    with pytest.raises(ai.AIError, match="GEMINI_API_KEY"):
-        _ask()
+def test_immagine(fake_post):
+    fake_post["payload"] = {"image": "aW1n", "mime": "image/png", "model": "img"}
+    data, mime, model = ai.generate_image("un piatto", feature="recipe_image")
+    assert (data, mime, model) == (b"img", "image/png", "img")
+    assert fake_post["seen"][0][1]["feature"] == "recipe_image"
 
 
-@override_settings(GEMINI_API_KEY="k", GEMINI_MODEL="main", GEMINI_FALLBACK_MODELS=["spare"])
-def test_risposta_e_registro(fake_gemini, user):
-    answer, model = _ask(user)
-    assert answer.text == "ciao"
-    assert model == "main"
-    call = AiCall.objects.get()
-    assert (call.feature, call.model, call.ok, call.user) == ("test", "main", True, user)
-    assert (call.input_tokens, call.output_tokens) == (120, 30)
-
-
-@override_settings(GEMINI_API_KEY="k", GEMINI_MODEL="main", GEMINI_FALLBACK_MODELS=["spare"])
-def test_modello_sovraccarico_passa_alla_riserva(fake_gemini):
-    behaviour, calls = fake_gemini
-    behaviour["main"] = errors.ServerError(503, {"error": {"message": "overloaded"}})
-    _, model = _ask()
-    assert model == "spare"
-    assert calls == ["main", "spare"]
-    # Il principale resta giu': la chiamata dopo parte dalla riserva.
-    calls.clear()
-    _ask()
-    assert calls == ["spare"]
-    assert AiCall.objects.filter(ok=False).count() == 1
-
-
-@override_settings(GEMINI_API_KEY="k", GEMINI_MODEL="main", GEMINI_FALLBACK_MODELS=["spare"])
-def test_tutti_giu_dopo_i_tentativi(fake_gemini):
-    behaviour, calls = fake_gemini
-    behaviour["main"] = errors.ServerError(503, {"error": {"message": "overloaded"}})
-    behaviour["spare"] = errors.ClientError(429, {"error": {"message": "quota"}})
-    with pytest.raises(ai.AIError, match="sovraccarico"):
-        _ask()
-    # Tre giri (due pause) su due modelli.
-    assert len(calls) == 6
-
-
-@override_settings(GEMINI_API_KEY="k", GEMINI_MODEL="main", GEMINI_FALLBACK_MODELS=["spare"])
-def test_chiave_rifiutata_si_ferma_subito(fake_gemini):
-    behaviour, calls = fake_gemini
-    behaviour["main"] = errors.ClientError(403, {"error": {"message": "denied"}})
-    with pytest.raises(ai.AIError, match="rifiutato la chiave"):
-        _ask()
-    assert calls == ["main"]
-
-
-@override_settings(GEMINI_API_KEY="k", GEMINI_MODEL="main", GEMINI_FALLBACK_MODELS=[])
-def test_risposta_non_valida(fake_gemini):
-    behaviour, _calls = fake_gemini
-    behaviour["main"] = _response("non e' json")
-    with pytest.raises(ai.AIError, match="formato"):
-        _ask()
-
-
-@override_settings(GEMINI_MODEL="main", GEMINI_FALLBACK_MODELS=["spare"], GEMINI_MODEL_FAST="lite")
-def test_modello_veloce_davanti_per_le_funzioni_interattive():
-    cache.clear()
-    assert ai.models_in_order() == ["main", "spare"]
-    assert ai.models_in_order(fast=True) == ["lite", "main", "spare"]
-    # Se il veloce e' giu', si passa agli altri senza aspettarlo.
-    ai.mark_down("lite")
-    assert ai.models_in_order(fast=True) == ["main", "spare", "lite"]
-    cache.clear()
-
-
-@pytest.fixture
-def tier_gemini(monkeypatch):
-    """Registra il service_tier chiesto e risponde col livello servito nell'header."""
-    seen: list = []
-
-    class FakeModels:
-        def generate_content(self, *, model, contents, config):
-            seen.append(config.service_tier)
-            response = _response()
-            served = "priority" if config.service_tier == "priority" else "standard"
-            response.sdk_http_response = SimpleNamespace(headers={"x-gemini-service-tier": served})
-            return response
-
-    class FakeClient:
-        def __init__(self, **kwargs):
-            self.models = FakeModels()
-
-    monkeypatch.setattr("google.genai.Client", FakeClient)
-    cache.clear()
-    return seen
-
-
-@override_settings(GEMINI_API_KEY="k", GEMINI_PRIORITY=False)
-def test_priorita_spenta(tier_gemini):
-    ai.generate(lambda types: ["ciao"], Answer, feature="test", fast=True)
-    assert tier_gemini == [None]
-    assert AiCall.objects.get().service_tier == "standard"
-
-
-@override_settings(GEMINI_API_KEY="k", GEMINI_PRIORITY=True)
-def test_priorita_solo_per_le_funzioni_interattive(tier_gemini):
-    ai.generate(lambda types: ["ciao"], Answer, feature="interattiva", fast=True)
-    ai.generate(lambda types: ["ciao"], Answer, feature="background")
-    assert tier_gemini == ["priority", None]
-    served = dict(AiCall.objects.values_list("feature", "service_tier"))
-    assert served == {"interattiva": "priority", "background": "standard"}
-
-
-@override_settings(GEMINI_API_KEY="k", GEMINI_MODEL_IMAGE="img")
-def test_immagine_vuota_registrata_come_non_riuscita(monkeypatch):
-    class FakeModels:
-        def generate_content(self, *, model, contents, config):
-            return SimpleNamespace(
-                candidates=[SimpleNamespace(content=SimpleNamespace(parts=[]))],
-                usage_metadata=None,
-            )
-
-    class FakeClient:
-        def __init__(self, **kwargs):
-            self.models = FakeModels()
-
-    monkeypatch.setattr("google.genai.Client", FakeClient)
-    with pytest.raises(ai.AINoImage):
-        ai.generate_image("un piatto", feature="recipe_image")
-    call = AiCall.objects.get()
-    assert (call.ok, call.error) == (False, "nessuna immagine")
+def test_spenta_senza_token(settings):
+    settings.CORNHUB_APP_TOKEN = ""
+    assert not ai.is_enabled()
+    with pytest.raises(ai.AIError):
+        ai.generate(["x"], Answer, feature="ask")

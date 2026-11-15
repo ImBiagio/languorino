@@ -158,15 +158,15 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 50,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exceptions.exception_handler",
-    # Solo le view con ``throttle_scope`` sono limitate: login, registrazione e
-    # le chiamate agli LLM. I contatori stanno nella cache Django, cioe' Redis.
-    # AiBudgetThrottle e' ScopedRateThrottle piu' il tetto giornaliero delle
-    # chiamate a Gemini sulle view "ai" (apps/ai/budget.py).
-    "DEFAULT_THROTTLE_CLASSES": ("apps.ai.budget.AiBudgetThrottle",),
+    # Solo le view con ``throttle_scope`` sono limitate: login, refresh e le
+    # chiamate all'AI. I contatori stanno nella cache Django, cioe' Redis. I
+    # limiti di spesa dell'AI li tiene cornhub (ADR 0021): qui resta solo il
+    # freno contro le raffiche.
+    "DEFAULT_THROTTLE_CLASSES": ("rest_framework.throttling.ScopedRateThrottle",),
     "DEFAULT_THROTTLE_RATES": {
         "auth": env("THROTTLE_AUTH", "10/min"),
         "refresh": env("THROTTLE_REFRESH", "60/min"),
-        # Ogni chiamata a Gemini consuma la quota della chiave.
+        # Ogni chiamata all'AI passa da cornhub e costa a qualcuno.
         "ai": env("THROTTLE_AI", "60/hour"),
         # Pagina pubblica delle ricette condivise (senza login) e copia.
         "public": env("THROTTLE_PUBLIC", "60/min"),
@@ -211,11 +211,6 @@ REFRESH_COOKIE_SECURE = env_bool("REFRESH_COOKIE_SECURE", True)
 REFRESH_COOKIE_SAMESITE = env("REFRESH_COOKIE_SAMESITE", "Lax")
 REFRESH_COOKIE_PATH = "/api/auth"
 
-REQUIRE_EMAIL_VERIFICATION = env_bool("REQUIRE_EMAIL_VERIFICATION", True)
-# Codice di invito: se impostato, /api/auth/register accetta solo chi lo
-# manda (``invite_code``). Vuoto = registrazione aperta.
-SIGNUP_CODE = env("SIGNUP_CODE", "").strip()
-
 # --- Celery ---
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://redis:6379/1")
 # Nessuno legge il valore di ritorno dei task: lo stato sta nel DB. Senza
@@ -224,7 +219,7 @@ CELERY_TASK_IGNORE_RESULT = True
 CELERY_TASK_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = TIME_ZONE
-# Tutto cio' che chiama Gemini va sulla coda "ai", con un worker suo a
+# Tutto cio' che chiama l'AI (via cornhub) va sulla coda "ai", con un worker suo a
 # concorrenza bassa: un import lungo non blocca le mail e non si sfora la quota.
 CELERY_TASK_ROUTES = {
     "apps.jobs.tasks.run_job": {"queue": "ai"},
@@ -248,10 +243,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.plans.tasks.resume_stalled_plans",
         "schedule": crontab(minute="*/10"),
     },
-    # Illustrazioni dei ricettari ferme per il tetto del giorno (ADR 0015).
+    # Foto e illustrazioni dei ricettari rimaste appese (worker riavviato).
     "resume-book-images": {
         "task": "apps.recipes.tasks.resume_book_images",
-        "schedule": crontab(hour=5, minute=15),
+        "schedule": crontab(minute="*/10"),
     },
     # Idee di "cosa cucino oggi" mai salvate, dopo una settimana.
     "clean-cook-ideas": {
@@ -289,41 +284,12 @@ UPLOAD_MAX_BYTES = int(env("UPLOAD_MAX_BYTES", str(55 * 1024 * 1024)))
 FILE_UPLOAD_MAX_MEMORY_SIZE = UPLOAD_MAX_BYTES
 DATA_UPLOAD_MAX_MEMORY_SIZE = UPLOAD_MAX_BYTES + 1024 * 1024
 
-# --- LLM (Gemini, Google AI Studio; ADR 0005) ---
-# Vuota: le funzioni che usano l'LLM restano spente.
-GEMINI_API_KEY = env("GEMINI_API_KEY", "")
-# Leggere foto e PDF di ricette vuole un modello "flash" pieno; se e'
-# sovraccarico si passa alle riserve (apps/ai/client.py, come in soldino).
-GEMINI_MODEL = env("GEMINI_MODEL", "gemini-flash-latest")
-GEMINI_FALLBACK_MODELS = env_list("GEMINI_FALLBACK_MODELS", "gemini-flash-lite-latest")
-# Quanto resta "giu'" un modello che ha risposto sovraccarico.
-GEMINI_MODEL_COOLDOWN = int(env("GEMINI_MODEL_COOLDOWN", "300"))
-# Il modello delle funzioni interattive (intervista, frigo, idee): senza
-# "thinking", risponde in pochi secondi (ADR 0014).
-GEMINI_MODEL_FAST = env("GEMINI_MODEL_FAST", "gemini-flash-lite-latest")
-# Priority inference per le funzioni interattive: costa dal 75 al 100% in
-# piu' e vale dal livello di pagamento 2 (ADR 0014). Spento di default.
-GEMINI_PRIORITY = env_bool("GEMINI_PRIORITY", False)
-# Intervista a voce in tempo reale (Live API, ADR 0014).
-GEMINI_MODEL_LIVE = env("GEMINI_MODEL_LIVE", "gemini-3.1-flash-live-preview")
-# Immagini delle ricette (ADR 0011): modello a parte, un tetto al giorno per utente.
-# Il piano gratuito di Gemini non ha quota per le immagini: serve la fatturazione.
-GEMINI_MODEL_IMAGE = env("GEMINI_MODEL_IMAGE", "gemini-2.5-flash-image")
-AI_IMAGES_PER_DAY = int(env("AI_IMAGES_PER_DAY", "20"))
+# --- Immagini delle ricette (ADR 0011) ---
 RECIPE_IMAGE_MAX_SIDE = 1600
-# Tetto alla spesa (apps/ai/budget.py): chiamate riuscite a Gemini al giorno,
-# per utente e per tutta l'app, immagini comprese. La registrazione e' aperta
-# e THROTTLE_AI limita solo l'ora. I default stanno larghi per una famiglia:
-# il giorno piu' pesante (un ricettario PDF di 200 pagine letto e illustrato)
-# sta sotto le 300 chiamate. 0 = nessun tetto.
-AI_CALLS_PER_DAY = int(env("AI_CALLS_PER_DAY", "400"))
-AI_CALLS_PER_DAY_GLOBAL = int(env("AI_CALLS_PER_DAY_GLOBAL", "2000"))
-# Conversazioni a voce in tempo reale aperte al giorno per utente: una dura
-# fino a 15 minuti di audio e costa molto piu' di una chiamata di testo.
-AI_LIVE_SESSIONS_PER_DAY = int(env("AI_LIVE_SESSIONS_PER_DAY", "20"))
 
 # --- Lavori lunghi (apps/jobs) ---
-# Gemini accetta al massimo ~20 MB per richiesta: i limiti stanno sotto.
+# Il gateway (e Gemini dietro) accetta al massimo ~20 MB per richiesta: i
+# limiti stanno sotto.
 JOB_MAX_FILES = int(env("JOB_MAX_FILES", "8"))
 JOB_MAX_IMAGE_BYTES = int(env("JOB_MAX_IMAGE_BYTES", str(10 * 1024 * 1024)))
 JOB_MAX_PDF_BYTES = int(env("JOB_MAX_PDF_BYTES", str(18 * 1024 * 1024)))
@@ -342,9 +308,22 @@ BOOK_MAX_BYTES = int(env("BOOK_MAX_BYTES", str(50 * 1024 * 1024)))
 BOOK_MAX_PAGES = int(env("BOOK_MAX_PAGES", "200"))
 BOOK_PAGES_PER_CHUNK = int(env("BOOK_PAGES_PER_CHUNK", "4"))
 
-# Il link di reset vale 2 ore (il default di Django sono 3 giorni).
-PASSWORD_RESET_TIMEOUT = int(env("PASSWORD_RESET_TIMEOUT", str(2 * 60 * 60)))
 FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", "http://localhost:5177")
+# Dove il browser raggiunge l'API (il ritorno dal login di cornhub). In
+# produzione e' lo stesso dominio del frontend; in locale la porta dell'API.
+API_PUBLIC_URL = env("API_PUBLIC_URL", FRONTEND_BASE_URL)
+
+# --- cornhub: login unico e intelligenza artificiale (ADR 0021) ---
+# Il browser va su CORNHUB_URL; il backend parla con cornhub sulla rete
+# interna Docker "cornhub" (CORNHUB_INTERNAL_URL). Client e token si creano
+# su cornhub con `manage.py register_app languorino` e vanno nel .env e nel vault.
+CORNHUB_URL = env("CORNHUB_URL", "https://cornhub.it")
+CORNHUB_INTERNAL_URL = env("CORNHUB_INTERNAL_URL", "http://cornhub-backend:8000")
+CORNHUB_APP_SLUG = env("CORNHUB_APP_SLUG", "languorino")
+CORNHUB_CLIENT_ID = env("CORNHUB_CLIENT_ID", "")
+CORNHUB_CLIENT_SECRET = env("CORNHUB_CLIENT_SECRET", "")
+# Token per il gateway AI e lo stato degli utenti. Vuoto: AI spenta.
+CORNHUB_APP_TOKEN = env("CORNHUB_APP_TOKEN", "")
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5177")

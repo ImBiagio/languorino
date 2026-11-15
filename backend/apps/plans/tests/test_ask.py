@@ -23,7 +23,7 @@ def gemini(monkeypatch):
     state = {"prompts": []}
 
     def fake(contents, schema, **kwargs):
-        state["prompts"].append(contents(None)[-1])
+        state["prompts"].append(contents[-1])
         state["kwargs"] = kwargs
         return AskReply(reply="  80 g a pranzo + 70 g a cena = 150 g di pasta.  "), "finto"
 
@@ -148,7 +148,7 @@ def test_api_crea_il_job(user, api, plan, gemini, django_capture_on_commit_callb
         {"role": "assistant", "text": "Chiedimi pure."},
         {"role": "user", "text": "Cosa ceno stasera?"},
     ]
-    with override_settings(GEMINI_API_KEY="k"), django_capture_on_commit_callbacks(execute=True):
+    with django_capture_on_commit_callbacks(execute=True):
         response = api(user).post(URL, {"messages": messages}, format="json")
     assert response.status_code == 202, response.data
     job = Job.objects.get(id=response.data["id"])
@@ -158,7 +158,7 @@ def test_api_crea_il_job(user, api, plan, gemini, django_capture_on_commit_callb
 
 
 def test_api_vuole_una_domanda(user, api):
-    with override_settings(GEMINI_API_KEY="k"):
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
         response = api(user).post(
             URL, {"messages": [{"role": "assistant", "text": "Ciao"}]}, format="json"
         )
@@ -166,7 +166,7 @@ def test_api_vuole_una_domanda(user, api):
 
 
 def test_api_senza_chiave(user, api):
-    with override_settings(GEMINI_API_KEY=""):
+    with override_settings(CORNHUB_APP_TOKEN=""):
         response = api(user).post(
             URL, {"messages": [{"role": "user", "text": "Ciao"}]}, format="json"
         )

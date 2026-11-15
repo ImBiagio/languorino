@@ -3,11 +3,16 @@ from .base import REST_FRAMEWORK, env
 
 DEBUG = False
 CELERY_TASK_ALWAYS_EAGER = True
-# Niente chiamate vere agli LLM nei test: si fingono nei test che li riguardano.
-GEMINI_API_KEY = ""
-REQUIRE_EMAIL_VERIFICATION = False
-# Il .env di chi lancia i test non deve chiudere la registrazione.
-SIGNUP_CODE = ""
+# Niente chiamate vere a cornhub nei test: si fingono con httpx finto o
+# sostituendo le funzioni che chiamano l'AI.
+CORNHUB_URL = "https://cornhub.test"
+CORNHUB_INTERNAL_URL = "http://cornhub-backend:8000"
+CORNHUB_APP_SLUG = "languorino"
+CORNHUB_CLIENT_ID = "client-test"
+CORNHUB_CLIENT_SECRET = "secret-test"
+CORNHUB_APP_TOKEN = "token-test"
+API_PUBLIC_URL = "https://app.test"
+FRONTEND_BASE_URL = "https://app.test"
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
