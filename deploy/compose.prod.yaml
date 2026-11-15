@@ -28,6 +28,11 @@ x-backend: &backend
     - media:/app/media
   labels:
     - com.centurylinklabs.watchtower.enable=true
+  # "cornhub": la rete interna da cui backend, worker e beat parlano con
+  # cornhub (token OIDC, gateway AI; ADR 0021) senza passare da internet.
+  networks:
+    - default
+    - cornhub
 
 services:
   db:
@@ -86,7 +91,7 @@ services:
       backend:
         condition: service_healthy
 
-  # Coda "ai" (ADR 0005): le chiamate a Gemini, due alla volta.
+  # Coda "ai" (ADR 0005): le chiamate all'AI via cornhub, due alla volta.
   worker-ai:
     <<: *backend
     # Piu' del worker: qui si tengono in memoria PDF e pagine disegnate.
@@ -201,6 +206,9 @@ services:
 
 networks:
   edge:
+    external: true
+  # Creata dal compose di cornhub (repo cornhub, deploy/compose.yaml).
+  cornhub:
     external: true
 
 volumes:

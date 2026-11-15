@@ -31,27 +31,30 @@ cp .env.example .env && docker compose up --build
 Le porte sono diverse dagli altri progetti per farli girare insieme; per lo
 stesso motivo il cookie di refresh si chiama `languorino_refresh`.
 
-Con `.env.example` la verifica email è disattivata (`REQUIRE_EMAIL_VERIFICATION=0`):
-ci si registra ed entra subito. Le mail finiscono nei log del worker:
-`docker compose logs -f worker`. Il codice è montato come volume (hot reload);
+Per entrare serve cornhub in locale (repo cornhub, `http://localhost:8095`):
+login e AI passano da lì ([ADR 0021](docs/decisions/0021-account-e-ai-tramite-cornhub.md)).
+Registra l'app su cornhub con `manage.py register_app languorino` (comando
+completo in `.env.example`) e copia client id, secret e token in `.env`.
+Le mail finiscono nei log del worker: `docker compose logs -f worker`. Il codice è montato come volume (hot reload);
 dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
 
 ---
 
 ## Fondamenta
 
-- **Auth JWT ibrida**: access token (15 min) in memoria, refresh (14 giorni) in
-  cookie `httpOnly` su `/api/auth`, blacklist a logout e cambio password, un
-  solo refresh in volo nel client (`frontend/src/lib/api.ts`). Registrazione,
-  conferma email, reset password, cambio password. Registrazione aperta, o
-  solo con un codice di invito se `SIGNUP_CODE` è impostato. Rate limit su
-  login/registrazione (`THROTTLE_AUTH`) e sulle chiamate all'LLM (`THROTTLE_AI`).
-- **Tetto alla spesa per l'AI** (`apps/ai/budget.py`): oltre al limite orario,
-  chiamate riuscite a Gemini al giorno per utente (`AI_CALLS_PER_DAY`, 400) e
-  per tutta l'app (`AI_CALLS_PER_DAY_GLOBAL`, 2000), conversazioni a voce per
-  utente (`AI_LIVE_SESSIONS_PER_DAY`, 20), immagini (`AI_IMAGES_PER_DAY`).
-  Finito il tetto le view rispondono 429 e i lavori in coda si fermano con lo
-  stesso messaggio, fino a mezzanotte; 0 spegne un tetto.
+- **Account unico su cornhub** ([ADR 0021](docs/decisions/0021-account-e-ai-tramite-cornhub.md)):
+  registrazione, login, password ed email stanno su cornhub (OpenID Connect,
+  `apps/users/sso.py`); gli account di prima si agganciano alla prima entrata
+  per email verificata. Poi la sessione è quella dell'app: access token (15
+  min) in memoria, refresh (14 giorni) in cookie `httpOnly` su `/api/auth`,
+  blacklist al logout, stato dell'account chiesto a cornhub a ogni refresh.
+  `manage.py export_cornhub_users` esporta gli utenti per il passaggio. Rate
+  limit su login (`THROTTLE_AUTH`) e sulle chiamate all'AI (`THROTTLE_AI`).
+- **AI tramite cornhub**: niente chiavi né tetti in Languorino. Funzioni
+  piccole sulla chiave di casa (quota in pannocchie), grandi sulla chiave
+  dell'utente nei suoi limiti; accanto ai loro bottoni `<AiCost>` dice chi
+  paga e quanto. Chiave mancante o limite raggiunto fermano il lavoro con il
+  messaggio e il link a cornhub.
 - **Mail** dal worker Celery dopo il commit, con retry, testo + HTML su un solo
   layout (`backend/templates/emails/`). In produzione SMTP di **Brevo**, lo
   stesso account di tutti i progetti (mittente `messagg@inoo.it`).
@@ -63,7 +66,8 @@ dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
   e task Celery (worker, worker-ai, beat) vanno a GlitchTip via `sentry-sdk`
   (`config/sentry.py`), senza dati personali, corpo delle richieste né variabili
   locali; `SENTRY_ENVIRONMENT` di default `production`. Vuoto = spento; nei test
-  non parte mai. Solo backend.
+  non parte mai. Il frontend usa `@sentry/react` con `VITE_SENTRY_DSN`, letta
+  alla build (variabile `SENTRY_DSN_FRONTEND` del repo su GitHub).
 - **Soft delete + audit**: `BaseModel` (UUID, `deleted_at`) e `django-simple-history`.
 - **Material 3**: ruoli M3 mappati in Tailwind, Roboto Flex, Roboto Mono per i
   numeri, Material Symbols Rounded. Rail su desktop, bottom bar e FAB sotto i
@@ -72,10 +76,11 @@ dopo nuove dipendenze ricostruisci l'immagine: `docker compose build backend`.
 - **i18n**: italiano sorgente, inglese in `backend/locale/en/LC_MESSAGES/`,
   frontend e backend sullo stesso catalogo gettext. Il nome dell'app sta in
   `settings.APP_NAME`, fuori dalle stringhe tradotte.
-- **LLM** ([ADR 0005](docs/decisions/0005-llm-e-lavori-lunghi.md)): chiave Gemini in `GEMINI_API_KEY`
-  (vuota = funzioni spente), modello in `GEMINI_MODEL` e riserve in `GEMINI_FALLBACK_MODELS`.
-  Le chiamate girano sulla coda Celery `ai` (servizio `worker-ai`); log con
-  `docker compose logs -f worker-ai`.
+- **LLM** ([ADR 0005](docs/decisions/0005-llm-e-lavori-lunghi.md), [0021](docs/decisions/0021-account-e-ai-tramite-cornhub.md)):
+  tutto passa da `apps/ai/client.py` verso il gateway di cornhub
+  (`CORNHUB_APP_TOKEN`; vuoto = funzioni spente), che sceglie modelli e
+  riserve. Le chiamate girano sulla coda Celery `ai` (servizio `worker-ai`);
+  log con `docker compose logs -f worker-ai`.
 
 ---
 
@@ -86,12 +91,12 @@ backend/
 ├── config/settings/     base · dev · prod · test
 ├── templates/emails/    layout unico delle mail
 └── apps/
-    ├── core/            BaseModel, methods (token, hash, mail), i18n, task mail
-    ├── users/           User custom + auth JWT + mail dell'account
+    ├── core/            BaseModel, methods (token, hash, mail), i18n, task mail, client di cornhub (cornhub.py), stima AI (ai_views.py)
+    ├── users/           User custom, login con cornhub (sso.py), sessione JWT, export verso cornhub
     ├── profiles/        profilo alimentare, gusti e allergie (14 allergeni UE), intervista (interview.py) e voce in tempo reale (live.py)
     ├── recipes/         ricette, tag, catalogo ingredienti (catalog.py), riconoscimento dei nomi, immagini (images.py),
     │                    import da foto (importing.py), calorie e macro (nutrition.py), ricettari PDF letti a pezzi (books.py, tasks.py), condivisione (sharing.py)
-    ├── ai/              client Gemini unico (riserve, retry, registro AiCall)
+    ├── ai/              adattatore verso il gateway AI di cornhub (eccezioni di sempre)
     ├── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
     ├── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py),
     │                    piano del nutrizionista letto da PDF/foto (nutritionist.py), chat su profilo e piano (ask.py), piano condiviso in sola lettura (sharing.py)
@@ -111,22 +116,22 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 
 | | |
 |---|---|
-| `POST /api/auth/register` · `login` · `refresh` · `logout` | account e sessione (refresh nel cookie) |
-| `GET /api/auth/config` | `{signup_code_required}`: con `SIGNUP_CODE` impostato la registrazione vuole `invite_code` (vuoto = aperta) |
-| `POST /api/auth/verify-email/{token}` · `verify-email/resend` | conferma dell'indirizzo |
-| `POST /api/auth/password` · `password-reset` · `password-reset/confirm` | cambio e reset della password |
-| `GET/PATCH /api/me` | account (nome visibile, lingua) |
+| `GET /api/auth/sso/start?next=` · `GET /api/auth/sso/callback` | login con cornhub (OIDC + PKCE), poi la sessione dell'app |
+| `POST /api/auth/refresh` · `logout` | sessione (refresh nel cookie); il logout risponde `{logout_url}` di cornhub |
+| `GET /api/auth/config` | `{login_url, account_url, ai_url, register_url}`: dove stanno login e account su cornhub |
+| `GET/PATCH /api/me` | account nell'app (indirizzo pubblico, lingua); nome ed email in sola lettura |
+| `GET /api/ai/quote?features=plan_week:4,…` | chi paga e quanto costa una funzione AI, chiesto a cornhub per l'utente |
 | `GET/PATCH /api/profile` · `POST /api/profile/complete` | profilo alimentare e fine del wizard |
 | `GET/POST /api/profile/preferences` · `DELETE …/{id}` | gusti, antipatie, allergie, intolleranze |
 | `POST /api/profile/interview` (JSON o multipart `messages`, `audio`) | un turno dell'intervista, anche a voce: job con risposta e proposte da confermare ([ADR 0013](docs/decisions/0013-intervista-e-voce.md)) |
-| `POST /api/profile/interview/live` · `POST …/interview/proposal` `{name, args}` | conversazione a voce in tempo reale con Gemini Live: token monouso vincolato · pulizia di quello che Gemini segna ([ADR 0014](docs/decisions/0014-modello-veloce-e-voce-in-tempo-reale.md)) |
+| `POST /api/profile/interview/live` · `POST …/interview/proposal` `{name, args}` | conversazione a voce in tempo reale con Gemini Live: token monouso vincolato, creato da cornhub · pulizia di quello che Gemini segna ([ADR 0014](docs/decisions/0014-modello-veloce-e-voce-in-tempo-reale.md)) |
 | `GET /api/ingredients?q=` | suggerimenti dal catalogo (e dagli ingredienti propri) |
 | `GET/POST /api/recipes` (`?q=`, `?tag=`, `?slot=`, `?max_minutes=`, `?difficulty=`, `?in_cookbook=`) · `GET/PATCH/DELETE …/{id}` | ricettario, con allergeni e avvisi dal profilo |
 | `GET /api/tags` · `DELETE /api/tags/{id}` | tag con il numero di ricette |
 | `GET/POST /api/jobs` (multipart `kind`, `files`) · `GET/DELETE /api/jobs/{id}` | lavori lunghi: import di ricette da foto e PDF |
 | `POST /api/jobs/{id}/retry` · `POST /api/jobs/{id}/confirm` `{recipes}` | riprova un lavoro non riuscito · le bozze riviste diventano ricette |
 | `GET/POST /api/recipe-books` (multipart `file`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/retry` | ricettari PDF letti a pezzi ([ADR 0006](docs/decisions/0006-ricettari-pdf.md)); le ricette con `GET /api/recipes?book={id}` |
-| `POST/DELETE /api/recipes/{id}/image` (multipart `file`) · `POST …/image/draw` | foto vera della ricetta o disegno di Gemini in un job ([ADR 0011](docs/decisions/0011-immagini-delle-ricette.md)) |
+| `POST/DELETE /api/recipes/{id}/image` (multipart `file`) · `POST …/image/draw` | foto vera della ricetta o disegno dell'AI in un job ([ADR 0011](docs/decisions/0011-immagini-delle-ricette.md)) |
 | `POST/DELETE /api/recipes/{id}/share` · `GET /api/shared/recipes/{token}` · `POST …/copy` | link di condivisione `/r/<token>`, pagina pubblica senza login, copia nel proprio ricettario ([ADR 0012](docs/decisions/0012-condivisione-delle-ricette.md)) |
 | `POST /api/recipes/{id}/share` `{visibility, renew?}` · `GET /api/public/profiles/{handle}` | visibilità privata, con il link o pubblica; profilo pubblico `/u/<handle>` con le ricette pubbliche ([ADR 0017](docs/decisions/0017-ricette-pubbliche-voti-e-commenti.md)) |
 | `PUT/DELETE /api/shared/recipes/{token}/rating` `{stars}` · `GET/POST …/comments` (multipart `text`, `parent`, `images`) · `DELETE /api/comments/{id}` | voti da 1 a 5 stelle, commenti con risposte e foto |
@@ -213,7 +218,9 @@ Primo avvio sul server:
 
 1. DNS: record A per `languor.inoo.it` → l'IP del server (come gli altri progetti);
 2. `~/languorino/compose.prod.yaml` (da `deploy/`) e `~/languorino/.env`
-   (modello `deploy/.env.prod.example`, SMTP Brevo come gli altri);
+   (modello `deploy/.env.prod.example`, SMTP Brevo come gli altri, `CORNHUB_*`
+   da `register_app languorino` sul server di cornhub). Backend, worker e beat
+   stanno anche sulla rete esterna `cornhub`, creata dal compose di cornhub;
 3. il blocco `languor.inoo.it { reverse_proxy languorino-web:80 }` nel Caddyfile
    dell'edge, che sta nel repo [homeserver](https://github.com/ImBiagio/homeserver)
    (`edge/`), applicato con `./deploy.sh edge` (valida, fa il backup e
@@ -229,6 +236,8 @@ Google Drive, la fa lo stack `~/offsite` del repo homeserver (`offsite/`).
 
 ## Test
 
-Backend con `pytest` + `factory-boy`: registrazione, login, conferma email,
-reset e cambio password, mail nella lingua dell'utente, catalogo delle
-traduzioni e scelta della lingua.
+Backend con `pytest` + `factory-boy`: login con cornhub finto (id_token
+firmati nel test, aggancio per email verificata, stato dell'account al
+refresh), adattatore AI e traduzione degli errori di cornhub, export degli
+utenti, catalogo delle traduzioni e scelta della lingua, e le funzioni
+dell'app con l'AI finta.

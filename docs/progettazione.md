@@ -232,7 +232,8 @@ libero), `label`, `quantity`, `unit`, `category`, `checked`, `in_pantry`
 
 **AiCall** (app `ai`): `user`, `feature`, `model`, `input_tokens`,
 `output_tokens`, `duration_ms`, `ok`. Serve a vedere quanto costa ogni
-funzione e a fermare un utente che esagera.
+funzione e a fermare un utente che esagera. *Tolto con l'ADR 0021: costi e
+limiti li tiene cornhub.*
 
 ---
 
@@ -452,13 +453,15 @@ ottenere" in testo libero. Poi l'attesa e la bozza da rivedere.
 - **Retry**: 429 e 503 di Gemini si riprovano con attesa crescente, al
   massimo tre volte; poi il job va in `failed` con un messaggio leggibile.
 - **Rate limit**: lo scope `ai` del template (`THROTTLE_AI`) sugli endpoint
-  che creano job, più un tetto giornaliero per funzione letto da `AiCall`.
+  che creano job, più un tetto giornaliero per funzione letto da `AiCall`
+  (oggi i limiti di spesa stanno su cornhub, ADR 0021).
 - **File**: upload nel volume `media` del template (già con backup notturno).
   Limiti: 10 MB per immagine, 20 MB per PDF, 5 minuti di audio. I file dei job
   si cancellano dopo 30 giorni; quelli dei piani del nutrizionista restano.
 - **Modelli**: `GEMINI_MODEL` (flash-lite) per i compiti veloci;
   `GEMINI_MODEL_PLAN` per generazione del piano e lettura dei PDF, dove serve
-  un modello più capace; `GEMINI_MODEL_IMAGE` per le immagini.
+  un modello più capace; `GEMINI_MODEL_IMAGE` per le immagini. (Oggi i
+  modelli li sceglie cornhub, ADR 0021.)
 - **Privacy**: profilo, patologie e peso non escono dal server se non nella
   forma ridotta del prompt. Eliminare l'account cancella tutto, file compresi.
   Nell'app un avviso chiaro: il piano generato non sostituisce medico o

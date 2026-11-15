@@ -1,5 +1,7 @@
 # 0015 — Immagini dei ricettari PDF: foto ritagliate dal PDF, poi illustrazioni AI
 
+> **Superata in parte da [0021](0021-account-e-ai-tramite-cornhub.md):** niente più tetto del giorno né ripresa al mattino: con la chiave mancante o il limite raggiunto su cornhub le illustrazioni si fermano col messaggio.
+
 Le ricette lette da un ricettario PDF (ADR 0006) prendono un'immagine in due
 passi, che partono da soli a fine lettura. Per i ricettari già letti si
 avviano dal bottone "Cerca le foto e disegna le altre", con `POST

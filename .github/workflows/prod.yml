@@ -86,5 +86,7 @@ jobs:
           tags: |
             ghcr.io/imbiagio/${{ matrix.image }}:prod
             ghcr.io/imbiagio/${{ matrix.image }}:${{ github.sha }}
+          build-args: |
+            VITE_SENTRY_DSN=${{ vars.SENTRY_DSN_FRONTEND }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}

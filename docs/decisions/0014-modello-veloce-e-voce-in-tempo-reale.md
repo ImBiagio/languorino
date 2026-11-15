@@ -1,5 +1,7 @@
 # 0014 — Modello veloce per le funzioni interattive e intervista a voce in tempo reale
 
+> **Superata in parte da [0021](0021-account-e-ai-tramite-cornhub.md):** modello veloce, priorità e modello Live li sceglie cornhub (`fast=True`); il token di Gemini Live lo crea cornhub (`interview_live`). La voce dal browser resta come qui.
+
 **Modello veloce.** Le funzioni che l'utente aspetta guardando lo schermo
 (turno dell'intervista, foto del frigo, idee di "cosa cucino oggi") partono
 dal modello veloce, `GEMINI_MODEL_FAST` (default `gemini-flash-lite-latest`).

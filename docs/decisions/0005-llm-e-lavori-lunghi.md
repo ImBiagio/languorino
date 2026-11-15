@@ -1,5 +1,7 @@
 # 0005 — Gemini dietro l'app `ai`, lavori lunghi nell'app `jobs`
 
+> **Superata in parte da [0021](0021-account-e-ai-tramite-cornhub.md):** chiave, modelli e riserve stanno su cornhub; `apps/ai/client.py` è un adattatore verso il suo gateway e `AiCall` non c'è più. I lavori lunghi in `apps/jobs` restano come qui.
+
 Ogni chiamata all'LLM passa da `apps/ai/client.py` (`generate`): Gemini con
 l'SDK `google-genai`, API `v1beta` esplicita, risposta JSON vincolata a un
 modello pydantic, un modello principale (`GEMINI_MODEL`, default

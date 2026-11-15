@@ -1,5 +1,7 @@
 # 0011 — Immagini delle ricette: foto vera che vince, disegno di Gemini su richiesta
 
+> **Superata in parte da [0021](0021-account-e-ai-tramite-cornhub.md):** il disegno passa da cornhub (`recipe_image`, funzione grande) e il tetto `AI_IMAGES_PER_DAY` non c'è più.
+
 Una ricetta ha un campo `image`, sempre WebP, e un `image_source` che vale
 `photo` o `ai`. Senza immagine si vede il disegno della sua categoria, come
 prima (ADR 0003). Ci sono due modi di avere un'immagine:

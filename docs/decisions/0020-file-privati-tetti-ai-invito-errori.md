@@ -1,5 +1,7 @@
 # 0020 — File privati fuori da `/media`, tetto giornaliero all'AI, codice di invito, errori a GlitchTip
 
+> **Superata in parte da [0021](0021-account-e-ai-tramite-cornhub.md):** tetto giornaliero all'AI e codice di invito non ci sono più (limiti e accessi su cornhub). File privati ed errori a GlitchTip restano, e GlitchTip ora riceve anche gli errori del frontend.
+
 Quattro scelte nate dalla revisione di sicurezza del 2026-11-14 (il numero
 salta 0017–0019, presi dai branch delle feature non ancora unite).
 
