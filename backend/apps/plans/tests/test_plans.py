@@ -936,3 +936,29 @@ def test_rileggere_dai_file(user, api, reading, django_capture_on_commit_callbac
 
     with override_settings(CORNHUB_APP_TOKEN="token-test"):
         assert api(UserFactory()).post(url).status_code == 404
+
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_piano_cancellato_durante_la_generazione(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks, caplog, monkeypatch, fails
+):
+    """Il piano cancellato (o rifatto da capo) mentre una settimana si genera:
+    il task si ferma in silenzio, senza errori su GlitchTip, sia che la
+    generazione finisca sia che fallisca sulla chiave esterna."""
+    from django.db import IntegrityError
+
+    from apps.plans import tasks
+
+    def generate_week(plan, week):
+        MealPlan.all_objects.filter(pk=plan.pk).hard_delete()
+        if fails:
+            raise IntegrityError("plans_plannedmeal violates foreign key constraint")
+
+    monkeypatch.setattr(tasks, "generate_week", generate_week)
+    with caplog.at_level("INFO", logger="apps.plans.tasks"):
+        response = _create(api, user, django_capture_on_commit_callbacks)
+    assert response.status_code == 202
+    assert not MealPlan.all_objects.exists()
+    assert "cancellato durante la generazione" in caplog.text
+    assert not [r for r in caplog.records if r.levelname == "ERROR"]

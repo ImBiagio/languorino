@@ -49,6 +49,8 @@ def plan_week(self, plan_id: str) -> None:
     with override(plan.language):
         try:
             generate_week(plan, plan.weeks_done)
+            if not _still_there(plan):
+                return
             with transaction.atomic():
                 plan.weeks_done += 1
                 plan.error = ""
@@ -72,10 +74,25 @@ def plan_week(self, plan_id: str) -> None:
         except SoftTimeLimitExceeded:
             plan.error = _("Questa settimana ci sta mettendo troppo. Riprova.")
         except Exception:
+            if not _still_there(plan):
+                return
             logger.exception("Generazione del piano %s non riuscita", plan.id)
             plan.error = _("Qualcosa è andato storto. Riprova tra poco.")
+    if not _still_there(plan):
+        return
     plan.status = MealPlan.Status.FAILED
     plan.save(update_fields=["status", "error", "updated_at"])
+
+
+def _still_there(plan: MealPlan) -> bool:
+    """Il piano puo' essere cancellato (o rifatto da capo) mentre una
+    settimana si sta generando: allora il lavoro si butta in silenzio,
+    invece di salvare pasti su un piano che non c'e' piu' (errore di chiave
+    esterna) e un errore che non vedrebbe nessuno."""
+    if MealPlan.objects.filter(pk=plan.pk).exists():
+        return True
+    logger.info("Piano %s cancellato durante la generazione: lavoro scartato", plan.pk)
+    return False
 
 
 @shared_task
