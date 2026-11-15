@@ -156,9 +156,15 @@ def _headers() -> dict:
 
 
 def user_status(sub: str) -> dict:
-    """Stato dell'account su cornhub (cache 2 minuti). Se cornhub non
-    risponde si lascia passare: un riavvio di cornhub non deve buttare fuori
-    tutti; un account spento perde l'accesso al primo controllo riuscito."""
+    """Stato dell'account su cornhub (cache 2 minuti).
+
+    Solo un guasto di cornhub (rete, 5xx) lascia passare, segnato
+    ``unknown``: un riavvio di cornhub non deve buttare fuori tutti, e
+    l'account spento perde l'accesso al primo controllo riuscito. Un rifiuto
+    (401/403: token dell'app vuoto, sbagliato o app disattivata; 404: utente
+    sconosciuto) chiude: altrimenti un errore di configurazione terrebbe
+    dentro per sempre chi e' stato spento.
+    """
     key = f"cornhub:user:{sub}"
     cached = cache.get(key)
     if cached is not None:
@@ -168,13 +174,16 @@ def user_status(sub: str) -> dict:
     except httpx.HTTPError:
         logger.warning("cornhub non risponde al controllo dell'utente")
         return {"active": True, "allowed": True, "unknown": True}
-    if response.status_code == 404:
-        data = {"active": False, "allowed": False}
-    elif response.status_code == 200:
-        data = response.json()
-    else:
+    if response.status_code >= 500:
         logger.warning("cornhub: stato utente %s", response.status_code)
         return {"active": True, "allowed": True, "unknown": True}
+    if response.status_code == 200:
+        data = response.json()
+    else:
+        if response.status_code in (401, 403):
+            logger.error("cornhub rifiuta l'app (%s): controlla CORNHUB_APP_TOKEN",
+                         response.status_code)
+        data = {"active": False, "allowed": False}
     cache.set(key, data, 120)
     return data
 
@@ -266,7 +275,7 @@ def generate[Schema: BaseModel](
     temperature: float | None = None,
     max_output_tokens: int = 8192,
     media_resolution: str = "",
-    timeout: int = 150,
+    timeout: int = 300,
 ) -> AIResult:
     """Una richiesta di testo (con foto, PDF o audio da ``file_part``).
 
@@ -298,7 +307,7 @@ def generate[Schema: BaseModel](
 
 
 def image(
-    feature: str, prompt: str, *, user=None, timeout: int = 150
+    feature: str, prompt: str, *, user=None, timeout: int = 300
 ) -> tuple[bytes, str, AIResult]:
     """Un'immagine disegnata: (byte, tipo MIME, dettagli)."""
     body = {"feature": feature, "user": _sub(user), "prompt": prompt}
