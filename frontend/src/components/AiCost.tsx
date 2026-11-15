@@ -18,14 +18,17 @@ export function AiCost({
   feature,
   count = 1,
   note,
+  fast = false,
 }: {
   feature: string
   count?: number
   note?: string
+  /** Come la chiamata vera (fast=True): la stima usa lo stesso modello. */
+  fast?: boolean
 }) {
   const n = Math.max(1, Math.round(count))
   const features = n > 1 ? [`${feature}:${n}`] : [feature]
-  const { data } = useAiQuote(features)
+  const { data } = useAiQuote(features, fast)
   const item = data?.items[0]
   if (!item || !data) return null
 

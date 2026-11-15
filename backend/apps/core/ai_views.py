@@ -26,7 +26,8 @@ class AiQuoteView(APIView):
         if not wanted:
             return Response({"detail": "features?"}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            return Response(cornhub.quote(wanted, user=request.user))
+            fast = request.query_params.get("fast") in ("1", "true")
+            return Response(cornhub.quote(wanted, user=request.user, fast=fast))
         except cornhub.AIError as exc:
             return Response({"detail": exc.message, "code": exc.code},
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
