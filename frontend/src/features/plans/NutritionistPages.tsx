@@ -19,6 +19,7 @@ import {
   useRereadNutritionistPlan,
   useUpdateNutritionistPlan,
 } from '../../api/hooks'
+import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
 import { FoodPattern } from '../../components/illustrations'
@@ -195,23 +196,26 @@ export function NutritionistHomePage() {
           )}
           {job?.status === 'failed' && <ErrorBanner error={job.error} />}
           <ErrorBanner error={read.error} />
-          <button
-            type="button"
-            className="btn-filled justify-self-end"
-            disabled={!files.length || reading}
-            onClick={async () => {
-              try {
-                const created = await read.mutateAsync(files)
-                setJobId(created.id)
-                setFiles([])
-              } catch {
-                // Errore sopra.
-              }
-            }}
-          >
-            <Icon name="auto_awesome" size={20} />
-            {gettext('Leggi il piano')}
-          </button>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <AiCost feature="nutritionist_plan" />
+            <button
+              type="button"
+              className="btn-filled"
+              disabled={!files.length || reading}
+              onClick={async () => {
+                try {
+                  const created = await read.mutateAsync(files)
+                  setJobId(created.id)
+                  setFiles([])
+                } catch {
+                  // Errore sopra.
+                }
+              }}
+            >
+              <Icon name="auto_awesome" size={20} />
+              {gettext('Leggi il piano')}
+            </button>
+          </div>
         </section>
 
         <p className="flex items-start gap-2 px-1 text-body-small text-on-surface-variant">

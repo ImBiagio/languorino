@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 
+import { ApiError } from '../lib/api'
 import { initials } from '../lib/format'
 import { useCloseOnEscape } from '../lib/hooks'
 import { gettext } from '../lib/i18n'
@@ -404,13 +405,27 @@ export function RowsSkeleton({ rows = 5 }: { rows?: number }) {
 export function ErrorBanner({ error }: { error: unknown }) {
   if (!error) return null
   const message = error instanceof Error ? error.message : String(error)
+  // Errori dell'AI da cornhub (chiave mancante, limite di spesa): il link alla
+  // pagina dove si sistemano (ADR 0021).
+  const data = error instanceof ApiError ? (error.data as { account_url?: unknown }) : null
+  const accountUrl = typeof data?.account_url === 'string' ? data.account_url : ''
   return (
     <div
       role="alert"
       className="flex items-start gap-3 rounded-row bg-error-container px-4 py-3 text-body-medium text-on-error-container"
     >
       <Icon name="error" size={20} />
-      <span>{message}</span>
+      <span>
+        {message}
+        {accountUrl && (
+          <>
+            {' '}
+            <a className="font-medium underline" href={accountUrl}>
+              {gettext('Apri cornhub')}
+            </a>
+          </>
+        )}
+      </span>
     </div>
   )
 }

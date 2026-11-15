@@ -13,7 +13,7 @@ import {
 import { FoodPattern, RecipeCover } from '../../components/illustrations'
 import { Chip, ErrorBanner, Icon, Modal, Segmented, Skeleton } from '../../components/ui'
 import { api } from '../../lib/api'
-import { useAuth } from '../../lib/auth'
+import { loginUrl, useAuth } from '../../lib/auth'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { Recipe, User, Visibility } from '../../lib/types'
 import { CommentsSection, RateRecipe, RatingLine } from './Community'
@@ -287,12 +287,10 @@ export function SharedRecipePage() {
                       'Con Languorino la copi nel tuo ricettario, ci componi il piano della settimana e fai la spesa.',
                     )}
                   </p>
-                  <Link to={`/registrati?next=${encodeURIComponent(back)}`} className="btn-filled">
-                    {gettext('Registrati')}
-                  </Link>
-                  <Link to={`/accedi?next=${encodeURIComponent(back)}`} className="btn-text">
-                    {gettext('Accedi')}
-                  </Link>
+                  {/* Registrazione e login stanno su cornhub (ADR 0021): si torna qui. */}
+                  <a href={loginUrl(back)} className="btn-filled">
+                    {gettext('Accedi o registrati')}
+                  </a>
                 </>
               )}
             </section>

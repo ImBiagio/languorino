@@ -5,6 +5,10 @@ import { BrowserRouter } from 'react-router-dom'
 
 import './index.css'
 import { loadCatalog } from './lib/i18n'
+import { initSentry } from './lib/sentry'
+
+// Errori del frontend a GlitchTip, prima di tutto il resto.
+initSentry()
 
 const queryClient = new QueryClient({
   defaultOptions: {

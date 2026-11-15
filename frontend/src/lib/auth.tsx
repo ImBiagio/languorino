@@ -2,67 +2,49 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react'
 
 import { api, getAccessToken, setAccessToken, setUnauthenticatedHandler } from './api'
-import { getLanguage, isExplicitLanguage, setLanguage } from './i18n'
+import { getLanguage, setLanguage } from './i18n'
 import type { User } from './types'
+
+const API = (import.meta.env.VITE_API_BASE_URL as string) || window.location.origin
+
+/** Il giro di login su cornhub (ADR 0021), con ritorno su ``next`` (percorso dell'app). */
+export function loginUrl(next = '/'): string {
+  return `${API}/api/auth/sso/start?next=${encodeURIComponent(next)}`
+}
 
 interface AuthState {
   user: User | null
   ready: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (
-    email: string,
-    password: string,
-    displayName: string,
-    inviteCode?: string,
-  ) => Promise<string | null>
-  verifyEmail: (token: string) => Promise<void>
-  /** Nuova password dal link della mail: se va bene si entra direttamente. */
-  resetPassword: (uid: string, token: string, password: string) => Promise<void>
   logout: () => Promise<void>
   setUser: (user: User) => void
 }
 
 const AuthContext = createContext<AuthState | null>(null)
 
-/**
- * Allinea la lingua dell'interfaccia a quella dell'utente. Appena entrato, una
- * lingua scelta a mano sulla pagina di login vince e si salva sul profilo;
- * altrimenti (sessione ripresa, lingua solo dedotta dal browser) vale quella
- * salvata, e la pagina si ricarica tradotta.
- */
-function syncLanguage(user: User, justLoggedIn: boolean): User {
-  const current = getLanguage()
-  if (!user.language || user.language === current) return user
-  if (justLoggedIn && isExplicitLanguage()) {
-    void api.post('/api/i18n/language', { language: current }).catch(() => undefined)
-    return { ...user, language: current }
+/** La lingua dell'account (arriva da cornhub al login) vince su quella del browser. */
+function syncLanguage(user: User): User {
+  if (user.language && user.language !== getLanguage()) {
+    void setLanguage(user.language, getAccessToken())
   }
-  void setLanguage(user.language, getAccessToken())
   return user
-}
-
-interface AuthPayload {
-  access: string
-  user: User
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [ready, setReady] = useState(false)
 
-  const apply = useCallback((payload: AuthPayload) => {
-    setAccessToken(payload.access)
-    setUser(syncLanguage(payload.user, true))
-  }, [])
-
   const logout = useCallback(async () => {
-    await api.post('/api/auth/logout').catch(() => undefined)
+    const result = await api
+      .post<{ logout_url?: string }>('/api/auth/logout')
+      .catch(() => undefined)
     setAccessToken(null)
     setUser(null)
+    // cornhub chiede se uscire anche dall'account della suite.
+    if (result?.logout_url) window.location.assign(result.logout_url)
   }, [])
 
   // Al primo caricamento si prova il refresh: se il cookie e' ancora valido la
-  // sessione riparte senza passare dal login.
+  // sessione riparte senza passare da cornhub (e cosi' anche dopo il login).
   useEffect(() => {
     let cancelled = false
     setUnauthenticatedHandler(() => {
@@ -74,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async (ok) => {
         if (!ok || cancelled) return
         const me = await api.get<User>('/api/me')
-        if (!cancelled) setUser(syncLanguage(me, false))
+        if (!cancelled) setUser(syncLanguage(me))
       })
       .catch(() => undefined)
       .finally(() => {
@@ -87,41 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthState>(
-    () => ({
-      user,
-      ready,
-      setUser,
-      login: async (email, password) => {
-        apply(await api.post<AuthPayload>('/api/auth/login', { email, password }))
-      },
-      register: async (email, password, displayName, inviteCode = '') => {
-        const response = await api.post<AuthPayload | { detail: string }>('/api/auth/register', {
-          email,
-          password,
-          display_name: displayName,
-          invite_code: inviteCode,
-        })
-        if ('access' in response) {
-          apply(response)
-          return null
-        }
-        return response.detail
-      },
-      verifyEmail: async (token) => {
-        apply(await api.post<AuthPayload>(`/api/auth/verify-email/${token}`))
-      },
-      resetPassword: async (uid, token, password) => {
-        apply(
-          await api.post<AuthPayload>('/api/auth/password-reset/confirm', {
-            uid,
-            token,
-            new_password: password,
-          }),
-        )
-      },
-      logout,
-    }),
-    [user, ready, apply, logout],
+    () => ({ user, ready, setUser, logout }),
+    [user, ready, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -16,6 +16,7 @@ import {
   useRetryBook,
   useUploadBook,
 } from '../../api/hooks'
+import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page, PageHeader } from '../../components/Layout'
 import { CookbookIllustration, FoodPattern } from '../../components/illustrations'
@@ -32,6 +33,9 @@ import {
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { RecipeBook } from '../../lib/types'
 import { RecipeCard } from './RecipesPage'
+
+// Pagine per chiamata, come BOOK_PAGES_PER_CHUNK e PAGES_PER_CALL del backend.
+const BOOK_PAGES_PER_CALL = 4
 
 /** Le due schede della sezione Ricette: il proprio ricettario e i PDF. */
 export function RecipeTabs() {
@@ -127,6 +131,15 @@ export function BooksPage() {
               <Icon name="upload_file" size={20} />
               {uploader.upload.isPending ? gettext('Carico…') : gettext('Carica un PDF')}
             </button>
+            {/* Le pagine non si sanno prima di caricarlo: la stima e' per 4 pagine. */}
+            <div className="mt-2">
+              <AiCost
+                feature="book_read"
+                note={gettext(
+                  'Ogni 4 pagine. Poi foto dal PDF e disegni per le ricette che non ne hanno.',
+                )}
+              />
+            </div>
           </div>
         </section>
         <ErrorBanner error={uploader.upload.error ?? error} />
@@ -289,15 +302,21 @@ export function BookPage() {
           {book.status === 'failed' && (
             <div className="mt-3 grid gap-3">
               <ErrorBanner error={book.error || gettext('La lettura si è interrotta.')} />
-              <button
-                type="button"
-                className="btn-filled w-fit"
-                disabled={retry.isPending}
-                onClick={() => retry.mutate(book.id)}
-              >
-                <Icon name="refresh" size={20} />
-                {interpolate(gettext('Riprendi da pagina %s'), [book.pages_done + 1])}
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  className="btn-filled w-fit"
+                  disabled={retry.isPending}
+                  onClick={() => retry.mutate(book.id)}
+                >
+                  <Icon name="refresh" size={20} />
+                  {interpolate(gettext('Riprendi da pagina %s'), [book.pages_done + 1])}
+                </button>
+                <AiCost
+                  feature="book_read"
+                  count={Math.ceil((book.page_count - book.pages_done) / BOOK_PAGES_PER_CALL)}
+                />
+              </div>
               <ErrorBanner error={retry.error} />
             </div>
           )}
@@ -405,15 +424,23 @@ function BookImages({ book }: { book: RecipeBook }) {
         </p>
       )}
       {!working && (status === '' || status === 'failed' || missing > 0) && (
-        <button
-          type="button"
-          className="btn-tonal w-fit"
-          disabled={start.isPending}
-          onClick={() => start.mutate(book.id)}
-        >
-          <Icon name={status === '' ? 'imagesmode' : 'refresh'} size={20} />
-          {status === '' ? gettext('Cerca le foto e disegna le altre') : gettext('Riprova')}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn-tonal w-fit"
+            disabled={start.isPending}
+            onClick={() => start.mutate(book.id)}
+          >
+            <Icon name={status === '' ? 'imagesmode' : 'refresh'} size={20} />
+            {status === '' ? gettext('Cerca le foto e disegna le altre') : gettext('Riprova')}
+          </button>
+          {/* Due costi: le pagine riguardate per le foto e i disegni delle altre. */}
+          <AiCost
+            feature="book_photos"
+            count={Math.ceil(book.page_count / BOOK_PAGES_PER_CALL)}
+          />
+          {missing > 0 && <AiCost feature="recipe_image" count={missing} />}
+        </div>
       )}
       <ErrorBanner error={start.error} />
     </section>

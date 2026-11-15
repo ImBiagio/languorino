@@ -13,6 +13,7 @@ import {
   useRetryJob,
   useStartImport,
 } from '../../api/hooks'
+import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
 import { CookbookIllustration, FoodPattern } from '../../components/illustrations'
@@ -194,7 +195,8 @@ export function ImportPage() {
         </p>
 
         <ErrorBanner error={start.error ?? uploader.upload.error} />
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <AiCost feature="import_recipes" />
           <button
             type="button"
             className="btn-filled"

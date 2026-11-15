@@ -10,6 +10,7 @@ import {
   useRecipes,
   useTags,
 } from '../../api/hooks'
+import { AiCost } from '../../components/AiCost'
 import { Page } from '../../components/Layout'
 import { FoodPattern } from '../../components/illustrations'
 import {
@@ -371,7 +372,13 @@ function NewPlanForm({ profile }: { profile: Profile }) {
         </Card>
 
         <ErrorBanner error={create.error} />
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* Una chiamata per settimana, piu' le ricette nuove che servono. */}
+          <AiCost
+            feature="plan_week"
+            count={Math.ceil(plan.days / 7)}
+            note={gettext('Più le ricette nuove, circa 9 a settimana se servono.')}
+          />
           <button type="button" className="btn-text" onClick={() => navigate('/piano')}>
             {gettext('Annulla')}
           </button>

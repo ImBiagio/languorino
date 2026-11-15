@@ -1,6 +1,7 @@
 // Conversazione a voce in tempo reale con Gemini Live (ADR 0014): il browser
 // parla direttamente con Gemini con un token monouso preso dal backend, che ha
-// gia' deciso modello, istruzioni e strumenti. Le trascrizioni compaiono man
+// gia' deciso istruzioni e strumenti e l'ha chiesto a cornhub (ADR 0021:
+// cornhub sceglie il modello e chi paga; la chiave non arriva mai qui). Le trascrizioni compaiono man
 // mano; quello che Gemini "segna" passa dal backend e va nel riepilogo.
 
 import { GoogleGenAI, Modality } from '@google/genai'
@@ -9,6 +10,7 @@ import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 
 import { cleanLiveCall, useStartLiveInterview } from '../../api/hooks'
+import { AiCost } from '../../components/AiCost'
 import { ErrorBanner, Icon, IconButton } from '../../components/ui'
 import { gettext } from '../../lib/i18n'
 import { MicStream, VoicePlayer } from '../../lib/liveAudio'
@@ -206,6 +208,8 @@ export function LiveInterview({ proposals }: { proposals: Proposals }) {
               : gettext('Tocca il cerchio e rispondi a voce: ti faccio io le domande.')}
           </p>
         </div>
+        {/* Fino a 15 minuti di voce: e' una funzione grande, si dice prima quanto costa. */}
+        {!live && phase !== 'connecting' && <AiCost feature="interview_live" />}
         {live && (
           <IconButton
             icon={muted ? 'mic_off' : 'mic'}

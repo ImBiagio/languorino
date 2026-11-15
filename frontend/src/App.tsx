@@ -4,13 +4,7 @@ import { AppLayout } from './components/Layout'
 import { Skeleton } from './components/ui'
 import { AccountPage } from './features/account/AccountPage'
 import { AskPage } from './features/ask/AskPage'
-import {
-  ForgotPasswordPage,
-  LoginPage,
-  RegisterPage,
-  ResetPasswordPage,
-  VerifyEmailPage,
-} from './features/auth/AuthPages'
+import { LoginPage } from './features/auth/AuthPages'
 import { HomePage } from './features/home/HomePage'
 import { InterviewPage } from './features/interview/InterviewPage'
 import { CookTodayPage } from './features/kitchen/CookTodayPage'
@@ -56,11 +50,8 @@ function RequireOnboarding({ children }: { children: JSX.Element }) {
 export default function App() {
   return (
     <Routes>
+      {/* Registrazione, password e conferma email stanno su cornhub (ADR 0021). */}
       <Route path="/accedi" element={<LoginPage />} />
-      <Route path="/registrati" element={<RegisterPage />} />
-      <Route path="/verifica-email/:token" element={<VerifyEmailPage />} />
-      <Route path="/password-dimenticata" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
       {/* Ricetta condivisa (ADR 0012): si apre anche senza account. */}
       <Route path="/r/:token" element={<SharedRecipePage />} />
       <Route path="/u/:handle" element={<PublicProfilePage />} />

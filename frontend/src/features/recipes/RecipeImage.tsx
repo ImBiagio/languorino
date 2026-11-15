@@ -1,5 +1,5 @@
 // Immagine della ricetta (ADR 0011): foto vera caricata a mano, che vince
-// sempre, o disegnata da Gemini su richiesta; senza, il disegno per categoria.
+// sempre, o disegnata dall'AI su richiesta (via cornhub, ADR 0021); senza, il disegno per categoria.
 
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
@@ -11,6 +11,7 @@ import {
   useRemoveRecipeImage,
   useUploadRecipeImage,
 } from '../../api/hooks'
+import { AiCost } from '../../components/AiCost'
 import { RecipeCover } from '../../components/illustrations'
 import { Icon, IconButton, Modal } from '../../components/ui'
 import { gettext } from '../../lib/i18n'
@@ -114,7 +115,7 @@ export function RecipeHeroImage({ recipe }: { recipe: Recipe }) {
               title={
                 recipe.image ? gettext('Fallo ridisegnare') : gettext('Fallo disegnare all’AI')
               }
-              hint={gettext('Un’immagine del piatto creata da Gemini, in meno di un minuto')}
+              hint={gettext('Un’immagine del piatto creata dall’AI, in meno di un minuto')}
               onClick={() =>
                 close(async () => {
                   try {
@@ -126,6 +127,11 @@ export function RecipeHeroImage({ recipe }: { recipe: Recipe }) {
                 })
               }
             />
+          )}
+          {open && recipe.image_source !== 'photo' && (
+            <div className="px-1">
+              <AiCost feature="recipe_image" />
+            </div>
           )}
           {recipe.image && (
             <Action

@@ -12,6 +12,8 @@ import {
 
 import { api } from '../lib/api'
 import type {
+  AiQuote,
+  AuthConfig,
   CookSuggestions,
   FoodPreference,
   Ingredient,
@@ -47,6 +49,7 @@ import type {
 
 export const keys = {
   authConfig: ['auth-config'] as const,
+  aiQuote: (features: string[]) => ['ai-quote', ...features] as const,
   profile: ['profile'] as const,
   recipes: ['recipes'] as const,
   recipeList: (filters: RecipeFilters) => ['recipes', 'list', filters] as const,
@@ -67,14 +70,25 @@ export const keys = {
   nutritionistPlan: (id: UUID) => ['nutritionist-plans', 'detail', id] as const,
 }
 
-/* ------------------------------------------------------------ registrazione -- */
+/* ------------------------------------------ account della suite (cornhub) -- */
 
-/** Cosa chiede il server a chi si registra: oggi solo il codice di invito. */
+/** Dove sono login, account e chiavi AI su cornhub (ADR 0021). */
 export function useAuthConfig() {
   return useQuery({
     queryKey: keys.authConfig,
-    queryFn: () => api.get<{ signup_code_required: boolean }>('/api/auth/config'),
-    staleTime: 5 * 60 * 1000,
+    queryFn: () => api.get<AuthConfig>('/api/auth/config'),
+    staleTime: Infinity,
+  })
+}
+
+/** Chi paga e quanto costa una funzione AI, prima di premere il bottone. */
+export function useAiQuote(features: string[], enabled = true) {
+  return useQuery({
+    queryKey: keys.aiQuote(features),
+    queryFn: () => api.get<AiQuote>('/api/ai/quote', { features: features.join(',') }),
+    enabled: enabled && features.length > 0,
+    staleTime: 60_000,
+    retry: false,
   })
 }
 

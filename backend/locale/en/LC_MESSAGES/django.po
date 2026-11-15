@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 20:49+0100\n"
+"POT-Creation-Date: 2026-11-15 12:44+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,81 +17,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-#: apps/ai/budget.py:53
-#, python-format
-msgid ""
-"Per oggi hai finito le richieste all'intelligenza artificiale (%(n)d al "
-"giorno). Riprova domani."
-msgstr "You've used up today's AI requests (%(n)d a day). Try again tomorrow."
-
-#: apps/ai/budget.py:59
-msgid ""
-"Per oggi sono finite le richieste all'intelligenza artificiale di tutta "
-"l'app. Riprova domani."
-msgstr "The whole app has used up today's AI requests. Try again tomorrow."
-
-#: apps/ai/budget.py:66
-#, python-format
-msgid ""
-"Per oggi hai finito le conversazioni a voce (%(n)d al giorno). Riprova "
-"domani."
-msgstr ""
-"You've used up today's voice conversations (%(n)d a day). Try again tomorrow."
-
-#: apps/ai/client.py:117
-msgid "La risposta dell'intelligenza artificiale non è nel formato atteso."
-msgstr "The AI's answer wasn't in the expected format."
-
-#: apps/ai/client.py:149 apps/ai/client.py:233
-msgid ""
-"Chiave Gemini non configurata: imposta GEMINI_API_KEY nel file .env e "
-"riavvia."
-msgstr ""
-"Gemini key not configured: set GEMINI_API_KEY in the .env file and restart."
-
-#: apps/ai/client.py:194 apps/ai/client.py:267
-msgid "Gemini ha rifiutato la chiave: controlla GEMINI_API_KEY."
-msgstr "Gemini rejected the key: check GEMINI_API_KEY."
-
-#: apps/ai/client.py:198 apps/ai/client.py:269
-#, python-format
-msgid "Gemini ha risposto con un errore (%(code)s)."
-msgstr "Gemini answered with an error (%(code)s)."
-
-#: apps/ai/client.py:201
-#, python-format
-msgid "errore %(code)s"
-msgstr "error %(code)s"
-
-#: apps/ai/client.py:219
-#, python-format
-msgid ""
-"Gemini è sovraccarico in questo momento (%(models)s; ultimo: %(error)s). "
-"Riprova tra qualche minuto."
-msgstr ""
-"Gemini is overloaded right now (%(models)s; last: %(error)s). Try again in a "
-"few minutes."
-
-#: apps/ai/client.py:258
-msgid ""
-"La chiave Gemini non ha quota per le immagini (piano gratuito): attiva la "
-"fatturazione su Google AI Studio."
-msgstr ""
-"The Gemini key has no quota for images (free tier): enable billing in Google "
-"AI Studio."
-
-#: apps/ai/client.py:264
-msgid "Gemini è sovraccarico in questo momento. Riprova tra qualche minuto."
-msgstr "Gemini is overloaded right now. Try again in a few minutes."
-
-#: apps/ai/client.py:275
-msgid "Gemini non risponde. Riprova tra qualche minuto."
-msgstr "Gemini isn't answering. Try again in a few minutes."
-
-#: apps/ai/client.py:284
-msgid "Gemini non ha disegnato niente questa volta. Riprova."
-msgstr "Gemini didn't draw anything this time. Try again."
 
 #: apps/community/profiles.py:26
 msgid "Da 3 a 40 caratteri: lettere minuscole, numeri e trattini."
@@ -241,16 +166,16 @@ msgstr "I couldn't find a meal plan in these files."
 msgid "Piano del nutrizionista"
 msgstr "Nutritionist's plan"
 
-#: apps/jobs/tasks.py:197
+#: apps/jobs/tasks.py:204
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:201 apps/plans/tasks.py:76 apps/recipes/tasks.py:139
-#: apps/recipes/tasks.py:236
+#: apps/jobs/tasks.py:208 apps/plans/tasks.py:76 apps/recipes/tasks.py:142
+#: apps/recipes/tasks.py:239
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
-#: apps/jobs/tasks.py:220
+#: apps/jobs/tasks.py:227
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
@@ -260,10 +185,10 @@ msgstr "Unknown job."
 
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:77
 #: apps/plans/views.py:263 apps/plans/views.py:347 apps/plans/views.py:378
-#: apps/plans/views.py:415 apps/profiles/live.py:161 apps/profiles/views.py:132
-#: apps/profiles/views.py:183 apps/recipes/views.py:233
-#: apps/recipes/views.py:395 apps/recipes/views.py:433
-#: apps/recipes/views.py:539
+#: apps/plans/views.py:415 apps/profiles/live.py:156 apps/profiles/views.py:131
+#: apps/profiles/views.py:182 apps/recipes/views.py:233
+#: apps/recipes/views.py:396 apps/recipes/views.py:425
+#: apps/recipes/views.py:531
 msgid "La lettura con l'intelligenza artificiale non è configurata."
 msgstr "AI reading isn't configured."
 
@@ -495,10 +420,6 @@ msgstr "Lupin"
 msgid "Molluschi"
 msgstr "Molluscs"
 
-#: apps/profiles/live.py:186
-msgid "Gemini non ha aperto la conversazione. Riprova tra poco."
-msgstr "Gemini didn't open the conversation. Try again shortly."
-
 #: apps/profiles/models.py:25
 msgid "Donna"
 msgstr "Woman"
@@ -612,11 +533,11 @@ msgstr "Check the year of birth."
 msgid "Al massimo %(n)d voci."
 msgstr "At most %(n)d items."
 
-#: apps/profiles/views.py:141
+#: apps/profiles/views.py:140
 msgid "Conversazione non valida."
 msgstr "Invalid conversation."
 
-#: apps/profiles/views.py:150
+#: apps/profiles/views.py:149
 msgid "Scrivi o registra una risposta."
 msgstr "Write or record an answer."
 
@@ -628,7 +549,7 @@ msgstr "The PDF is password-protected."
 msgid "Il PDF non si apre: è danneggiato o non è un PDF."
 msgstr "The PDF won't open: it's damaged or not a PDF."
 
-#: apps/recipes/images.py:55
+#: apps/recipes/images.py:53
 msgid "Il file non si apre come immagine."
 msgstr "The file can't be opened as an image."
 
@@ -820,7 +741,7 @@ msgstr "Estimated by AI"
 msgid "Scritti a mano"
 msgstr "Entered by hand"
 
-#: apps/recipes/nutrition.py:100 apps/recipes/views.py:438
+#: apps/recipes/nutrition.py:100 apps/recipes/views.py:430
 msgid "Senza ingredienti non posso stimare calorie e macro."
 msgstr "I can't estimate calories and macros without ingredients."
 
@@ -848,13 +769,9 @@ msgstr "Ingredient not found."
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
-#: apps/recipes/tasks.py:136 apps/recipes/tasks.py:233
+#: apps/recipes/tasks.py:139 apps/recipes/tasks.py:236
 msgid "Questa parte del ricettario ci sta mettendo troppo. Riprova."
 msgstr "This part of the cookbook is taking too long. Try again."
-
-#: apps/recipes/tasks.py:259
-msgid "Per oggi ho finito le immagini: continuo domani."
-msgstr "I've used up today's images: I'll continue tomorrow."
 
 #: apps/recipes/views.py:238
 msgid "Carica un PDF."
@@ -890,32 +807,27 @@ msgstr "Choose a photo."
 msgid "Serve una foto JPEG, PNG o WebP (le HEIC dell'iPhone non ancora)."
 msgstr "A JPEG, PNG or WebP photo is needed (iPhone HEIC not yet)."
 
-#: apps/recipes/views.py:400
+#: apps/recipes/views.py:401
 msgid "Ha già una foto vera: toglila prima di farne disegnare una."
 msgstr "It already has a real photo: remove it before having one drawn."
 
-#: apps/recipes/views.py:406
-#, python-format
-msgid "Per oggi hai finito le immagini (%(n)d al giorno). Riprova domani."
-msgstr "You've used up today's images (%(n)d a day). Try again tomorrow."
-
-#: apps/recipes/views.py:466
+#: apps/recipes/views.py:458
 msgid "Visibilità non valida."
 msgstr "Invalid visibility."
 
-#: apps/recipes/views.py:471
+#: apps/recipes/views.py:463
 msgid "Salvala nel tuo ricettario prima di pubblicarla."
 msgstr "Save it to your cookbook before publishing it."
 
-#: apps/recipes/views.py:518
+#: apps/recipes/views.py:510
 msgid "È già nel tuo ricettario."
 msgstr "It's already in your cookbook."
 
-#: apps/recipes/views.py:544
+#: apps/recipes/views.py:536
 msgid "Prima finisco di leggere il ricettario."
 msgstr "Let me finish reading the cookbook first."
 
-#: apps/recipes/views.py:550
+#: apps/recipes/views.py:542
 msgid "Ci sto già lavorando."
 msgstr "I'm already working on it."
 
@@ -952,107 +864,17 @@ msgstr "Shopping"
 msgid "Questa lista non viene da un piano."
 msgstr "This list doesn't come from a plan."
 
-#: apps/users/emails.py:22
-msgid "Conferma il tuo indirizzo email"
-msgstr "Confirm your email address"
+#: apps/users/views.py:90
+msgid "Sessione assente."
+msgstr "No session."
 
-#: apps/users/emails.py:25
-#, python-format
-msgid ""
-"Manca un passo: conferma che questo indirizzo e' tuo e il tuo account "
-"%(app)s e' pronto."
-msgstr ""
-"One last step: confirm this address is yours and your %(app)s account is "
-"ready."
+#: apps/users/views.py:94
+msgid "Sessione scaduta."
+msgstr "Session expired."
 
-#: apps/users/emails.py:29
-msgid "Conferma email"
-msgstr "Confirm email"
-
-#: apps/users/emails.py:32
-msgid ""
-"Il link vale 3 giorni e una volta sola. Se non ti sei registrato tu, ignora "
-"questa mail."
-msgstr ""
-"The link is valid for 3 days and can be used once. If you didn't sign up, "
-"just ignore this email."
-
-#: apps/users/emails.py:42
-#, python-format
-msgid "Reimposta la password di %(app)s"
-msgstr "Reset your %(app)s password"
-
-#: apps/users/emails.py:45
-#, python-format
-msgid ""
-"Qualcuno (speriamo tu) ha chiesto di reimpostare la password del tuo account "
-"%(app)s."
-msgstr ""
-"Someone (hopefully you) asked to reset the password of your %(app)s account."
-
-#: apps/users/emails.py:49
-msgid "Scegli una nuova password"
-msgstr "Choose a new password"
-
-#: apps/users/emails.py:52
-msgid ""
-"Il link vale 2 ore e una volta sola. Se non l'hai chiesto tu, ignora questa "
-"mail: la password resta quella di prima."
-msgstr ""
-"The link is valid for 2 hours and can be used once. If you didn't request "
-"it, just ignore this email: your password stays the same."
-
-#: apps/users/serializers.py:70
-msgid "Codice di invito non valido."
-msgstr "Invalid invite code."
-
-#: apps/users/serializers.py:77
-msgid "Esiste gia' un account con questa email."
-msgstr "An account with this email already exists."
-
-#: apps/users/views.py:86
-msgid "Registrazione completata. Controlla la mail per confermare."
-msgstr "Sign-up complete. Check your email to confirm."
-
-#: apps/users/views.py:112
-msgid "Credenziali non valide."
-msgstr "Invalid credentials."
-
-#: apps/users/views.py:117
-msgid "Email non ancora confermata."
-msgstr "Email not confirmed yet."
-
-#: apps/users/views.py:133
-msgid "Refresh token assente."
-msgstr "Refresh token missing."
-
-#: apps/users/views.py:139
-msgid "Refresh token non valido."
-msgstr "Invalid refresh token."
-
-#: apps/users/views.py:145
-msgid "Utente non valido."
-msgstr "Invalid user."
-
-#: apps/users/views.py:182
-msgid "Link non valido o scaduto."
-msgstr "Invalid or expired link."
-
-#: apps/users/views.py:187
-msgid "Utente inesistente."
-msgstr "User doesn't exist."
-
-#: apps/users/views.py:192
-msgid "Email gia' confermata: accedi con la tua password."
-msgstr "Email already confirmed: sign in with your password."
-
-#: apps/users/views.py:224
-msgid "Password attuale errata."
-msgstr "Current password is incorrect."
-
-#: apps/users/views.py:286
-msgid "Link non valido, gia' usato o scaduto: chiedine uno nuovo."
-msgstr "Invalid, already used or expired link: request a new one."
+#: apps/users/views.py:101
+msgid "Accesso non piu' valido."
+msgstr "Access no longer valid."
 
 #: templates/emails/base.html:25 templates/emails/base.txt:1
 #, python-format

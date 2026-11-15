@@ -16,6 +16,7 @@ import {
   useRetryPlan,
   useUpdateMeal,
 } from '../../api/hooks'
+import { AiCost } from '../../components/AiCost'
 import { useConfirm } from '../../components/ConfirmDialog'
 import { Page } from '../../components/Layout'
 import {
@@ -282,6 +283,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
             >
               {gettext('Rifai da capo')}
             </button>
+            <AiCost feature="plan_week" count={plan.weeks_total - plan.weeks_done} />
           </div>
         </section>
       )}

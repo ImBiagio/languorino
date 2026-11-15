@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 20:49+0100\n"
+"POT-Creation-Date: 2026-11-15 12:45+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,17 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Apri cornhub"
+msgstr "Open cornhub"
+
+#, javascript-format
+msgid "Pannocchie rimaste oggi: %s"
+msgstr "Corn cobs left today: %s"
+
+#, javascript-format
+msgid "~%s con la tua chiave"
+msgstr "~%s with your key"
 
 msgid "Annulla"
 msgstr "Cancel"
@@ -66,20 +77,16 @@ msgstr "Account"
 msgid "Esci"
 msgstr "Sign out"
 
-msgid "Nome visibile"
-msgstr "Display name"
+msgid ""
+"Nome, email e password sono dell'account della suite ino: valgono per tutte "
+"le app e si cambiano su cornhub."
+msgstr "Name, email and password belong to your ino suite account: they apply to every app and are changed on cornhub."
 
-msgid "Il nome che vedono gli altri."
-msgstr "The name other people see."
+msgid "Account della suite"
+msgstr "Suite account"
 
-msgid "Nome"
-msgstr "Name"
-
-msgid "Salvato"
-msgstr "Saved"
-
-msgid "Salva"
-msgstr "Save"
+msgid "Chiavi e limiti AI"
+msgstr "AI keys and limits"
 
 msgid "Profilo pubblico"
 msgstr "Public profile"
@@ -98,53 +105,11 @@ msgstr "Address"
 msgid "nasce alla prima ricetta pubblica"
 msgstr "created with your first public recipe"
 
-msgid "Email"
-msgstr "Email"
+msgid "Salvato"
+msgstr "Saved"
 
-msgid "Confermata"
-msgstr "Confirmed"
-
-msgid "Da confermare"
-msgstr "Not confirmed yet"
-
-msgid "Mail mandata"
-msgstr "Email sent"
-
-msgid "Rimanda la mail di conferma"
-msgstr "Resend confirmation email"
-
-msgid "Password"
-msgstr "Password"
-
-msgid ""
-"Cambiandola si chiudono le sessioni aperte sugli altri dispositivi; questa "
-"resta aperta."
-msgstr ""
-"Changing it signs you out on your other devices; this one stays signed in."
-
-msgid "Password cambiata."
-msgstr "Password changed."
-
-msgid "Password attuale"
-msgstr "Current password"
-
-msgid "Salvo…"
-msgstr "Saving…"
-
-msgid "Cambia password"
-msgstr "Change password"
-
-msgid "Non ricordi quella attuale?"
-msgstr "Can't remember your current one?"
-
-msgid "Ti mandiamo a %(email)s un link per reimpostarla, valido 2 ore."
-msgstr "We'll send a link to %(email)s to reset it, valid for 2 hours."
-
-msgid "Link mandato, controlla la mail"
-msgstr "Link sent, check your email"
-
-msgid "Mandami il link di reset"
-msgstr "Send me the reset link"
+msgid "Salva"
+msgstr "Save"
 
 msgid "Lingua"
 msgstr "Language"
@@ -192,100 +157,32 @@ msgstr "Send"
 msgid "Cosa mangiamo oggi? Ci pensiamo insieme."
 msgstr "What are we eating today? Let's work it out together."
 
-msgid "Prima di entrare conferma l'indirizzo dal link che ti abbiamo mandato."
-msgstr "Before signing in, confirm your address using the link we sent you."
+msgid "Accesso annullato."
+msgstr "Sign-in cancelled."
 
-msgid "Mail rimandata"
-msgstr "Email resent"
+msgid "Il login ha impiegato troppo: riprova."
+msgstr "Sign-in took too long: try again."
 
-msgid "Rimanda la mail"
-msgstr "Resend email"
+msgid "Il login non e' andato a buon fine: riprova."
+msgstr "Sign-in didn't work: try again."
+
+msgid "L'account della suite non risponde: riprova tra poco."
+msgstr "The suite account isn't responding: try again shortly."
+
+msgid "Questo account non puo' entrare nell'app."
+msgstr "This account can't access the app."
 
 msgid "Accedi"
 msgstr "Sign in"
 
-msgid "Non hai un account?"
-msgstr "Don't have an account?"
+msgid "Si entra con l'account della suite ino: lo stesso per tutte le app."
+msgstr "Sign in with your ino suite account: the same one for every app."
 
-msgid "Registrati"
-msgstr "Sign up"
+msgid "Accesso non riuscito: riprova."
+msgstr "Sign-in failed: try again."
 
-msgid "Accesso…"
-msgstr "Signing in…"
-
-msgid "Entra"
-msgstr "Sign in"
-
-msgid "Password dimenticata?"
-msgstr "Forgot password?"
-
-msgid "Crea un account"
-msgstr "Create an account"
-
-msgid "Hai già un account?"
-msgstr "Already have an account?"
-
-msgid "Torna al login"
-msgstr "Back to sign in"
-
-msgid "Come ti chiamano"
-msgstr "What people call you"
-
-msgid "Almeno 10 caratteri."
-msgstr "At least 10 characters."
-
-msgid "Codice di invito"
-msgstr "Invite code"
-
-msgid "Te lo dà chi ti ha invitato."
-msgstr "You get it from whoever invited you."
-
-msgid "Creazione…"
-msgstr "Creating…"
-
-msgid "Crea account"
-msgstr "Create account"
-
-msgid "Conferma email"
-msgstr "Confirm email"
-
-msgid "Password dimenticata"
-msgstr "Forgot password"
-
-msgid "Se"
-msgstr "If"
-
-msgid ""
-"ha un account, tra poco ti arriva una mail con il link per scegliere una "
-"nuova password. Il link vale 2 ore. Controlla anche lo spam."
-msgstr ""
-"has an account, you'll shortly get an email with a link to choose a new "
-"password. The link is valid for 2 hours. Check your spam folder too."
-
-msgid ""
-"Scrivi l'email dell'account: ti mandiamo un link per sceglierne una nuova."
-msgstr "Enter your account email: we'll send you a link to choose a new one."
-
-msgid "Invio…"
-msgstr "Sending…"
-
-msgid "Mandami il link"
-msgstr "Send me the link"
-
-msgid "Nuova password"
-msgstr "New password"
-
-msgid "Ripeti la nuova password"
-msgstr "Repeat new password"
-
-msgid "Non coincide."
-msgstr "Doesn't match."
-
-msgid "Salva ed entra"
-msgstr "Save and sign in"
-
-msgid "Il link non va? Chiedine uno nuovo"
-msgstr "Link not working? Request a new one"
+msgid "Accedi con cornhub"
+msgstr "Sign in with cornhub"
 
 #, javascript-format
 msgid "Ciao %s"
@@ -769,6 +666,9 @@ msgstr "In your own words"
 msgid "Es. “più proteine e pranzi leggeri da portare in ufficio”."
 msgstr "E.g. “more protein and light lunches to take to the office”."
 
+msgid "Più le ricette nuove, circa 9 a settimana se servono."
+msgstr "Plus the new recipes, about 9 a week if needed."
+
 #, javascript-format
 msgid "Dal %s al %s"
 msgstr "From %s to %s"
@@ -846,6 +746,9 @@ msgstr "Create a plan from this"
 
 msgid "In generale"
 msgstr "General"
+
+msgid "Nome"
+msgstr "Name"
 
 msgid "Valido dal"
 msgstr "Valid from"
@@ -1154,6 +1057,9 @@ msgid ""
 msgstr ""
 "The people you choose see your current plan and its recipes, always up to "
 "date, but can't change it. They get an email. They need an account."
+
+msgid "Email"
+msgstr "Email"
 
 msgid "Condividi"
 msgstr "Share"
@@ -1650,6 +1556,10 @@ msgstr "Uploading…"
 
 msgid "Carica un PDF"
 msgstr "Upload a PDF"
+
+msgid ""
+"Ogni 4 pagine. Poi foto dal PDF e disegni per le ricette che non ne hanno."
+msgstr "Every 4 pages. Then photos from the PDF and drawings for recipes without one."
 
 msgid "Ancora nessun ricettario"
 msgstr "No cookbooks yet"
@@ -2292,8 +2202,8 @@ msgstr "Have it redrawn"
 msgid "Fallo disegnare all’AI"
 msgstr "Have the AI draw it"
 
-msgid "Un’immagine del piatto creata da Gemini, in meno di un minuto"
-msgstr "An image of the dish made by Gemini, in under a minute"
+msgid "Un’immagine del piatto creata dall’AI, in meno di un minuto"
+msgstr "An image of the dish made by AI, in under a minute"
 
 msgid "Togli l’immagine"
 msgstr "Remove the image"
@@ -2442,6 +2352,9 @@ msgid ""
 msgstr ""
 "With Languorino you copy it into your cookbook, build your weekly plan with "
 "it and do the shopping."
+
+msgid "Accedi o registrati"
+msgstr "Sign in or sign up"
 
 msgid "Il tuo voto"
 msgstr "Your rating"

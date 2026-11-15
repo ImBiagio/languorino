@@ -16,6 +16,38 @@ export interface User {
   language?: string
 }
 
+/** Dove stanno login, account e chiavi AI su cornhub (ADR 0021). */
+export interface AuthConfig {
+  login_url: string
+  account_url: string
+  ai_url: string
+  register_url: string
+}
+
+/** Stima di cornhub per una funzione AI (vedi components/AiCost.tsx). */
+export interface AiQuoteItem {
+  feature: string
+  label?: string
+  tier?: 'small' | 'large'
+  allowed: boolean
+  billed_to?: 'house' | 'user'
+  provider?: string
+  model?: string
+  code?: string
+  message?: string
+  note?: string
+  estimate_eur?: string
+  estimate_label?: string
+  estimate_pannocchie?: number
+}
+
+export interface AiQuote {
+  items: AiQuoteItem[]
+  total_label: string
+  pannocchie_left: number
+  account_url: string
+}
+
 /* ------------------------------------------------------ profilo alimentare -- */
 
 export type Sex = 'f' | 'm' | 'other'
