@@ -118,8 +118,9 @@ class PlannedMealSerializer(serializers.ModelSerializer):
             "note",
             "eaten",
             "portion",
+            "diet_portion",
         ]
-        read_only_fields = ["id", "date", "slot", "note", "portion"]
+        read_only_fields = ["id", "date", "slot", "note", "portion", "diet_portion"]
 
     def get_portion(self, meal: PlannedMeal) -> list[dict]:
         """Quanto mangia una persona di ogni ingrediente: la ricetta divisa per

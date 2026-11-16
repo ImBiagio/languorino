@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 10:28+0100\n"
+"POT-Creation-Date: 2026-11-16 16:42+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -146,11 +146,11 @@ msgstr "Queued"
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:33 apps/plans/models.py:114
+#: apps/jobs/models.py:33 apps/plans/models.py:121
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:34 apps/plans/models.py:115
+#: apps/jobs/models.py:34 apps/plans/models.py:122
 msgid "Confermato"
 msgstr "Confirmed"
 
@@ -166,16 +166,16 @@ msgstr "I couldn't find a meal plan in these files."
 msgid "Piano del nutrizionista"
 msgstr "Nutritionist's plan"
 
-#: apps/jobs/tasks.py:204
+#: apps/jobs/tasks.py:205
 msgid "Ci sta mettendo troppo: riprova con meno pagine alla volta."
 msgstr "It's taking too long: try again with fewer pages at a time."
 
-#: apps/jobs/tasks.py:208 apps/plans/tasks.py:80 apps/recipes/tasks.py:266
-#: apps/recipes/tasks.py:363
+#: apps/jobs/tasks.py:209 apps/plans/tasks.py:80 apps/recipes/tasks.py:267
+#: apps/recipes/tasks.py:364
 msgid "Qualcosa è andato storto. Riprova tra poco."
 msgstr "Something went wrong. Try again shortly."
 
-#: apps/jobs/tasks.py:227
+#: apps/jobs/tasks.py:228
 msgid "Il lavoro si è interrotto. Riprova."
 msgstr "The job stopped. Try again."
 
@@ -184,8 +184,8 @@ msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:77
-#: apps/plans/views.py:263 apps/plans/views.py:347 apps/plans/views.py:378
-#: apps/plans/views.py:415 apps/profiles/live.py:156 apps/profiles/views.py:131
+#: apps/plans/views.py:266 apps/plans/views.py:350 apps/plans/views.py:381
+#: apps/plans/views.py:418 apps/profiles/live.py:156 apps/profiles/views.py:131
 #: apps/profiles/views.py:182 apps/recipes/views.py:233
 #: apps/recipes/views.py:344 apps/recipes/views.py:448
 #: apps/recipes/views.py:477 apps/recipes/views.py:583
@@ -213,11 +213,23 @@ msgstr "At most %(n)d photos."
 msgid "Qui servono foto, non PDF."
 msgstr "Photos only here, not PDFs."
 
-#: apps/plans/generation.py:599
+#: apps/plans/generation.py:450
+#, python-format
+msgid "%(food)s %(times)s volta"
+msgid_plural "%(food)s %(times)s volte"
+msgstr[0] "%(food)s %(times)s time"
+msgstr[1] "%(food)s %(times)s times"
+
+#: apps/plans/generation.py:454
+#, python-format
+msgid "Oltre le frequenze del nutrizionista (%(rules)s a settimana)."
+msgstr "Over the nutritionist's frequencies (%(rules)s a week)."
+
+#: apps/plans/generation.py:684
 msgid "Nessuna ricetta adatta: scegline una tu."
 msgstr "No suitable recipe: pick one yourself."
 
-#: apps/plans/generation.py:604
+#: apps/plans/generation.py:689
 msgid "Non regge in frigo: meglio cucinarla il giorno stesso."
 msgstr "It doesn't keep in the fridge: better to cook it the same day."
 
@@ -282,23 +294,23 @@ msgstr "Cookbook not found."
 msgid "Scegli almeno una fonte: il tuo ricettario o un ricettario PDF."
 msgstr "Choose at least one source: your cookbook or a PDF cookbook."
 
-#: apps/plans/serializers.py:157
+#: apps/plans/serializers.py:158
 msgid "Da 1 a 50 porzioni."
 msgstr "From 1 to 50 servings."
 
-#: apps/plans/serializers.py:164
+#: apps/plans/serializers.py:165
 msgid "Non si può cucinare dopo averlo mangiato."
 msgstr "You can't cook it after eating it."
 
-#: apps/plans/serializers.py:241
+#: apps/plans/serializers.py:242
 msgid "Dai un nome al piano."
 msgstr "Give the plan a name."
 
-#: apps/plans/serializers.py:248
+#: apps/plans/serializers.py:249
 msgid "Regole non valide."
 msgstr "Invalid rules."
 
-#: apps/plans/serializers.py:255
+#: apps/plans/serializers.py:256
 msgid "La fine viene prima dell'inizio."
 msgstr "The end comes before the start."
 
@@ -352,15 +364,15 @@ msgstr "Only a stopped plan can be resumed."
 msgid "Pasto libero."
 msgstr "Free meal."
 
-#: apps/plans/views.py:325
+#: apps/plans/views.py:328
 msgid "Serve almeno un pasto con le sue opzioni."
 msgstr "At least one meal with its options is needed."
 
-#: apps/plans/views.py:352
+#: apps/plans/views.py:355
 msgid "I file di questo piano non ci sono più: caricalo di nuovo."
 msgstr "This plan's files are gone: upload it again."
 
-#: apps/plans/views.py:422
+#: apps/plans/views.py:425
 msgid "Scrivi una domanda."
 msgstr "Write a question."
 
@@ -769,7 +781,7 @@ msgstr "Ingredient not found."
 msgid "Dai un nome al ricettario."
 msgstr "Give the cookbook a name."
 
-#: apps/recipes/tasks.py:263 apps/recipes/tasks.py:360
+#: apps/recipes/tasks.py:264 apps/recipes/tasks.py:361
 msgid "Questa parte del ricettario ci sta mettendo troppo. Riprova."
 msgstr "This part of the cookbook is taking too long. Try again."
 

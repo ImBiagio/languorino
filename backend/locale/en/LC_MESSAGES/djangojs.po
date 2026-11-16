@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 10:28+0100\n"
+"POT-Creation-Date: 2026-11-16 16:42+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -580,21 +580,6 @@ msgid_plural "%s settimane"
 msgstr[0] "%s week"
 msgstr[1] "%s weeks"
 
-msgid "Pasti e porzioni"
-msgstr "Meals and servings"
-
-msgid "Porzioni per pasto"
-msgstr "Servings per meal"
-
-msgid "Meal prep"
-msgstr "Meal prep"
-
-msgid "Tempo per cucinare, ogni volta"
-msgstr "Time to cook, each time"
-
-msgid "Difficoltà massima"
-msgstr "Maximum difficulty"
-
 msgid "Piano del nutrizionista"
 msgstr "Nutritionist's plan"
 
@@ -611,6 +596,21 @@ msgid ""
 msgstr ""
 "Their options, frequencies and foods to avoid replace the goal; recipes I "
 "can't find I'll write following their portions."
+
+msgid "Pasti e porzioni"
+msgstr "Meals and servings"
+
+msgid "Porzioni per pasto"
+msgstr "Servings per meal"
+
+msgid "Meal prep"
+msgstr "Meal prep"
+
+msgid "Tempo per cucinare, ogni volta"
+msgstr "Time to cook, each time"
+
+msgid "Difficoltà massima"
+msgstr "Maximum difficulty"
 
 msgid "Da dove prendo le ricette"
 msgstr "Where I take recipes from"
@@ -979,6 +979,9 @@ msgstr "Week %s of %s. You can leave: I'll carry on."
 
 msgid "Settimane"
 msgstr "Weeks"
+
+msgid "Dieta, a persona:"
+msgstr "Diet, per person:"
 
 msgid "Pasto libero"
 msgstr "Free meal"
@@ -1642,7 +1645,9 @@ msgstr "Re-read the recipes"
 msgid ""
 "Rilegge il PDF per riprendere quantità e passaggi che la prima lettura ha "
 "perso. Foto e illustrazioni restano."
-msgstr "Reads the PDF again to pick up quantities and steps the first reading missed. Photos and illustrations stay."
+msgstr ""
+"Reads the PDF again to pick up quantities and steps the first reading "
+"missed. Photos and illustrations stay."
 
 #, javascript-format
 msgid "Ultima rilettura: %s ricetta aggiornata"
@@ -1663,7 +1668,10 @@ msgid ""
 "Le ricette che non hai salvato prendono ingredienti, quantità, porzioni e "
 "passaggi della nuova lettura. In quelle salvate nel tuo ricettario aggiungo "
 "solo le quantità che mancano. Foto e illustrazioni non cambiano."
-msgstr "Recipes you haven't saved get the ingredients, quantities, servings and steps of the new reading. In the ones saved in your cookbook I only add the missing quantities. Photos and illustrations don't change."
+msgstr ""
+"Recipes you haven't saved get the ingredients, quantities, servings and "
+"steps of the new reading. In the ones saved in your cookbook I only add the "
+"missing quantities. Photos and illustrations don't change."
 
 #, javascript-format
 msgid "Riprendi da pagina %s"

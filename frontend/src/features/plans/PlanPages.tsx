@@ -471,6 +471,20 @@ export function EatView({
 }
 
 /** "pasta 80 g · zucchina ½ pz": le grammature, moltiplicate per ``factor``. */
+/** Le dosi a persona della dieta del nutrizionista: valgono al posto delle
+ * quantita' della ricetta (che nei ricettari PDF spesso mancano). */
+function DietPortion({ text }: { text: string }) {
+  return (
+    <p className="mt-1 text-body-small text-on-surface">
+      <span className="inline-flex items-center gap-0.5 font-medium text-primary">
+        <Icon name="clinical_notes" size={14} />
+        {gettext('Dieta, a persona:')}
+      </span>{' '}
+      {text}
+    </p>
+  )
+}
+
 export function Portion({
   lines,
   factor = 1,
@@ -557,7 +571,17 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
             </span>
           )}
         </p>
-        <Portion lines={meal.portion ?? []} label={gettext('A porzione:')} />
+        {meal.diet_portion ? (
+          <DietPortion text={meal.diet_portion} />
+        ) : (
+          <Portion lines={meal.portion ?? []} label={gettext('A porzione:')} />
+        )}
+        {recipe && meal.note && (
+          <p className="mt-1 flex items-start gap-1 text-body-small text-on-surface-variant">
+            <Icon name="info" size={14} className="mt-0.5 shrink-0" />
+            {meal.note}
+          </p>
+        )}
       </div>
       {onEdit && (
         <IconButton icon="swap_horiz" label={gettext('Cambia il pasto')} onClick={onEdit} />
@@ -654,11 +678,15 @@ export function CookView({
                           .join(', '),
                       ])}
                     </p>
-                    <Portion
-                      lines={item.meal.portion ?? []}
-                      factor={item.servings}
-                      label={gettext('Da cucinare:')}
-                    />
+                    {item.meal.diet_portion ? (
+                      <DietPortion text={item.meal.diet_portion} />
+                    ) : (
+                      <Portion
+                        lines={item.meal.portion ?? []}
+                        factor={item.servings}
+                        label={gettext('Da cucinare:')}
+                      />
+                    )}
                   </div>
                 </li>
               ))}
