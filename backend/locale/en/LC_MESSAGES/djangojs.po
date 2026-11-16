@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-15 17:15+0100\n"
+"POT-Creation-Date: 2026-11-16 10:28+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,8 +21,7 @@ msgstr ""
 #, javascript-format
 msgid ""
 "Pannocchie rimaste oggi: %s su %s. Quota gratuita per le funzioni AI piccole."
-msgstr ""
-"Corn cobs left today: %s of %s. Free quota for small AI features."
+msgstr "Corn cobs left today: %s of %s. Free quota for small AI features."
 
 msgid "Usa la tua chiave API"
 msgstr "Uses your API key"
@@ -1580,6 +1579,10 @@ msgid "Fino a 200 pagine e 50 MB per PDF."
 msgstr "Up to 200 pages and 50 MB per PDF."
 
 #, javascript-format
+msgid "Rileggo… pagina %s di %s"
+msgstr "Re-reading… page %s of %s"
+
+#, javascript-format
 msgid "Leggo… pagina %s di %s"
 msgstr "Reading… page %s of %s"
 
@@ -1632,6 +1635,35 @@ msgstr "No recipes found"
 
 msgid "Non ho trovato ricette in questo PDF"
 msgstr "I found no recipes in this PDF"
+
+msgid "Rileggi le ricette"
+msgstr "Re-read the recipes"
+
+msgid ""
+"Rilegge il PDF per riprendere quantità e passaggi che la prima lettura ha "
+"perso. Foto e illustrazioni restano."
+msgstr "Reads the PDF again to pick up quantities and steps the first reading missed. Photos and illustrations stay."
+
+#, javascript-format
+msgid "Ultima rilettura: %s ricetta aggiornata"
+msgid_plural "Ultima rilettura: %s ricette aggiornate"
+msgstr[0] "Last re-read: %s recipe updated"
+msgstr[1] "Last re-read: %s recipes updated"
+
+#, javascript-format
+msgid "%s nuova"
+msgid_plural "%s nuove"
+msgstr[0] "%s new"
+msgstr[1] "%s new"
+
+msgid "Rileggere il ricettario?"
+msgstr "Re-read the cookbook?"
+
+msgid ""
+"Le ricette che non hai salvato prendono ingredienti, quantità, porzioni e "
+"passaggi della nuova lettura. In quelle salvate nel tuo ricettario aggiungo "
+"solo le quantità che mancano. Foto e illustrazioni non cambiano."
+msgstr "Recipes you haven't saved get the ingredients, quantities, servings and steps of the new reading. In the ones saved in your cookbook I only add the missing quantities. Photos and illustrations don't change."
 
 #, javascript-format
 msgid "Riprendi da pagina %s"

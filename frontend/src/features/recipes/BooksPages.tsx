@@ -13,6 +13,7 @@ import {
   useRecipes,
   useRenameBook,
   useBookImages,
+  useRereadBook,
   useRetryBook,
   useUploadBook,
 } from '../../api/hooks'
@@ -191,10 +192,12 @@ function BookStatusLine({ book }: { book: RecipeBook }) {
       {reading && (
         <>
           <span className="block">
-            {interpolate(gettext('Leggo… pagina %s di %s'), [
-              Math.min(book.pages_done + 1, book.page_count),
-              book.page_count,
-            ])}
+            {interpolate(
+              book.rereading
+                ? gettext('Rileggo… pagina %s di %s')
+                : gettext('Leggo… pagina %s di %s'),
+              [Math.min(book.pages_done + 1, book.page_count), book.page_count],
+            )}
             {book.recipe_count > 0 &&
               ` · ${interpolate(ngettext('%s ricetta', '%s ricette', book.recipe_count), [book.recipe_count])}`}
           </span>
@@ -309,6 +312,7 @@ export function BookPage() {
           )}
         </section>
         {book.status === 'ready' && book.recipe_count > 0 && <BookImages book={book} />}
+        {book.status === 'ready' && book.recipe_count > 0 && !drawing && <RereadBook book={book} />}
 
         <label className="flex items-center gap-3 rounded-pill bg-surface-container-high px-5 py-3 focus-within:ring-2 focus-within:ring-primary">
           <Icon name="search" size={22} className="text-on-surface-variant" />
@@ -344,6 +348,67 @@ export function BookPage() {
 
       {renaming && <RenameDialog book={book} onClose={() => setRenaming(false)} />}
     </Page>
+  )
+}
+
+/**
+ * Rilegge il PDF con le regole di adesso (ADR 0022): quantita' e passaggi delle
+ * ricette che ci sono gia', senza rifare foto e illustrazioni.
+ */
+function RereadBook({ book }: { book: RecipeBook }) {
+  const reread = useRereadBook()
+  const confirm = useConfirm()
+  const count = Math.ceil(book.page_count / BOOK_PAGES_PER_CALL)
+  const gate = useAiGate('book_read', { count })
+  const done = book.reread_updated + book.reread_added > 0
+  return (
+    <section className="rounded-card bg-surface-container-low p-4">
+      <h2 className="text-title-small">{gettext('Rileggi le ricette')}</h2>
+      <p className="mt-1 text-body-small text-on-surface-variant">
+        {gettext(
+          'Rilegge il PDF per riprendere quantità e passaggi che la prima lettura ha perso. Foto e illustrazioni restano.',
+        )}
+      </p>
+      {done && (
+        <p className="mt-2 flex items-center gap-1 text-body-small text-on-surface-variant">
+          <Icon name="check_circle" size={16} />
+          {interpolate(
+            ngettext(
+              'Ultima rilettura: %s ricetta aggiornata',
+              'Ultima rilettura: %s ricette aggiornate',
+              book.reread_updated,
+            ),
+            [book.reread_updated],
+          )}
+          {book.reread_added > 0 &&
+            ` · ${interpolate(ngettext('%s nuova', '%s nuove', book.reread_added), [book.reread_added])}`}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          className="btn-tonal w-fit"
+          disabled={!gate.allowed || reread.isPending}
+          onClick={async () => {
+            const ok = await confirm({
+              title: gettext('Rileggere il ricettario?'),
+              message: gettext(
+                'Le ricette che non hai salvato prendono ingredienti, quantità, porzioni e passaggi della nuova lettura. In quelle salvate nel tuo ricettario aggiungo solo le quantità che mancano. Foto e illustrazioni non cambiano.',
+              ),
+              confirmLabel: gettext('Rileggi'),
+              icon: 'refresh',
+            })
+            if (ok) reread.mutate(book.id)
+          }}
+        >
+          <Icon name="refresh" size={20} />
+          {gettext('Rileggi le ricette')}
+          {gate.large && <AiKeyIcon />}
+        </button>
+        <AiCost feature="book_read" count={count} />
+      </div>
+      <ErrorBanner error={reread.error} />
+    </section>
   )
 }
 

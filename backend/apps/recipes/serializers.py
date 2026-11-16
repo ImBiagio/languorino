@@ -379,6 +379,8 @@ class RecipeBookSerializer(serializers.ModelSerializer):
     recipe_count = serializers.IntegerField(read_only=True, default=0)
     saved_count = serializers.IntegerField(read_only=True, default=0)
     without_image = serializers.IntegerField(read_only=True, default=0)
+    # Ultima rilettura (ADR 0022): ricette ritrovate e aggiornate, e nuove.
+    reread_updated = serializers.SerializerMethodField()
 
     class Meta:
         model = RecipeBook
@@ -398,10 +400,16 @@ class RecipeBookSerializer(serializers.ModelSerializer):
             "images_pages_done",
             "images_found",
             "images_error",
+            "rereading",
+            "reread_updated",
+            "reread_added",
             "created_at",
             "finished_at",
         ]
         read_only_fields = [field for field in fields if field != "title"]
+
+    def get_reread_updated(self, book: RecipeBook) -> int:
+        return max(len(book.reread_done) - book.reread_added, 0)
 
     def validate_title(self, value: str) -> str:
         value = " ".join(value.split())

@@ -329,6 +329,58 @@ class RecipeBookRetryView(APIView):
         )
 
 
+class RecipeBookRereadView(APIView):
+    """Rilegge il PDF con le regole di adesso (ADR 0022): ingredienti, quantita'
+    e passaggi delle ricette che ci sono gia', senza rifare le immagini."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: RecipeBookSerializer})
+    def post(self, request, pk):
+        book = get_object_or_404(RecipeBook, pk=pk, owner=request.user)
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        if book.status != RecipeBook.Status.READY:
+            raise serializers.ValidationError(
+                {"detail": _("Prima finisco di leggere il ricettario.")}
+            )
+        # Le immagini si scrivono sulle stesse ricette: una cosa alla volta.
+        if book.images_status in (
+            RecipeBook.ImagesStatus.SEARCHING,
+            RecipeBook.ImagesStatus.DRAWING,
+        ):
+            raise serializers.ValidationError(
+                {"detail": _("Aspetta che finisca con le immagini.")}
+            )
+        with transaction.atomic():
+            book.status = RecipeBook.Status.QUEUED
+            book.rereading = True
+            book.pages_done = 0
+            book.reread_done = []
+            book.reread_added = 0
+            book.error = ""
+            book.save(
+                update_fields=[
+                    "status",
+                    "rereading",
+                    "pages_done",
+                    "reread_done",
+                    "reread_added",
+                    "error",
+                    "updated_at",
+                ]
+            )
+            enqueue_book(book)
+        return Response(
+            RecipeBookSerializer(books_of(request.user).get(pk=pk)).data,
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
 # --- immagini (ADR 0011) ------------------------------------------------------------------
 
 PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
