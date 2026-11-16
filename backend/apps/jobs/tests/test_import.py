@@ -117,7 +117,7 @@ def test_import_da_foto(user, api, gemini, django_capture_on_commit_callbacks):
     assert isinstance(gemini["files"][2], str)
     # Trascrizione piu' ricette: gli 8192 token di default troncavano i pezzi
     # fitti dei ricettari, scambiati per "Gemini sovraccarico".
-    assert gemini["kwargs"]["max_output_tokens"] == 32_768
+    assert gemini["kwargs"]["max_output_tokens"] == 32_000
     assert gemini["kwargs"]["media_resolution"] == "high"
 
     [draft] = api(user).get(f"{JOBS}/{job.id}").data["result"]["recipes"]

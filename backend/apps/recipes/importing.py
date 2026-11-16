@@ -349,8 +349,8 @@ def to_draft(recipe: ImportedRecipe, user) -> dict:
     }
 
 
-# Gemini Flash e Claude Sonnet arrivano ben oltre; e' il tetto di una lettura.
-MAX_OUTPUT_TOKENS = 32_768
+# Il massimo che cornhub accetta (GenerateCall.max_output_tokens <= 32000).
+MAX_OUTPUT_TOKENS = 32_000
 
 
 def read_recipes(
