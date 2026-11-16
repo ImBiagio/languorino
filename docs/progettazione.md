@@ -192,6 +192,9 @@ piano si archivia.
 **PlannedMeal**: `plan`, `date`, `slot`, `recipe`, `servings`, `cooked_on`
 (data in cui si cucina: uguale a `date` se si cucina al momento, prima se
 viene dal prep), `prep_session` (FK facoltativa), `eaten` (bool, per il diario).
+Con il piano del nutrizionista anche `diet_portion` (le dosi a persona della
+dieta, testo scritto dall'LLM) e `diet_foods` (gli alimenti delle frequenze
+settimanali che il pasto contiene), vedi ADR 0010.
 
 **PrepSession**: `plan`, `date`, `minutes_available`, `max_difficulty`,
 `guide` (JSON: i passi in ordine per cucinare insieme tutto quello della

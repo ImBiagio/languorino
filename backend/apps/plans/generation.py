@@ -27,6 +27,7 @@ from typing import Literal
 from django.db import transaction
 from django.db.models import Prefetch, Q
 from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 from pydantic import BaseModel, Field
 
 from apps.ai.client import MAX_OUTPUT_TOKENS, generate
@@ -226,6 +227,16 @@ class MealChoice(BaseModel):
         default=None, description="Titolo di una ricetta nuova, solo se nessuna candidata va bene"
     )
     idea: str = Field(default="", description="Per una ricetta nuova: una frase su cosa contiene")
+    portion: str = Field(
+        default="",
+        description="Solo con il nutrizionista: le dosi a persona di questo pasto secondo il "
+        "suo piano, alimenti e grammi (es. '45 g riso, 85 g ceci lessati, 200 g verdura')",
+    )
+    weekly: list[str] = Field(
+        default_factory=list,
+        description="Solo con il nutrizionista: gli alimenti delle frequenze settimanali che "
+        "questo pasto contiene, coi nomi esatti della lista",
+    )
 
 
 class WeekChoices(BaseModel):
@@ -411,6 +422,41 @@ def leftover_lunches(plan: MealPlan) -> dict:
     return {day: day - timedelta(days=1) for day in days[1:]}
 
 
+def _diet_foods(names: list[str], nutritionist: NutritionistPlan) -> list[str]:
+    """Gli alimenti delle frequenze nominati dall'LLM, coi nomi delle regole
+    (gli altri si scartano: senza un nome noto non si possono contare)."""
+    known = {normalize(item["food"]): item["food"] for item in nutritionist.rules.get("weekly", [])}
+    return list(dict.fromkeys(known[normalize(n)] for n in names if normalize(n) in known))
+
+
+def _over_frequencies(
+    keys: list[tuple], diet: dict[tuple, tuple[str, list[str]]], nutritionist
+) -> dict[tuple, str]:
+    """I pasti della settimana oltre le frequenze del nutrizionista, contate
+    sui pasti (un pranzo-avanzo conta come la sua cena). Non si cambia niente:
+    il pasto porta una nota e l'utente decide se cambiarlo. Prima l'LLM contava
+    i piatti, e con gli avanzi le patate uscivano 6 volte invece di 3."""
+    if nutritionist is None:
+        return {}
+    limits = {item["food"]: item["times"] for item in nutritionist.rules.get("weekly", [])}
+    counts: dict[str, int] = {}
+    over: dict[tuple, str] = {}
+    for key in keys:
+        exceeded = []
+        for food in diet.get(key, ("", []))[1]:
+            counts[food] = counts.get(food, 0) + 1
+            if food in limits and counts[food] > limits[food]:
+                exceeded.append(
+                    ngettext("%(food)s %(times)s volta", "%(food)s %(times)s volte", limits[food])
+                    % {"food": food, "times": limits[food]}
+                )
+        if exceeded:
+            over[key] = _("Oltre le frequenze del nutrizionista (%(rules)s a settimana).") % {
+                "rules": ", ".join(exceeded)
+            }
+    return over
+
+
 def _keeps(recipe: Recipe) -> int:
     return DEFAULT_KEEPS_DAYS if recipe.keeps_days is None else recipe.keeps_days
 
@@ -485,14 +531,26 @@ def generate_week(plan: MealPlan, week: int) -> None:
         )
         if nutritionist is not None:
             variety.append(
+                "- Le frequenze settimanali del nutrizionista si contano sui pasti, non sui "
+                "piatti: una cena che fa anche da pranzo conta DUE volte (patate a cena e "
+                "il giorno dopo a pranzo sono 2 volte). Tienine conto prima di rispondere."
+            )
+            variety.append(
                 "- Con il nutrizionista, ogni cena che fa anche da pranzo e' un piatto unico "
                 "che vale per tutti e due i pasti: ogni porzione unisce, a occhio, meta' di "
                 "un'opzione del pranzo e meta' di una della cena (per esempio cereali e "
                 "legumi del pranzo con il pesce della cena), cosi' cena e pranzo insieme "
                 "portano tutti e due i pasti. Per queste cene vale questo, anche al posto "
-                "della regola alla lettera; in \"idea\" scrivi le due opzioni unite con le "
+                'della regola alla lettera; in "idea" scrivi le due opzioni unite con le '
                 "grammature per porzione."
             )
+    if nutritionist is not None:
+        variety.append(
+            '- Per OGNI pasto scrivi in "portion" le dosi a persona secondo il nutrizionista '
+            "(alimenti e grammi, verdura compresa), anche per le ricette candidate: si mangia "
+            'quella quantita\', non quella della ricetta. In "weekly" gli alimenti delle '
+            "frequenze settimanali che il pasto contiene, coi nomi della lista."
+        )
     if needs.get("other"):
         variety.append(
             f"- Le candidate per colazioni e spuntini non bastano: inventa ALMENO "
@@ -566,6 +624,8 @@ def generate_week(plan: MealPlan, week: int) -> None:
     pool = [*candidates, *(recipe for recipe in written.values() if recipe is not None)]
     usage: dict = {}
     chosen: dict[tuple, Recipe] = {}
+    # Dosi della dieta e alimenti delle frequenze, per i pasti scelti dall'LLM.
+    diet: dict[tuple, tuple[str, list[str]]] = {}
     for key in wanted:
         choice = picked.get(key)
         recipe = None
@@ -576,6 +636,8 @@ def generate_week(plan: MealPlan, week: int) -> None:
         if recipe is not None:
             chosen[key] = recipe
             usage[recipe.id] = usage.get(recipe.id, 0) + 1
+            if nutritionist is not None:
+                diet[key] = (choice.portion, _diet_foods(choice.weekly, nutritionist))
     if nutritionist is not None and nutritionist.strict:
         # Alla lettera: i buchi si riempiono solo con le ricette che l'LLM ha
         # scelto questa settimana seguendo le opzioni, mai con altre del ricettario.
@@ -595,7 +657,9 @@ def generate_week(plan: MealPlan, week: int) -> None:
         if row["slot"] != MealSlot.LUNCH or row["date"] not in leftovers:
             continue
         evening = leftovers[row["date"]]
-        dinner = chosen.get((evening.isoformat(), MealSlot.DINNER))
+        evening_key = (evening.isoformat(), MealSlot.DINNER)
+        dinner = chosen.get(evening_key)
+        dinner_diet = diet.get(evening_key)
         if dinner is None:
             earlier = (
                 plan.meals.filter(date=evening, slot=MealSlot.DINNER)
@@ -603,10 +667,15 @@ def generate_week(plan: MealPlan, week: int) -> None:
                 .first()
             )
             dinner = earlier.recipe if earlier else None
+            dinner_diet = (earlier.diet_portion, earlier.diet_foods) if earlier else None
         key = (row["date"].isoformat(), row["slot"])
         wanted[key] = row
         if dinner is not None:
             chosen[key] = dinner
+            if dinner_diet:
+                # Stesso piatto, stessa porzione: meta' pranzo e meta' cena.
+                diet[key] = dinner_diet
+    over = _over_frequencies(sorted(wanted), diet, nutritionist)
 
     servings = options.get("servings", 1)
     meals = []
@@ -618,6 +687,9 @@ def generate_week(plan: MealPlan, week: int) -> None:
             # Non regge l'attesa: si cucina il giorno stesso.
             cooked = row["date"]
             note = _("Non regge in frigo: meglio cucinarla il giorno stesso.")
+        portion, foods = diet.get(key, ("", [])) if recipe is not None else ("", [])
+        if recipe is not None and key in over:
+            note = " ".join(filter(None, [note, over[key]]))[:200]
         meals.append(
             PlannedMeal(
                 plan=plan,
@@ -627,6 +699,8 @@ def generate_week(plan: MealPlan, week: int) -> None:
                 servings=servings,
                 cooked_on=cooked,
                 note=note,
+                diet_portion=" ".join(portion.split())[:300],
+                diet_foods=foods,
             )
         )
     with transaction.atomic():

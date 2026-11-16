@@ -180,7 +180,7 @@ def gemini(monkeypatch):
     from apps.plans import generation
     from apps.plans.generation import MealChoice, WeekChoices
 
-    state = {"prompts": [], "kwargs": [], "new": [], "overloaded": 0, "pick": None}
+    state = {"prompts": [], "kwargs": [], "new": [], "overloaded": 0, "pick": None, "diet": None}
 
     def fake_generate(contents, schema, **kwargs):
         prompt = contents[0]
@@ -207,10 +207,14 @@ def gemini(monkeypatch):
         meals = []
         for day, slot, wait in SLOT_LINE.findall(prompt):
             choice = state["pick"](candidates, slot, date.fromisoformat(day), int(wait))
+            # Dosi della dieta e alimenti delle frequenze, se il test li vuole.
+            diet = state["diet"](slot, date.fromisoformat(day)) if state["diet"] else {}
             if isinstance(choice, int):
-                meals.append(MealChoice(date=day, slot=slot, recipe=choice))
+                meals.append(MealChoice(date=day, slot=slot, recipe=choice, **diet))
             elif choice:
-                meals.append(MealChoice(date=day, slot=slot, new_recipe=choice, idea="leggera"))
+                meals.append(
+                    MealChoice(date=day, slot=slot, new_recipe=choice, idea="leggera", **diet)
+                )
         return WeekChoices(meals=meals), "finto"
 
     monkeypatch.setattr(generation, "generate", fake_generate)
@@ -817,6 +821,65 @@ def test_alla_lettera_pranzo_avanzo_unisce_le_due_opzioni(
     tuesday = MONDAY + timedelta(days=1)
     assert meals[(tuesday, "lunch")].recipe.title == "Orzo e merluzzo"
     assert meals[(tuesday, "lunch")].cooked_on == MONDAY
+
+
+def test_dosi_della_dieta_e_frequenze_contate_sui_pasti(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    """Con il nutrizionista ogni pasto porta le dosi a persona della dieta
+    (anche con una ricetta senza quantita'), il pranzo-avanzo quelle della sua
+    cena, e i pasti oltre le frequenze settimanali (contate sui pasti, non sui
+    piatti) hanno una nota."""
+    from apps.plans.models import NutritionistPlan
+
+    nutritionist = NutritionistPlan.objects.create(
+        owner=user,
+        title="Piano",
+        status=NutritionistPlan.Status.CONFIRMED,
+        rules={
+            "meals": [
+                {"slot": "lunch", "options": ["90 g riso + 60 g legumi"]},
+                {"slot": "dinner", "options": ["300 g merluzzo + 220 g patate"]},
+            ],
+            "weekly": [{"food": "Patate", "times": 3}],
+        },
+    )
+    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
+    gemini["diet"] = lambda slot, day: (
+        {"portion": "45 g riso,  150 g merluzzo, 110 g patate", "weekly": ["patate", "dolci"]}
+        if slot == "dinner"
+        else {"portion": "90 g riso, 60 g legumi"}
+    )
+    response = _create(
+        api,
+        user,
+        django_capture_on_commit_callbacks,
+        prep_mode="evening_before",
+        nutritionist_plan=str(nutritionist.id),
+    )
+    week = gemini["prompts"][0]
+    assert "conta DUE volte" in week and '"portion"' in week
+    plan = MealPlan.objects.get(id=response.data["id"])
+    meals = {(m.date, m.slot): m for m in plan.meals.all()}
+    monday_lunch = meals[(MONDAY, "lunch")]
+    assert (monday_lunch.diet_portion, monday_lunch.diet_foods) == ("90 g riso, 60 g legumi", [])
+    tuesday, wednesday = MONDAY + timedelta(days=1), MONDAY + timedelta(days=2)
+    # Il pranzo-avanzo ha le dosi della cena; "dolci" non e' nelle frequenze.
+    assert meals[(tuesday, "lunch")].diet_portion == "45 g riso, 150 g merluzzo, 110 g patate"
+    assert meals[(tuesday, "lunch")].diet_foods == ["Patate"]
+    # Lunedi' cena, martedi' cena e pranzo: 3 volte. Mercoledi' a cena e' la quarta.
+    assert "Oltre le frequenze" not in meals[(tuesday, "lunch")].note
+    assert "Patate 3 volte" in meals[(wednesday, "dinner")].note
+    detail = api(user).get(f"{PLANS}/{plan.id}").data
+    shown = next(m for m in detail["meals"] if m["id"] == monday_lunch.id)
+    assert shown["diet_portion"] == "90 g riso, 60 g legumi"
+    # Cambiato il piatto, le dosi della dieta non valgono piu'.
+    recipe = Recipe.objects.get(title="Frittata")
+    changed = api(user).patch(
+        f"{PLANS}/{plan.id}/meals/{monday_lunch.id}", {"recipe_id": str(recipe.id)}, format="json"
+    )
+    assert changed.status_code == 200, changed.data
+    assert changed.data["diet_portion"] == ""
 
 
 @pytest.mark.parametrize(

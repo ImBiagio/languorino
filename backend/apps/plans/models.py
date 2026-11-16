@@ -90,6 +90,13 @@ class PlannedMeal(models.Model):
     # Perche' il pasto e' vuoto o e' stato cambiato (mostrato all'utente).
     note = models.CharField(max_length=200, blank=True)
     eaten = models.BooleanField(default=False)
+    # Con il piano del nutrizionista: le dosi a persona secondo la dieta,
+    # scritte dall'LLM per ogni pasto ("45 g riso, 150 g merluzzo, ..."). Valgono
+    # anche quando la ricetta non ha quantita' (molte dei ricettari PDF).
+    diet_portion = models.CharField(max_length=300, blank=True)
+    # Gli alimenti delle frequenze settimanali del nutrizionista che il pasto
+    # contiene (coi nomi delle sue regole): servono a contarle sui pasti.
+    diet_foods = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ["date", "slot"]

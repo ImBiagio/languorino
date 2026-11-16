@@ -516,6 +516,8 @@ export interface PlannedMeal {
   eaten: boolean
   /** Quanto mangia una persona di ogni ingrediente (senza q.b. e facoltativi). */
   portion: PortionLine[]
+  /** Con il piano del nutrizionista: le dosi a persona secondo la dieta. */
+  diet_portion: string
 }
 
 export interface PortionLine {

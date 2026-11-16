@@ -213,6 +213,9 @@ class PlannedMealView(APIView):
                 get_object_or_404(Recipe, pk=recipe_id, owner=request.user) if recipe_id else None
             )
             meal.note = "" if meal.recipe else _("Pasto libero.")
+            # Le dosi della dieta erano per il piatto di prima.
+            meal.diet_portion = ""
+            meal.diet_foods = []
         for field, value in data.items():
             setattr(meal, field, value)
         meal.save()

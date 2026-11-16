@@ -72,3 +72,21 @@ confermato. In quel caso:
 - Se arrivano calorie e macro: grammature strutturate e controllo nel codice.
 - Se i nutrizionisti usano spesso piani giorno per giorno da seguire così come
   sono.
+
+**Aggiornamento 2026-11-16, dosi della dieta per pasto e frequenze sui pasti:**
+- Ogni pasto di un piano col nutrizionista porta `diet_portion`: le dosi a
+  persona secondo la dieta ("45 g riso, 150 g merluzzo, 200 g verdura"),
+  scritte dall'LLM nella scelta della settimana. Il piano le mostra al posto
+  delle quantità della ricetta. Serve per le ricette dei ricettari PDF senza
+  dosi ("q.b."): in un piano vero 4 piatti su 8 non dicevano quanto mangiare.
+  Il pranzo-avanzo ha le dosi della sua cena; cambiato il piatto, si svuotano.
+- Le frequenze settimanali si contano sui pasti, non sui piatti: con "la sera
+  cucino anche il pranzo dopo" una cena vale due volte (le patate uscivano 6
+  volte invece di 3). Lo dice il prompt, e il codice ricontrolla: l'LLM indica
+  per ogni pasto gli alimenti delle frequenze (`diet_foods`), il codice li
+  conta e i pasti oltre il limite hanno una nota. Il codice non cambia il
+  pasto: decide l'utente.
+
+Costo accettato: le dosi sono testo dell'LLM, non verificate e non usate
+dalla lista della spesa (che resta sulle quantità delle ricette); il
+conteggio vale solo quanto l'LLM indica bene gli alimenti di ogni pasto.
