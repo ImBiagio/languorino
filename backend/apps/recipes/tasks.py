@@ -178,8 +178,9 @@ OVERLOAD_PAUSE = 120  # secondi, moltiplicati per il numero del tentativo
 
 # acks_late: il messaggio si conferma a fine lavoro, cosi' un worker che muore
 # a meta' non se lo porta via (Redis lo riconsegna).
+# 400 s: due provider in fila con risposte lunghe (vedi importing.read_recipes).
 @shared_task(
-    bind=True, soft_time_limit=240, time_limit=270, acks_late=True, reject_on_worker_lost=True
+    bind=True, soft_time_limit=400, time_limit=430, acks_late=True, reject_on_worker_lost=True
 )
 def read_book_chunk(self, book_id: str) -> None:
     book = (

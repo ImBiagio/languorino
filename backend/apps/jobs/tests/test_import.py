@@ -79,6 +79,7 @@ def gemini(monkeypatch):
             (p["mime"], len(base64.b64decode(p["data"]))) if isinstance(p, dict) else p
             for p in contents
         ]
+        state["kwargs"] = kwargs
         return state["result"], "gemini-finto"
 
     monkeypatch.setattr("apps.recipes.importing.generate", fake_generate)
@@ -114,6 +115,10 @@ def test_import_da_foto(user, api, gemini, django_capture_on_commit_callbacks):
     # A Gemini vanno i file nell'ordine, la foto ridotta a JPEG, piu' il prompt.
     assert [part[0] for part in gemini["files"][:2]] == ["image/jpeg", "application/pdf"]
     assert isinstance(gemini["files"][2], str)
+    # Trascrizione piu' ricette: gli 8192 token di default troncavano i pezzi
+    # fitti dei ricettari, scambiati per "Gemini sovraccarico".
+    assert gemini["kwargs"]["max_output_tokens"] == 32_768
+    assert gemini["kwargs"]["media_resolution"] == "high"
 
     [draft] = api(user).get(f"{JOBS}/{job.id}").data["result"]["recipes"]
     assert draft["title"] == "Torta di mele della nonna"

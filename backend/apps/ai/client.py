@@ -92,6 +92,7 @@ def generate[Schema: BaseModel](
     temperature: float = 0.2,
     fast: bool = False,
     media_resolution: str = "",
+    max_output_tokens: int | None = None,
 ) -> tuple[Schema, str]:
     """Chiede a cornhub e restituisce ``(risposta validata, modello usato)``.
 
@@ -99,8 +100,10 @@ def generate[Schema: BaseModel](
     cornhub). ``user``: chi la chiede, decide chi paga. ``fast``: per chi
     aspetta guardando lo schermo (intervista, frigo; ADR 0014).
     ``media_resolution``: "high" per leggere testo piccolo o scritto a mano
-    nelle foto e nei PDF.
+    nelle foto e nei PDF. ``max_output_tokens``: per le risposte lunghe (le
+    ricette trascritte riga per riga); altrimenti il default di cornhub.
     """
+    extra = {"max_output_tokens": max_output_tokens} if max_output_tokens else {}
     try:
         result = cornhub.generate(
             feature,
@@ -111,6 +114,7 @@ def generate[Schema: BaseModel](
             temperature=temperature,
             media_resolution=media_resolution,
             timeout=_seconds(timeout_ms),
+            **extra,
         )
     except cornhub.AIError as exc:
         raise _translate(exc) from exc

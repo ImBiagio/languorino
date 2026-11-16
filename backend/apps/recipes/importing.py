@@ -349,6 +349,10 @@ def to_draft(recipe: ImportedRecipe, user) -> dict:
     }
 
 
+# Gemini Flash e Claude Sonnet arrivano ben oltre; e' il tetto di una lettura.
+MAX_OUTPUT_TOKENS = 32_768
+
+
 def read_recipes(
     files: list[tuple[bytes, str]],
     *,
@@ -374,8 +378,14 @@ def read_recipes(
         ImportedRecipes,
         feature=feature,
         user=user,
-        timeout_ms=180_000,
+        # cornhub puo' provare due provider in fila (Gemini, poi la chiave
+        # Anthropic dell'utente), ognuno fino al suo tempo massimo.
+        timeout_ms=360_000,
         temperature=0.1,
+        # Trascrizione riga per riga piu' le ricette strutturate: quattro
+        # pagine fitte superano gli 8192 token di default e la risposta
+        # arrivava troncata (prima scambiata per "Gemini sovraccarico").
+        max_output_tokens=MAX_OUTPUT_TOKENS,
         # Scrittura a mano e stampe piccole: le quantita' si leggono solo ad
         # alta risoluzione (con quella di default sparivano le cifre).
         media_resolution="high",
