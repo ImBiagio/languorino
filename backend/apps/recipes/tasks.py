@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from decimal import Decimal
+from difflib import get_close_matches
 
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
@@ -31,30 +33,136 @@ def enqueue_book(book: RecipeBook) -> None:
     transaction.on_commit(lambda: read_book_chunk.delay(str(book.id)))
 
 
-def _save_recipes(book: RecipeBook, drafts: list[dict]) -> int:
-    """Le ricette lette diventano ricette del ricettario PDF (non dell'utente)."""
+def _create_recipe(book: RecipeBook, draft: dict) -> Recipe | None:
+    """Una ricetta letta diventa ricetta del ricettario PDF (non dell'utente)."""
     from .serializers import RecipeSerializer
 
+    serializer = RecipeSerializer(data=draft, context={})
+    if not serializer.is_valid():
+        logger.warning("Ricetta del ricettario %s scartata: %s", book.id, serializer.errors)
+        return None
+    return serializer.save(
+        owner=book.owner,
+        book=book,
+        in_cookbook=False,
+        status=Recipe.Status.DRAFT,
+        source=Recipe.Source.PDF,
+    )
+
+
+def _save_recipes(book: RecipeBook, drafts: list[dict]) -> int:
     seen = {normalize(title) for title in book.recipes.values_list("title", flat=True)}
     saved = 0
     for draft in drafts:
         key = normalize(draft["title"])
         if not key or key in seen:
             continue  # la stessa ricetta letta due volte (pagina di contesto)
-        serializer = RecipeSerializer(data=draft, context={})
-        if not serializer.is_valid():
-            logger.warning("Ricetta del ricettario %s scartata: %s", book.id, serializer.errors)
-            continue
-        serializer.save(
-            owner=book.owner,
-            book=book,
-            in_cookbook=False,
-            status=Recipe.Status.DRAFT,
-            source=Recipe.Source.PDF,
-        )
-        seen.add(key)
-        saved += 1
+        if _create_recipe(book, draft) is not None:
+            seen.add(key)
+            saved += 1
     return saved
+
+
+# --- rilettura (ADR 0022) ---------------------------------------------------------------
+
+# Quello che la rilettura riscrive nelle ricette mai salvate: cio' che serve
+# a cucinarle. Titolo, tag, foto e illustrazioni restano.
+REREAD_FIELDS = ("servings", "prep_minutes", "cook_minutes", "steps", "ingredients")
+
+
+def _replace_content(recipe: Recipe, draft: dict) -> bool:
+    """Ricetta mai salvata nel ricettario dell'utente: nessuno l'ha toccata,
+    si riscrive con la lettura nuova (stessa ricetta, stesso id, stessa foto)."""
+    from .nutrition import FIELDS
+    from .serializers import RecipeSerializer
+
+    data = {field: draft[field] for field in REREAD_FIELDS if field in draft}
+    # Calorie scritte nella ricetta: valgono piu' della stima dell'AI, non
+    # di quelle scritte a mano dall'utente.
+    if (
+        draft.get("nutrition_source") == Recipe.NutritionSource.RECIPE
+        and recipe.nutrition_source != Recipe.NutritionSource.MANUAL
+    ):
+        data.update({field: draft.get(field) for field in FIELDS})
+        data["nutrition_source"] = Recipe.NutritionSource.RECIPE
+    serializer = RecipeSerializer(recipe, data=data, partial=True, context={})
+    if not serializer.is_valid():
+        logger.warning("Rilettura di %s scartata: %s", recipe.id, serializer.errors)
+        return False
+    serializer.save()
+    return True
+
+
+def _fill_quantities(recipe: Recipe, draft: dict) -> bool:
+    """Ricetta salvata nel ricettario: l'utente puo' averla corretta, quindi
+    si riempiono solo le quantita' che mancano, riportate alle sue porzioni.
+    Righe tolte o aggiunte, passaggi e porzioni restano i suoi."""
+    found: dict[str, dict] = {}
+    for row in draft.get("ingredients", []):
+        if row.get("quantity") in (None, ""):
+            continue
+        if row.get("ingredient_id"):
+            found.setdefault(str(row["ingredient_id"]), row)
+        found.setdefault(normalize(row["name"]), row)
+    if not found:
+        return False
+    read_servings = draft.get("servings") or recipe.servings
+    scale = Decimal(recipe.servings) / Decimal(read_servings)
+    filled = False
+    for line in recipe.ingredients.select_related("ingredient").filter(quantity__isnull=True):
+        row = (
+            found.get(str(line.ingredient_id))
+            or found.get(normalize(line.ingredient.name))
+            or found.get(normalize(line.ingredient.display_name))
+        )
+        if row is None:
+            continue
+        line.quantity = (Decimal(str(row["quantity"])) * scale).quantize(Decimal("0.01"))
+        line.unit = row["unit"]
+        line.save(update_fields=["quantity", "unit"])
+        filled = True
+    if filled:
+        # Le grammature sono cambiate: una stima dell'AI fatta senza non vale piu'.
+        from .nutrition import clear
+
+        if recipe.nutrition_source == Recipe.NutritionSource.AI:
+            clear(recipe)
+        recipe.save()
+    return filled
+
+
+def _reread_recipes(book: RecipeBook, drafts: list[dict]) -> None:
+    """Le ricette rilette aggiornano quelle che ci sono gia' (stesso titolo);
+    quelle che la prima lettura aveva perso si aggiungono, senza immagine."""
+    known: dict[str, Recipe] = {}
+    # Anche le cancellate: una ricetta tolta dall'utente non deve tornare.
+    for recipe in Recipe.all_objects.filter(book=book).order_by("created_at"):
+        known.setdefault(normalize(recipe.title), recipe)
+    done = set(book.reread_done)
+    for draft in drafts:
+        key = normalize(draft["title"])
+        if not key:
+            continue
+        # Un titolo letto con una lettera diversa e' la stessa ricetta.
+        match = known.get(key) or next(
+            (known[k] for k in get_close_matches(key, list(known), n=1, cutoff=0.9)), None
+        )
+        if match is None:
+            created = _create_recipe(book, draft)
+            if created is not None:
+                known[key] = created
+                done.add(str(created.id))
+                book.reread_added += 1
+            continue
+        if match.deleted_at is not None or str(match.id) in done:
+            # Tolta dall'utente, o gia' riletta dal pezzo prima (pagina di contesto).
+            continue
+        done.add(str(match.id))
+        if match.in_cookbook:
+            _fill_quantities(match, draft)
+        else:
+            _replace_content(match, draft)
+    book.reread_done = sorted(done)
 
 
 # Un pezzo che non avanza da cosi' tanto e' stato perso (worker riavviato da un
@@ -86,7 +194,8 @@ def read_book_chunk(self, book_id: str) -> None:
     if book.pages_done >= book.page_count:
         book.status = RecipeBook.Status.READY
         book.finished_at = timezone.now()
-        book.save(update_fields=["status", "finished_at", "updated_at"])
+        book.rereading = False
+        book.save(update_fields=["status", "finished_at", "rereading", "updated_at"])
         return
 
     book.status = RecipeBook.Status.READING
@@ -105,22 +214,37 @@ def read_book_chunk(self, book_id: str) -> None:
                 feature="book_read",
             )
             with transaction.atomic():
-                _save_recipes(book, result["recipes"])
+                rereading = book.rereading
+                if rereading:
+                    _reread_recipes(book, result["recipes"])
+                else:
+                    _save_recipes(book, result["recipes"])
                 book.pages_done = end
                 book.error = ""
                 if end >= book.page_count:
                     book.status = RecipeBook.Status.READY
                     book.finished_at = timezone.now()
+                    book.rereading = False
                 # Solo i campi della lettura: il libro e' stato caricato prima
                 # della chiamata all'AI (decine di secondi) e un save() intero
                 # riscriverebbe il titolo cambiato nel frattempo dall'utente.
                 book.save(
-                    update_fields=["pages_done", "error", "status", "finished_at", "updated_at"]
+                    update_fields=[
+                        "pages_done",
+                        "error",
+                        "status",
+                        "finished_at",
+                        "rereading",
+                        "reread_done",
+                        "reread_added",
+                        "updated_at",
+                    ]
                 )
                 if book.status == RecipeBook.Status.READING:
                     enqueue_book(book)
-                else:
+                elif not rereading:
                     # Letto tutto: si cercano le foto delle ricette (ADR 0015).
+                    # Nella rilettura no: le immagini ci sono gia'.
                     start_book_images(book)
             return
         except AIOverloaded as exc:

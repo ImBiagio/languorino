@@ -172,6 +172,13 @@ class RecipeBook(BaseModel):
     # Lingua di chi l'ha caricato: per i tag e i messaggi d'errore.
     language = models.CharField(max_length=8, default="it")
     finished_at = models.DateTimeField(null=True, blank=True)
+    # La lettura in corso e' una rilettura (ADR 0022): aggiorna le ricette che
+    # ci sono gia' invece di saltarle, e alla fine non rifa' le immagini.
+    rereading = models.BooleanField(default=False)
+    # Le ricette gia' rilette (id): la pagina di contesto le fa rileggere al
+    # pezzo dopo, e conta la prima lettura, come nella lettura normale.
+    reread_done = models.JSONField(default=list, blank=True)
+    reread_added = models.PositiveSmallIntegerField(default=0)
 
     class ImagesStatus(models.TextChoices):
         # Immagini delle ricette (ADR 0015): foto ritagliate dal PDF, poi

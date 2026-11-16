@@ -470,6 +470,11 @@ export interface RecipeBook {
   images_pages_done: number
   images_found: number
   images_error: string
+  /** La lettura in corso e' una rilettura (ADR 0022). */
+  rereading: boolean
+  /** Ultima rilettura: ricette ritrovate e aggiornate, e quelle nuove. */
+  reread_updated: number
+  reread_added: number
   created_at: string
   finished_at: string | null
 }

@@ -5,6 +5,7 @@ from .views import (
     RecipeBookDetailView,
     RecipeBookImagesView,
     RecipeBookListView,
+    RecipeBookRereadView,
     RecipeBookRetryView,
     RecipeDetailView,
     RecipeImageDrawView,
@@ -37,6 +38,11 @@ urlpatterns = [
     path("recipe-books", RecipeBookListView.as_view(), name="recipe-books"),
     path("recipe-books/<uuid:pk>", RecipeBookDetailView.as_view(), name="recipe-book-detail"),
     path("recipe-books/<uuid:pk>/retry", RecipeBookRetryView.as_view(), name="recipe-book-retry"),
+    path(
+        "recipe-books/<uuid:pk>/reread",
+        RecipeBookRereadView.as_view(),
+        name="recipe-book-reread",
+    ),
     path(
         "recipe-books/<uuid:pk>/images", RecipeBookImagesView.as_view(), name="recipe-book-images"
     ),

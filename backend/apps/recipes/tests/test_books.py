@@ -328,3 +328,118 @@ def test_rinominare_durante_la_lettura(user, api, gemini, django_capture_on_comm
     book = RecipeBook.objects.get()
     assert renamed and book.status == RecipeBook.Status.READY
     assert book.title == "Le ricette di Anna"
+
+
+# --- rilettura (ADR 0022) ---------------------------------------------------------------
+
+
+def _with(draft, **changes):
+    """Una bozza con quantita', porzioni o passaggi diversi."""
+    quantity = changes.pop("quantity", "keep")
+    draft = {**draft, **changes}
+    if quantity != "keep":
+        draft["ingredients"] = [{**draft["ingredients"][0], "quantity": quantity}]
+    return draft
+
+
+def _reread(api, user, book, capture):
+    with override_settings(BOOK_PAGES_PER_CHUNK=4), capture(execute=True):
+        return api(user).post(f"{BOOKS}/{book.id}/reread")
+
+
+def test_rilettura_aggiorna_le_ricette_senza_rifare_le_immagini(
+    user, api, gemini, django_capture_on_commit_callbacks
+):
+    # Prima lettura con le quantita' perse, come succedeva prima del fix.
+    gemini["by_start"] = {
+        1: [_with(_draft("Zuppa di ceci"), quantity=None)],
+        5: [
+            _with(_draft("Vellutata di zucca", "zucca"), quantity=None),
+            _draft("Porridge", "fiocchi d'avena"),
+        ],
+    }
+    _start(api, user, django_capture_on_commit_callbacks)
+    book = RecipeBook.objects.get()
+    zuppa = Recipe.objects.get(title="Zuppa di ceci")
+    vellutata = Recipe.objects.get(title="Vellutata di zucca")
+    porridge = Recipe.objects.get(title="Porridge")
+    # Foto gia' fatte, una ricetta salvata e corretta a mano, una tolta.
+    Recipe.objects.filter(id=zuppa.id).update(image="recipes/zuppa.webp")
+    RecipeBook.objects.filter(id=book.id).update(images_status=RecipeBook.ImagesStatus.DONE)
+    api(user).post(f"/api/recipes/{vellutata.id}/save")
+    Recipe.objects.filter(id=vellutata.id).update(steps=["La mia versione."])
+    api(user).delete(f"/api/recipes/{porridge.id}")
+    gemini["calls"].clear()
+
+    gemini["by_start"] = {
+        1: [_with(_draft("Zuppa di ceci"), steps=["Scola i ceci.", "Frulla."])],
+        5: [
+            # Riletta anche dal pezzo prima: conta la prima lettura.
+            _with(_draft("Zuppa di  ceci"), quantity="999"),
+            _with(_draft("Vellutata di zucca", "zucca"), quantity="300", servings=2),
+            _draft("Porridge", "fiocchi d'avena"),
+        ],
+        9: [_draft("Torta di mele", "mele")],
+    }
+    response = _reread(api, user, book, django_capture_on_commit_callbacks)
+    assert response.status_code == 202, response.data
+    assert response.data["rereading"] is True
+
+    assert gemini["calls"] == [(1, 5), (5, 5), (9, 1)]
+    book.refresh_from_db()
+    assert (book.status, book.rereading, book.images_status) == ("ready", False, "done")
+    data = api(user).get(f"{BOOKS}/{book.id}").data
+    assert (data["reread_updated"], data["reread_added"]) == (2, 1)
+
+    # Mai salvata: riscritta, stessa ricetta e stessa foto.
+    zuppa.refresh_from_db()
+    assert zuppa.steps == ["Scola i ceci.", "Frulla."]
+    assert [line.quantity for line in zuppa.ingredients.all()] == [100]
+    assert zuppa.image.name == "recipes/zuppa.webp"
+    # Salvata: solo la quantita' che mancava, riportata alla sua porzione.
+    vellutata.refresh_from_db()
+    assert vellutata.steps == ["La mia versione."]
+    assert [line.quantity for line in vellutata.ingredients.all()] == [150]
+    # Tolta dall'utente: non torna. Quella persa la prima volta si aggiunge.
+    assert Recipe.all_objects.filter(title="Porridge").count() == 1
+    assert Recipe.objects.filter(title="Porridge").exists() is False
+    assert Recipe.objects.filter(book=book, title="Torta di mele", in_cookbook=False).exists()
+
+
+def test_rilettura_solo_a_lettura_finita_e_senza_immagini_in_corso(
+    user, other_user, api, gemini, django_capture_on_commit_callbacks
+):
+    gemini["by_start"] = {1: [_draft("Zuppa di ceci")]}
+    _start(api, user, django_capture_on_commit_callbacks, pages=1)
+    book = RecipeBook.objects.get()
+    assert api(other_user).post(f"{BOOKS}/{book.id}/reread").status_code == 404
+
+    RecipeBook.objects.filter(id=book.id).update(images_status=RecipeBook.ImagesStatus.DRAWING)
+    assert api(user).post(f"{BOOKS}/{book.id}/reread").status_code == 400
+    RecipeBook.objects.filter(id=book.id).update(
+        images_status=RecipeBook.ImagesStatus.DONE, status=RecipeBook.Status.FAILED
+    )
+    assert api(user).post(f"{BOOKS}/{book.id}/reread").status_code == 400
+
+
+def test_rilettura_interrotta_si_riprende(user, api, gemini, django_capture_on_commit_callbacks):
+    gemini["by_start"] = {1: [_with(_draft("Zuppa di ceci"), quantity=None)]}
+    _start(api, user, django_capture_on_commit_callbacks)
+    book = RecipeBook.objects.get()
+    RecipeBook.objects.filter(id=book.id).update(images_status=RecipeBook.ImagesStatus.DONE)
+
+    gemini["by_start"] = {1: [_draft("Zuppa di ceci")], 5: [_draft("Vellutata", "zucca")]}
+    gemini["fail_at"] = 5
+    _reread(api, user, book, django_capture_on_commit_callbacks)
+    book.refresh_from_db()
+    assert (book.status, book.rereading, book.pages_done) == ("failed", True, 4)
+
+    gemini["fail_at"] = None
+    with override_settings(BOOK_PAGES_PER_CHUNK=4), django_capture_on_commit_callbacks(
+        execute=True
+    ):
+        assert api(user).post(f"{BOOKS}/{book.id}/retry").status_code == 202
+    book.refresh_from_db()
+    assert (book.status, book.rereading, book.reread_added) == ("ready", False, 1)
+    assert book.images_status == RecipeBook.ImagesStatus.DONE
+    assert Recipe.objects.get(title="Zuppa di ceci").ingredients.get().quantity == 100

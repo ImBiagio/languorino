@@ -137,6 +137,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `PUT/DELETE /api/shared/recipes/{token}/rating` `{stars}` · `GET/POST …/comments` (multipart `text`, `parent`, `images`) · `DELETE /api/comments/{id}` | voti da 1 a 5 stelle, commenti con risposte e foto |
 | `POST /api/recipes/{id}/nutrition` | calorie e macro a porzione stimati dall'AI dagli ingredienti, in un job ([ADR 0018](docs/decisions/0018-calorie-e-macro-delle-ricette.md)); si leggono anche dalla ricetta importata o si scrivono a mano |
 | `POST /api/recipe-books/{id}/images` | foto delle ricette ritagliate dal PDF e illustrazioni AI per le altre; parte anche da sola a fine lettura ([ADR 0015](docs/decisions/0015-immagini-dei-ricettari-pdf.md)) |
+| `POST /api/recipe-books/{id}/reread` | rilegge il PDF e aggiorna quantità e passaggi delle ricette che ci sono già, senza rifare le immagini ([ADR 0022](docs/decisions/0022-rilettura-dei-ricettari.md)) |
 | `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
 | `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto (ogni pasto ha `portion`: grammature a persona) |

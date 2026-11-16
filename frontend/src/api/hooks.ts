@@ -427,6 +427,18 @@ export function useRetryBook() {
   })
 }
 
+/** Rilegge il PDF e aggiorna le ricette che ci sono gia' (ADR 0022). */
+export function useRereadBook() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<RecipeBook>(`/api/recipe-books/${id}/reread`),
+    onSuccess: (book) => {
+      client.setQueryData(keys.book(book.id), book)
+      void client.invalidateQueries({ queryKey: keys.books })
+    },
+  })
+}
+
 export function useRenameBook() {
   const client = useQueryClient()
   return useMutation({
