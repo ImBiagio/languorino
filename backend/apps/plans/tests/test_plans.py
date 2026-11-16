@@ -768,15 +768,55 @@ def test_la_sera_cucino_anche_il_pranzo_dopo(
     )
 
 
-def test_alla_lettera_niente_pranzi_avanzo(user, cookbook):
+def test_pranzi_avanzo_solo_la_sera_prima(user, cookbook):
     from apps.plans.generation import leftover_lunches
+
+    assert len(leftover_lunches(_plan(user, prep_mode="evening_before"))) == 6
+    assert leftover_lunches(_plan(user, prep_mode="none")) == {}
+
+
+def test_alla_lettera_pranzo_avanzo_unisce_le_due_opzioni(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    """Con il nutrizionista alla lettera e "la sera cucino anche il pranzo
+    dopo" il pranzo resta l'avanzo della cena (prima si cucinavano due piatti
+    diversi): il piatto unisce a occhio l'opzione del pranzo e quella della cena."""
     from apps.plans.models import NutritionistPlan
 
-    plan = _plan(user, prep_mode="evening_before")
-    assert len(leftover_lunches(plan, None)) == 6
-    strict = NutritionistPlan(owner=user, title="P", strict=True, rules={})
-    assert leftover_lunches(plan, strict) == {}
-    assert leftover_lunches(_plan(user, prep_mode="none"), None) == {}
+    nutritionist = NutritionistPlan.objects.create(
+        owner=user,
+        title="Piano",
+        status=NutritionistPlan.Status.CONFIRMED,
+        rules={
+            "meals": [
+                {"slot": "lunch", "options": ["90 g cereali + 60 g legumi"]},
+                {"slot": "dinner", "options": ["300 g pesce bianco + 60 g pane"]},
+            ]
+        },
+    )
+
+    def pick(candidates, slot, day, wait):
+        if slot == "dinner" and day == MONDAY:
+            return "Orzo e merluzzo"
+        return candidates["Zuppa di ceci"]
+
+    gemini["pick"] = pick
+    response = _create(
+        api,
+        user,
+        django_capture_on_commit_callbacks,
+        prep_mode="evening_before",
+        nutritionist_plan=str(nutritionist.id),
+    )
+    plan = MealPlan.objects.get(id=response.data["id"])
+    assert "piatto unico" in gemini["prompts"][0]
+    written = gemini["prompts"][1]
+    assert "anche il pranzo del giorno dopo" in written
+    assert "90 g cereali + 60 g legumi" in written and "300 g pesce bianco" in written
+    meals = {(m.date, m.slot): m for m in plan.meals.select_related("recipe")}
+    tuesday = MONDAY + timedelta(days=1)
+    assert meals[(tuesday, "lunch")].recipe.title == "Orzo e merluzzo"
+    assert meals[(tuesday, "lunch")].cooked_on == MONDAY
 
 
 @pytest.mark.parametrize(

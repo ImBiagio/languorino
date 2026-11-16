@@ -291,6 +291,30 @@ def meal_rules_text(rules: dict, slots: list[str]) -> str:
     return text
 
 
+def combined_meal_text(rules: dict) -> str:
+    """Per la cena che fa anche da pranzo il giorno dopo (una sola cottura):
+    ogni porzione e' meta' pranzo e meta' cena del nutrizionista, cosi' i due
+    pasti insieme portano le grammature di tutti e due. A occhio, non al
+    grammo: l'utente ha scelto di mangiare a pranzo la cena."""
+    lunch = slot_options(rules, "lunch")[:4]
+    dinner = slot_options(rules, "dinner")[:4]
+    text = ""
+    if lunch or dinner:
+        text += (
+            "\nQuesta cena e' anche il pranzo del giorno dopo (una sola cottura). Ogni "
+            "porzione unisce, a occhio, meta' di un'opzione del pranzo e meta' di una "
+            "della cena del nutrizionista (porzione di una persona, da moltiplicare per le "
+            "porzioni)."
+        )
+        if lunch:
+            text += "\nPranzo, una di queste: " + " | ".join(lunch) + "."
+        if dinner:
+            text += "\nCena, una di queste: " + " | ".join(dinner) + "."
+    if substitutions := substitutions_text(rules):
+        text += "\n" + substitutions + "\n" + SWAP_RULE
+    return text
+
+
 def slot_options(rules: dict, slot: str) -> list[str]:
     for meal in rules.get("meals", []):
         if meal["slot"] == slot:

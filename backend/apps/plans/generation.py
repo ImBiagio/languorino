@@ -306,14 +306,18 @@ def write_recipe(
     nutritionist: NutritionistPlan | None = None,
 ) -> Recipe | None:
     """Scrive e salva una ricetta nuova per il piano; None se tocca un divieto."""
-    from .nutritionist import avoided, meal_rules_text
+    from .nutritionist import avoided, combined_meal_text, meal_rules_text
 
     options = plan.settings
     extra = ""
     avoid = []
     if nutritionist is not None:
         avoid = nutritionist.rules.get("avoid_foods", [])
-        extra += meal_rules_text(nutritionist.rules, [row["slot"] for row in uses])
+        if any(row.get("feeds_lunch") for row in uses):
+            # Cena che e' anche il pranzo di domani: le due opzioni in un piatto.
+            extra += combined_meal_text(nutritionist.rules)
+        else:
+            extra += meal_rules_text(nutritionist.rules, [row["slot"] for row in uses])
         if avoid:
             extra += "\nIl nutrizionista dice di evitare: " + ", ".join(avoid) + "."
     slots = sorted({SLOT_NAMES[row["slot"]] for row in uses})
@@ -384,14 +388,17 @@ def variety_needs(
     return needs
 
 
-def leftover_lunches(plan: MealPlan, nutritionist: NutritionistPlan | None) -> dict:
+def leftover_lunches(plan: MealPlan) -> dict:
     """Con "la sera cucino anche il pranzo dopo": ``{giorno del pranzo: giorno
     della cena}`` per ogni pranzo che e' l'avanzo della cena della sera prima.
 
     Una sola cottura, doppia porzione: prima si sceglievano pranzo e cena come
     due piatti diversi, e la sera si cucinavano due cose (e lo stesso piatto
     su due sere di fila). Il primo pranzo del piano non ha una cena prima.
-    Non con il nutrizionista alla lettera: pranzo e cena hanno opzioni diverse.
+    Anche con il nutrizionista alla lettera: chi sceglie questa modalita' vuole
+    mangiare a pranzo la cena, e il piatto unisce a occhio le sue opzioni di
+    pranzo e cena (``combined_meal_text``). Prima qui si rinunciava agli avanzi
+    e la sera si cucinavano due piatti diversi.
     """
     options = plan.settings
     slots = set(options.get("slots", []))
@@ -399,8 +406,6 @@ def leftover_lunches(plan: MealPlan, nutritionist: NutritionistPlan | None) -> d
         options.get("prep_mode") != "evening_before"
         or not {MealSlot.LUNCH, MealSlot.DINNER} <= slots
     ):
-        return {}
-    if nutritionist is not None and nutritionist.strict:
         return {}
     days = plan_dates(plan.start_date, plan.days)
     return {day: day - timedelta(days=1) for day in days[1:]}
@@ -418,12 +423,12 @@ def generate_week(plan: MealPlan, week: int) -> None:
     all_rows = week_rows(plan, week)
     candidates = candidate_recipes(plan)
     nutritionist = nutritionist_of(plan)
-    leftovers = leftover_lunches(plan, nutritionist)
+    leftovers = leftover_lunches(plan)
     # I pranzi-avanzo non si scelgono: li copia il codice dalla cena prima, che
     # quindi deve reggere almeno un giorno in frigo.
     feeding = set(leftovers.values())
     rows = [
-        {**row, "wait": max(row["wait"], 1)}
+        {**row, "wait": max(row["wait"], 1), "feeds_lunch": True}
         if row["slot"] == MealSlot.DINNER and row["date"] in feeding
         else row
         for row in all_rows
@@ -478,6 +483,16 @@ def generate_week(plan: MealPlan, week: int) -> None:
             "dopo (da portare o scaldare). Scegli cene che restano buone il giorno dopo; i "
             "pranzi non li devi scegliere, tranne quelli nella lista."
         )
+        if nutritionist is not None:
+            variety.append(
+                "- Con il nutrizionista, ogni cena che fa anche da pranzo e' un piatto unico "
+                "che vale per tutti e due i pasti: ogni porzione unisce, a occhio, meta' di "
+                "un'opzione del pranzo e meta' di una della cena (per esempio cereali e "
+                "legumi del pranzo con il pesce della cena), cosi' cena e pranzo insieme "
+                "portano tutti e due i pasti. Per queste cene vale questo, anche al posto "
+                "della regola alla lettera; in \"idea\" scrivi le due opzioni unite con le "
+                "grammature per porzione."
+            )
     if needs.get("other"):
         variety.append(
             f"- Le candidate per colazioni e spuntini non bastano: inventa ALMENO "

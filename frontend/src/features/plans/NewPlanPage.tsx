@@ -155,6 +155,30 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           </div>
         </Card>
 
+        {confirmed.length > 0 && (
+          <Card title={gettext('Piano del nutrizionista')} icon="clinical_notes">
+            {confirmed.map((item) => (
+              <SourceToggle
+                key={item.id}
+                icon="clinical_notes"
+                label={item.title}
+                hint={
+                  item.strict
+                    ? gettext('Alla lettera: ogni pasto è una delle sue opzioni')
+                    : gettext('Con piatti equivalenti, stesse grammature')
+                }
+                checked={plan.nutritionist_plan === item.id}
+                onChange={(checked) => follow(checked ? item : null)}
+              />
+            ))}
+            <p className="text-body-small text-on-surface-variant">
+              {gettext(
+                'Le sue opzioni, frequenze e alimenti da evitare prendono il posto dell’obiettivo; le ricette che non trovo le scrivo seguendo le sue grammature.',
+              )}
+            </p>
+          </Card>
+        )}
+
         <Card title={gettext('Pasti e porzioni')} icon="restaurant">
           <div className="flex flex-wrap gap-2">
             {MEAL_OPTIONS.map((option) => {
@@ -240,30 +264,6 @@ function NewPlanForm({ profile }: { profile: Profile }) {
             />
           </div>
         </Card>
-
-        {confirmed.length > 0 && (
-          <Card title={gettext('Piano del nutrizionista')} icon="clinical_notes">
-            {confirmed.map((item) => (
-              <SourceToggle
-                key={item.id}
-                icon="clinical_notes"
-                label={item.title}
-                hint={
-                  item.strict
-                    ? gettext('Alla lettera: ogni pasto è una delle sue opzioni')
-                    : gettext('Con piatti equivalenti, stesse grammature')
-                }
-                checked={plan.nutritionist_plan === item.id}
-                onChange={(checked) => follow(checked ? item : null)}
-              />
-            ))}
-            <p className="text-body-small text-on-surface-variant">
-              {gettext(
-                'Le sue opzioni, frequenze e alimenti da evitare prendono il posto dell’obiettivo; le ricette che non trovo le scrivo seguendo le sue grammature.',
-              )}
-            </p>
-          </Card>
-        )}
 
         <Card title={gettext('Da dove prendo le ricette')} icon="menu_book">
           <SourceToggle

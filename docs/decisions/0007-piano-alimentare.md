@@ -50,8 +50,18 @@ Gemini sceglie solo le cene (e il primo pranzo del piano), che devono reggere
 un giorno; il codice copia la cena nel pranzo dopo, anche a cavallo di due
 settimane (`leftover_lunches`). Prima pranzo e cena si sceglievano come due
 piatti diversi: la sera si cucinavano due cose e lo stesso piatto su due sere
-di fila. Non vale con il piano del nutrizionista alla lettera, dove pranzo e
-cena hanno opzioni diverse.
+di fila.
+
+**Aggiornamento 2026-11-16, pranzo-avanzo anche col nutrizionista alla
+lettera:** prima con il piano alla lettera i pranzi-avanzo erano spenti
+(pranzo e cena hanno opzioni diverse, per esempio cereali e legumi a pranzo,
+pesce e pane a cena) e la sera si cucinavano due piatti. Chi sceglie "la sera
+cucino anche il pranzo dopo" vuole mangiare a pranzo la cena: ora vale anche
+alla lettera, e la cena che fa da pranzo è un piatto unico in cui ogni
+porzione unisce a occhio metà dell'opzione del pranzo e metà di quella della
+cena (`combined_meal_text`), così i due pasti insieme portano le grammature
+di tutti e due. Costo accettato: le grammature sono approssimate, non quelle
+esatte di ciascun pasto.
 
 **Aggiornamento 2026-11-11, grammature, percentuale e cambio pasto:**
 - Ogni pasto del piano porta `portion`: per ingrediente quanto mangia una
