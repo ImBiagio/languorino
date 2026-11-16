@@ -74,14 +74,10 @@ function NewPlanForm({ profile }: { profile: Profile }) {
     new_share: 25,
   }))
   const set = (changes: Partial<PlanPayload>) => setPlan((current) => ({ ...current, ...changes }))
-  // Seguire il piano del nutrizionista: i pasti diventano i suoi.
-  const follow = (chosen: NutritionistPlan | null) =>
-    set({
-      nutritionist_plan: chosen?.id ?? null,
-      ...(chosen && chosen.rules.meals.length
-        ? { slots: chosen.rules.meals.map((meal) => meal.slot) }
-        : {}),
-    })
+  // Seguire il piano del nutrizionista non tocca i pasti scelti: le sue regole
+  // valgono per quelli che ci sono. Prima li sostituiva con tutti i suoi, in
+  // silenzio, e colazione e merende tornavano anche se l'utente le aveva tolte.
+  const follow = (chosen: NutritionistPlan | null) => set({ nutritionist_plan: chosen?.id ?? null })
   // Arrivati da "Crea un piano da qui": il piano del nutrizionista gia' scelto.
   const preset = useRef(params.get('nutrizionista'))
   useEffect(() => {

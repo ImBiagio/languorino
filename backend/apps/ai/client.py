@@ -77,6 +77,13 @@ def _translate(exc: cornhub.AIError) -> AIError:
     return kind(exc.message, exc.code, exc.account_url)
 
 
+# Il massimo che cornhub accetta (GenerateCall.max_output_tokens <= 32000).
+# Serve alle risposte lunghe: i modelli Gemini che "pensano" spendono parte del
+# budget nel ragionamento, e col default di cornhub (8192) una settimana con
+# cinque pasti al giorno o un pezzo di ricettario arrivava troncata.
+MAX_OUTPUT_TOKENS = 32_000
+
+
 def _seconds(timeout_ms: int) -> int:
     # cornhub prova piu' modelli in fila: almeno il suo tempo di default.
     return max(150, timeout_ms // 1000)
@@ -101,7 +108,8 @@ def generate[Schema: BaseModel](
     aspetta guardando lo schermo (intervista, frigo; ADR 0014).
     ``media_resolution``: "high" per leggere testo piccolo o scritto a mano
     nelle foto e nei PDF. ``max_output_tokens``: per le risposte lunghe (le
-    ricette trascritte riga per riga); altrimenti il default di cornhub.
+    ricette trascritte riga per riga, le settimane del piano); altrimenti il
+    default di cornhub.
     """
     extra = {"max_output_tokens": max_output_tokens} if max_output_tokens else {}
     try:

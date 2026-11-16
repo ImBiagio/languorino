@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from apps.ai.client import file_part, generate
+from apps.ai.client import MAX_OUTPUT_TOKENS, file_part, generate
 from apps.profiles.models import MEAL_SLOT_ORDER
 
 from .models import Difficulty, Unit
@@ -347,10 +347,6 @@ def to_draft(recipe: ImportedRecipe, user) -> dict:
         "ingredients": ingredients[:60],
         "inferred": sorted(set(recipe.inferred)),
     }
-
-
-# Il massimo che cornhub accetta (GenerateCall.max_output_tokens <= 32000).
-MAX_OUTPUT_TOKENS = 32_000
 
 
 def read_recipes(

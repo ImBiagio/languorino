@@ -180,11 +180,12 @@ def gemini(monkeypatch):
     from apps.plans import generation
     from apps.plans.generation import MealChoice, WeekChoices
 
-    state = {"prompts": [], "new": [], "overloaded": 0, "pick": None}
+    state = {"prompts": [], "kwargs": [], "new": [], "overloaded": 0, "pick": None}
 
     def fake_generate(contents, schema, **kwargs):
         prompt = contents[0]
         state["prompts"].append(prompt)
+        state["kwargs"].append(kwargs)
         if schema is ImportedRecipe:
             title = re.search(r'ricetta "([^"]+)"', prompt).group(1)
             state["new"].append(title)
@@ -243,6 +244,9 @@ def test_settimana_generata(user, api, cookbook, gemini, django_capture_on_commi
     assert sum(1 for meal in meals if meal.recipe_id == new.id) == 3
     # Nel prompt c'e' il profilo ridotto, mai email o nome.
     assert user.email not in gemini["prompts"][0]
+    # La settimana chiede il massimo di token: col default di cornhub Gemini la
+    # troncava con cinque pasti al giorno.
+    assert gemini["kwargs"][0]["max_output_tokens"] == 32_000
     detail = api(user).get(f"{PLANS}/{plan.id}").data
     assert len(detail["meals"]) == 14
     assert detail["meals"][0]["recipe"]["title"]

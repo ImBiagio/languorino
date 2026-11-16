@@ -29,7 +29,7 @@ from django.db.models import Prefetch, Q
 from django.utils.translation import gettext as _
 from pydantic import BaseModel, Field
 
-from apps.ai.client import generate
+from apps.ai.client import MAX_OUTPUT_TOKENS, generate
 from apps.profiles.models import FoodPreference, MealSlot, Profile
 from apps.recipes.generated import save_generated
 from apps.recipes.importing import ImportedRecipe
@@ -519,6 +519,7 @@ def generate_week(plan: MealPlan, week: int) -> None:
         user=plan.owner,
         timeout_ms=120_000,
         temperature=0.5,
+        max_output_tokens=MAX_OUTPUT_TOKENS,
     )
 
     wanted = {(row["date"].isoformat(), row["slot"]): row for row in rows}
