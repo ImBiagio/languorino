@@ -46,6 +46,19 @@ solo quelli che non sono già fra gli alimenti del pasto: la pasta la decide il
 piano, la cipolla la ricetta. Chat (ADR 0016), "Cosa cucini", home e piano
 condiviso leggono gli stessi alimenti.
 
+**Aggiornamento 2026-11-18.** Gli alimenti di colazione, spuntini e merende
+restano fuori da pranzo e cena (`plans/foods.py`). Un piano con "yogurt 3
+volte" preparato solo per pranzi e cene faceva mettere lo yogurt a pranzo per
+far tornare le frequenze. Ora l'LLM vede solo le opzioni e le sostituzioni dei
+pasti preparati, le frequenze di quegli alimenti non contano, e il codice
+toglie dai pasti principali gli alimenti tipici da merenda (yogurt, frutta,
+frutta secca, crackers...) che il piano non prevede a pranzo e cena. Gli
+alimenti di un pasto si cambiano a mano ("Cambia gli alimenti", `PATCH
+components`): coi chip degli equivalenti delle sostituzioni, per tutto il
+piatto. Le frequenze del pasto si aggiornano per gruppi ("ceci" conta per
+"legumi"). Se cambia un nome, suggerimenti e ricetta scelta si tolgono: erano
+per gli alimenti di prima.
+
 **Perché:** chi ha un piano del nutrizionista deve rispettarlo per alimenti e
 quantità, non per ricette. Prima ogni pasto era una ricetta e le dosi della
 dieta ci stavano sopra come testo (`diet_portion`). Le frequenze le contava
@@ -72,7 +85,6 @@ avrebbe grammature da rispettare.
 - `new_share` ("quante ricette nuove") non si usa più.
 
 **Quando rivederla:** se gli utenti preferiscono scegliere i piatti e adattare
-le dosi; se serve modificare a mano gli alimenti di un pasto (oggi si cambiano
-solo ricetta, porzioni e giorno di cottura); se le frequenze fuori anche dopo
+le dosi; se le frequenze fuori anche dopo
 la correzione restano tante, e conviene farle rispettare dal codice invece che
 da una seconda chiamata.

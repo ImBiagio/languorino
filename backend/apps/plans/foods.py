@@ -21,6 +21,8 @@ questo modulo, e fra loro si importano gia'.
 
 from __future__ import annotations
 
+import re
+
 from apps.recipes.matching import _word_variants, normalize
 
 MAIN_SLOTS = ("lunch", "dinner")
@@ -212,3 +214,77 @@ def side_rule(rules: dict) -> str:
         + "), nemmeno per far tornare le frequenze: nei pasti principali solo gli "
         "alimenti delle loro opzioni e sostituzioni."
     )
+
+
+# --- frequenze di un pasto cambiato a mano ------------------------------------------------
+
+# I gruppi che i piani usano nelle frequenze: "legumi 3 volte" conta i ceci.
+FOOD_GROUPS = {
+    "legumi": [
+        "ceci", "fagioli", "borlotti", "cannellini", "lenticchie", "piselli", "fave",
+        "cicerchie", "lupini", "soia", "edamame", "hummus", "tofu", "tempeh",
+    ],
+    "pesce": [
+        "merluzzo", "nasello", "salmone", "tonno", "orata", "branzino", "spigola",
+        "sgombro", "alici", "acciughe", "sardine", "gamberi", "gamberetti", "calamari",
+        "seppie", "totani", "polpo", "cozze", "vongole", "platessa", "sogliola", "trota",
+        "baccala", "pesce spada", "dentice", "rombo", "crostacei", "molluschi",
+    ],
+    "pesce azzurro": ["sgombro", "alici", "acciughe", "sardine", "aringa", "pesce spada"],
+    "carne bianca": ["pollo", "tacchino", "coniglio", "faraona"],
+    "carne rossa": ["manzo", "vitello", "maiale", "agnello", "cavallo", "vitellone"],
+    "uova": ["uovo", "albume"],
+    "formaggi": [
+        "formaggio", "mozzarella", "ricotta", "parmigiano", "grana", "pecorino",
+        "stracchino", "feta", "scamorza", "provola", "caciotta", "fiocchi di latte",
+        "robiola", "emmental", "asiago", "fontina", "primo sale", "burrata", "caprino",
+    ],
+    "salumi": ["prosciutto", "bresaola", "speck", "salame", "mortadella", "coppa"],
+    "latticini": ["latte", "yogurt", "kefir", "skyr"],
+    "frutta secca": ["noci", "mandorle", "nocciole", "anacardi", "pistacchi", "arachidi"],
+}
+FOOD_GROUPS["carne"] = FOOD_GROUPS["carne bianca"] + FOOD_GROUPS["carne rossa"]
+ALTERNATIVES = re.compile(r"\s*(?:/|,|\be\b|\bo\b|\boppure\b)\s*")
+
+
+def food_matches(name: str, weekly_food: str) -> bool:
+    """Se l'alimento del pasto conta per la frequenza: "ceci lessati" per
+    "legumi", "tonno" per "Salmone / tonno", "uova" per "Uova (4 totali)"."""
+    text = normalize(re.sub(r"\(.*?\)", " ", weekly_food))
+    for alternative in ALTERNATIVES.split(text):
+        alternative = alternative.strip()
+        if not alternative:
+            continue
+        if same_food(name, alternative):
+            return True
+        # "legumi secchi" e' il gruppo "legumi"; "carne bianca" prima di "carne".
+        group = next(
+            (
+                key
+                for key in sorted(FOOD_GROUPS, key=len, reverse=True)
+                if alternative == key or alternative.startswith(key + " ")
+            ),
+            None,
+        )
+        if group and any(same_food(name, member) for member in FOOD_GROUPS[group]):
+            return True
+    return False
+
+
+def updated_diet_foods(
+    foods: list[str], before: list[dict], after: list[dict], weekly: list[dict]
+) -> list[str]:
+    """Le frequenze del pasto dopo un cambio a mano: si tolgono quelle degli
+    alimenti tolti e si aggiungono quelle dei nuovi. Quelle degli alimenti
+    rimasti restano come le aveva date l'LLM, anche se il codice non sa
+    riconoscerle ("pesce azzurro" per "sgombro" si', per un nome strano no)."""
+    old = {normalize(item["name"]) for item in before}
+    new = {normalize(item["name"]) for item in after}
+    removed = [item["name"] for item in before if normalize(item["name"]) not in new]
+    added = [item["name"] for item in after if normalize(item["name"]) not in old]
+    out = [food for food in foods if not any(food_matches(name, food) for name in removed)]
+    for item in weekly:
+        food = item["food"]
+        if food not in out and any(food_matches(name, food) for name in added):
+            out.append(food)
+    return out

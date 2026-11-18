@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 12:45+0100\n"
+"POT-Creation-Date: 2026-11-18 14:32+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -972,11 +972,9 @@ msgid "Rifai da capo"
 msgstr "Start over"
 
 msgid ""
-"Controlla i pasti, scegli le ricette che ti piacciono, poi attiva: comparirà "
-"in “Oggi”."
-msgstr ""
-"Check the meals, pick the recipes you like, then activate: it will show up "
-"in “Today”."
+"Controlla i pasti: cambia gli alimenti che non ti tornano, scegli le "
+"ricette, poi attiva: comparirà in “Oggi”."
+msgstr "Check the meals: change the foods that don't suit you, pick the recipes, then activate: it will show up in “Today”."
 
 msgid "Rifare la preparazione?"
 msgstr "Redo the meal prep?"
@@ -1045,8 +1043,8 @@ msgstr "check it"
 msgid "A porzione:"
 msgstr "Per serving:"
 
-msgid "Scegli la ricetta"
-msgstr "Choose the recipe"
+msgid "Cambia alimenti o ricetta"
+msgstr "Change foods or recipe"
 
 msgid "Cambia il pasto"
 msgstr "Change the meal"
@@ -1083,8 +1081,14 @@ msgstr "Save servings"
 msgid "Cosa mangi, a persona"
 msgstr "What you eat, per person"
 
+msgid "Cambia gli alimenti"
+msgstr "Change the foods"
+
 msgid "Oppure un’altra ricetta con questi ingredienti"
 msgstr "Or another recipe with these ingredients"
+
+msgid "Una ricetta con questi ingredienti"
+msgstr "A recipe with these ingredients"
 
 msgid ""
 "Il tuo ricettario è vuoto: prova un ricettario PDF o fatti inventare una "
@@ -1096,6 +1100,34 @@ msgstr "Search your cookbook"
 
 msgid "Togli la ricetta"
 msgstr "Remove the recipe"
+
+msgid "Quantità"
+msgstr "Quantity"
+
+msgid "Unità"
+msgstr "Unit"
+
+msgid "Togli l’alimento"
+msgstr "Remove the food"
+
+msgid "Al suo posto:"
+msgstr "Instead:"
+
+msgid "Aggiungi un alimento"
+msgstr "Add a food"
+
+#, javascript-format
+msgid ""
+"Se cambi un alimento si toglie la ricetta scelta (%s): poi ne scegli "
+"un’altra."
+msgstr "Changing a food removes the chosen recipe (%s): then pick another one."
+
+#, javascript-format
+msgid "Cambia anche %s: è lo stesso piatto."
+msgstr "Also changes %s: it's the same dish."
+
+msgid "Salva gli alimenti"
+msgstr "Save the foods"
 
 msgid "Nessuna ricetta trovata."
 msgstr "No recipes found."
@@ -2292,12 +2324,6 @@ msgstr "New ingredient: I'll add it to your catalogue"
 
 msgid "Togli l’ingrediente"
 msgstr "Remove ingredient"
-
-msgid "Quantità"
-msgstr "Quantity"
-
-msgid "Unità"
-msgstr "Unit"
 
 msgid "Nota (es. tritata)"
 msgstr "Note (e.g. chopped)"

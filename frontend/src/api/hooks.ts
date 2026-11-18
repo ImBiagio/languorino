@@ -21,7 +21,9 @@ import type {
   Job,
   JobStatus,
   MealPlan,
+  MealComponent,
   MealPlanDetail,
+  MealSwap,
   NutritionistPlan,
   Paginated,
   PlanPayload,
@@ -66,6 +68,7 @@ export const keys = {
   plans: ['plans'] as const,
   plan: (id: UUID) => ['plans', 'detail', id] as const,
   currentPlan: ['plans', 'current'] as const,
+  mealSwaps: (planId: UUID, mealId: number) => ['plans', 'swaps', planId, mealId] as const,
   shoppingLists: ['shopping'] as const,
   shoppingList: (id: UUID) => ['shopping', 'detail', id] as const,
   nutritionistPlans: ['nutritionist-plans'] as const,
@@ -611,14 +614,20 @@ export function useUpdateMeal(planId: UUID) {
       servings?: number
       cooked_on?: string
       eaten?: boolean
+      components?: MealComponent[]
     }) => api.patch<PlannedMeal>(`/api/plans/${planId}/meals/${id}`, body),
     onSuccess: (meal, input) => {
       client.setQueryData<MealPlanDetail>(keys.plan(planId), (plan) =>
         plan ? { ...plan, meals: plan.meals.map((m) => (m.id === meal.id ? meal : m)) } : plan,
       )
-      // Una ricetta approvata vale per tutto il piatto (cena e pranzo-avanzo):
-      // cambiano anche gli altri pasti.
-      if ('recipe_id' in input) void client.invalidateQueries({ queryKey: keys.plan(planId) })
+      // Ricetta approvata e alimenti valgono per tutto il piatto (cena e
+      // pranzo-avanzo): cambiano anche gli altri pasti.
+      if ('recipe_id' in input || 'components' in input) {
+        void client.invalidateQueries({ queryKey: keys.plan(planId) })
+      }
+      if ('components' in input) {
+        void client.invalidateQueries({ queryKey: keys.mealSwaps(planId, meal.id) })
+      }
       void client.invalidateQueries({ queryKey: keys.currentPlan })
     },
   })
@@ -1057,6 +1066,16 @@ export function useWriteSuggestion(planId: UUID) {
     mutationFn: ({ mealId, index }: { mealId: number; index: number }) =>
       api.post<Job>(`/api/plans/${planId}/meals/${mealId}/suggestions/${index}/write`),
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
+/** Per ogni alimento del pasto, gli equivalenti delle sostituzioni del piano. */
+export function useMealSwaps(planId: UUID, mealId: number, enabled = true) {
+  return useQuery({
+    queryKey: keys.mealSwaps(planId, mealId),
+    queryFn: () =>
+      api.get<{ swaps: MealSwap[][] }>(`/api/plans/${planId}/meals/${mealId}/swaps`),
+    enabled,
   })
 }
 
