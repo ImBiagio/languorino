@@ -23,7 +23,7 @@ from apps.recipes.importing import LANGUAGES, _parse_number
 from apps.recipes.matching import normalize, variants
 from apps.recipes.models import Recipe
 
-from .foods import MAIN_SLOTS, prepared_rules, same_food, side_rule
+from .foods import MAIN_SLOTS, note_slots, prepared_rules, same_food, side_rule
 from .generation import SLOT_NAMES
 
 Slot = Literal["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner"]
@@ -336,34 +336,38 @@ def parse_equivalent(text: str) -> tuple[Decimal, str, str] | None:
     return quantity, UNIT_FAMILY[unit], name
 
 
-def _amount(value: Decimal, family: str) -> str:
+def _round(value: Decimal, family: str) -> Decimal:
     if family == "pz":
         # Mezzo pezzo si', un terzo d'uovo no.
-        rounded = (value * 2).quantize(Decimal("1"), rounding=ROUND_HALF_UP) / 2
-        text = f"{rounded.normalize():f}"
-        return f"{text} pz"
-    rounded = value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        return (value * 2).quantize(Decimal("1"), rounding=ROUND_HALF_UP) / 2
+    return value.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+
+
+def _amount(value: Decimal, family: str) -> str:
+    rounded = _round(value, family)
+    if family == "pz":
+        return f"{rounded.normalize():f} pz"
     return f"{rounded} {family}"
 
 
-def swaps_for(line: dict, rules: dict) -> list[str]:
-    """Per una riga "a persona" di un pasto (``name``, ``quantity``, ``unit``,
-    ``approx``), gli equivalenti della tabella del nutrizionista con la
-    grammatura in proporzione: 50 g di pane con "80 g pasta = 100 g pane"
-    diventano 40 g di pasta. Il conto lo fa il codice, non la chat."""
+def _swap_groups(line: dict, rules: dict, slot: str | None = None):
+    """``(gruppo, [(nome, quantita', famiglia)])`` per ogni gruppo di sostituzioni
+    che contiene l'alimento della riga, con le grammature in proporzione."""
     unit = line.get("unit", "")
     if line.get("quantity") is None:
-        return []  # "a volonta'": non c'e' niente da sostituire in proporzione
+        return  # "a volonta'": non c'e' niente da sostituire in proporzione
     quantity = Decimal(str(line["quantity"]))
     family = UNIT_FAMILY.get(unit)
     if family is None and line.get("approx"):
         quantity = Decimal(str(line["approx"]["quantity"]))
         family = UNIT_FAMILY.get(line["approx"]["unit"])
     if family is None:
-        return []
+        return
     quantity *= UNIT_FACTOR.get(unit, 1)
-    out = []
     for group in rules.get("substitutions", []):
+        # "a merenda": a pranzo quel gruppo non vale.
+        if slot and (only := note_slots(group.get("note", ""))) and slot not in only:
+            continue
         parsed = [(text, parse_equivalent(text)) for text in group["equivalents"]]
         base = next(
             (eq for _, eq in parsed if eq and same_food(line["name"], eq[2])),
@@ -376,11 +380,50 @@ def swaps_for(line: dict, rules: dict) -> list[str]:
             continue
         factor = quantity / base_quantity
         others = [
-            f"{eq[2]} {_amount(eq[0] * factor, eq[1])}"
+            (eq[2], eq[0] * factor, eq[1])
             for _, eq in parsed
             if eq and eq is not base and not same_food(line["name"], eq[2])
         ]
         if others:
-            note = f", {group['note']}" if group.get("note") else ""
-            out.append(f"{group['group']}{note}: " + ", ".join(others))
+            yield group, others
+
+
+def swaps_for(line: dict, rules: dict) -> list[str]:
+    """Per una riga "a persona" di un pasto (``name``, ``quantity``, ``unit``,
+    ``approx``), gli equivalenti della tabella del nutrizionista con la
+    grammatura in proporzione: 50 g di pane con "80 g pasta = 100 g pane"
+    diventano 40 g di pasta. Il conto lo fa il codice, non la chat."""
+    out = []
+    for group, others in _swap_groups(line, rules):
+        note = f", {group['note']}" if group.get("note") else ""
+        out.append(
+            f"{group['group']}{note}: "
+            + ", ".join(f"{name} {_amount(value, family)}" for name, value, family in others)
+        )
+    return out
+
+
+def equivalents_for(component: dict, rules: dict, slot: str) -> list[dict]:
+    """Gli alimenti con cui cambiare un alimento del pasto, gia' con la
+    grammatura giusta (``{name, quantity, unit, group}``): un tocco nella
+    preparazione e la pasta diventa 100 g di pane."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    for group, others in _swap_groups(component, rules, slot):
+        for name, value, family in others:
+            name = " ".join(name.split()).strip(" -")
+            key = normalize(name)
+            if not name or key in seen:
+                continue
+            seen.add(key)
+            rounded = _round(value, family)
+            number = int(rounded) if rounded == int(rounded) else float(rounded)
+            out.append(
+                {
+                    "name": name[:1].lower() + name[1:80],
+                    "quantity": number,
+                    "unit": family,
+                    "group": group["group"],
+                }
+            )
     return out

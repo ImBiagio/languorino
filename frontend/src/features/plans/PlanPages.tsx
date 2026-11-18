@@ -11,6 +11,7 @@ import {
   keys,
   useJob,
   useMealIdeas,
+  useMealSwaps,
   useNutritionistPlans,
   usePlan,
   usePlans,
@@ -45,6 +46,7 @@ import {
 } from '../../components/ui'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type {
+  MealComponent,
   MealPlanDetail,
   PlannedMeal,
   PortionLine,
@@ -53,7 +55,7 @@ import type {
   Unit,
 } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
-import { formatMinutes, formatQuantity } from '../recipes/options'
+import { formatMinutes, formatQuantity, unitLabel } from '../recipes/options'
 import { MakeShoppingDialog } from '../shopping/ShoppingPages'
 import { GuidelinesButton } from './NutritionistPages'
 import { SharePlanDialog, SharedWithMe } from './SharedPlanPages'
@@ -366,7 +368,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
           {/* Almeno 12rem: su telefono i bottoni vanno a capo, non il testo in colonna. */}
           <p className="min-w-[12rem] flex-1 text-body-medium">
             {gettext(
-              'Controlla i pasti, scegli le ricette che ti piacciono, poi attiva: comparirà in “Oggi”.',
+              'Controlla i pasti: cambia gli alimenti che non ti tornano, scegli le ricette, poi attiva: comparirà in “Oggi”.',
             )}
           </p>
           <button
@@ -699,8 +701,8 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
       </div>
       {onEdit && (
         <IconButton
-          icon={byIngredients ? 'menu_book' : 'swap_horiz'}
-          label={byIngredients ? gettext('Scegli la ricetta') : gettext('Cambia il pasto')}
+          icon={byIngredients ? 'edit' : 'swap_horiz'}
+          label={byIngredients ? gettext('Cambia alimenti o ricetta') : gettext('Cambia il pasto')}
           onClick={onEdit}
         />
       )}
@@ -917,13 +919,16 @@ type Source = 'cookbook' | 'books' | 'ai'
 
 function ChangeMealDialog({
   plan,
-  meal,
+  meal: initial,
   onClose,
 }: {
   plan: MealPlanDetail
   meal: PlannedMeal
   onClose: () => void
 }) {
+  // Il pasto aggiornato: dopo un cambio di alimenti il dialog resta aperto.
+  const meal = plan.meals.find((item) => item.id === initial.id) ?? initial
+  const [editingFoods, setEditingFoods] = useState(false)
   const update = useUpdateMeal(plan.id)
   const [servings, setServings] = useState(meal.servings)
   const { data: cookbook } = useRecipes({})
@@ -952,8 +957,17 @@ function ChangeMealDialog({
     { value: 'ai', label: gettext('Inventa'), icon: 'auto_awesome' },
   ]
 
+  const title = `${formatDayLong(meal.date)} · ${slot?.label ?? ''}`
+  if (editingFoods) {
+    return (
+      <Modal open onClose={onClose} title={title}>
+        <FoodsEditor plan={plan} meal={meal} onDone={() => setEditingFoods(false)} />
+      </Modal>
+    )
+  }
+
   return (
-    <Modal open onClose={onClose} title={`${formatDayLong(meal.date)} · ${slot?.label ?? ''}`}>
+    <Modal open onClose={onClose} title={title}>
       <div className="grid gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-body-large">{gettext('Porzioni')}</span>
@@ -973,14 +987,26 @@ function ChangeMealDialog({
         {byIngredients && (
           <>
             <div className="rounded-row bg-surface-container-low p-3">
-              <p className="mb-1 text-label-medium text-on-surface-variant">
-                {gettext('Cosa mangi, a persona')}
-              </p>
+              <div className="mb-1 flex flex-wrap items-center justify-between gap-x-2">
+                <p className="text-label-medium text-on-surface-variant">
+                  {gettext('Cosa mangi, a persona')}
+                </p>
+                <button
+                  type="button"
+                  className="btn-text btn-sm -mr-2"
+                  onClick={() => setEditingFoods(true)}
+                >
+                  <Icon name="edit" size={18} />
+                  {gettext('Cambia gli alimenti')}
+                </button>
+              </div>
               <Ingredients lines={meal.portion} />
             </div>
             <SuggestionPicker plan={plan} meal={meal} onPick={(id) => save({ recipe_id: id })} />
             <p className="text-label-large text-on-surface-variant">
-              {gettext('Oppure un’altra ricetta con questi ingredienti')}
+              {meal.suggestions.length
+                ? gettext('Oppure un’altra ricetta con questi ingredienti')
+                : gettext('Una ricetta con questi ingredienti')}
             </p>
           </>
         )}
@@ -1042,6 +1068,211 @@ function ChangeMealDialog({
         </div>
       </div>
     </Modal>
+  )
+}
+
+const MAIN_SLOTS = new Set(['lunch', 'dinner'])
+const FOOD_UNITS = ['g', 'ml', 'pz'] as const
+
+type FoodRow = {
+  key: number
+  name: string
+  quantity: string
+  unit: (typeof FOOD_UNITS)[number]
+  /** L'alimento del pasto da cui viene la riga: i suoi equivalenti. */
+  from: number | null
+}
+
+function toRow(component: MealComponent, index: number): FoodRow {
+  return {
+    key: index,
+    name: component.name,
+    quantity: component.quantity === null ? '' : String(component.quantity).replace('.', ','),
+    unit: component.unit === '' ? 'g' : component.unit,
+    from: index,
+  }
+}
+
+/**
+ * Gli alimenti del pasto cambiati a mano (ADR 0023): nome, quantità a persona
+ * (vuota = a volontà) e unità. Sotto ogni alimento gli equivalenti delle
+ * sostituzioni del piano, con la grammatura già fatta. Vale per tutto il
+ * piatto: la cena e il suo pranzo-avanzo cambiano insieme.
+ */
+function FoodsEditor({
+  plan,
+  meal,
+  onDone,
+}: {
+  plan: MealPlanDetail
+  meal: PlannedMeal
+  onDone: () => void
+}) {
+  const update = useUpdateMeal(plan.id)
+  const { data } = useMealSwaps(plan.id, meal.id)
+  const [rows, setRows] = useState<FoodRow[]>(() => meal.components.map(toRow))
+  const [nextKey, setNextKey] = useState(meal.components.length)
+  const sameDish = plan.meals.filter(
+    (other) =>
+      other.id !== meal.id &&
+      other.cooked_on === meal.cooked_on &&
+      (MAIN_SLOTS.has(meal.slot) ? MAIN_SLOTS.has(other.slot) : other.slot === meal.slot) &&
+      JSON.stringify(other.components) === JSON.stringify(meal.components),
+  )
+  const change = (key: number, patch: Partial<FoodRow>) =>
+    setRows((current) => current.map((row) => (row.key === key ? { ...row, ...patch } : row)))
+  const filled = rows.filter((row) => row.name.trim())
+
+  const save = async () => {
+    const components: MealComponent[] = filled.map((row) => {
+      const number = Number(row.quantity.replace(',', '.'))
+      const quantity = row.quantity.trim() && Number.isFinite(number) && number > 0 ? number : null
+      return { name: row.name.trim(), quantity, unit: quantity === null ? '' : row.unit }
+    })
+    try {
+      await update.mutateAsync({ id: meal.id, components })
+      onDone()
+    } catch {
+      // L'errore (es. un alimento che non puoi mangiare) si vede qui sotto.
+    }
+  }
+
+  return (
+    <div className="grid gap-3">
+      <p className="text-label-large text-on-surface-variant">
+        {gettext('Cosa mangi, a persona')}
+      </p>
+      <ul className="grid gap-2">
+        {rows.map((row) => {
+          const swaps = row.from === null ? [] : (data?.swaps[row.from] ?? [])
+          return (
+            <li key={row.key} className="rounded-row bg-surface-container-low p-2">
+              <div className="flex items-start gap-1">
+                {/* Su telefono il nome sta su una riga sua: deve leggersi intero. */}
+                <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_5rem_4.75rem]">
+                  <label className="field col-span-2 block bg-surface sm:col-span-1">
+                    <span className="field-label">{gettext('Alimento')}</span>
+                    <input
+                      className="field-input"
+                      value={row.name}
+                      maxLength={80}
+                      onChange={(event) => change(row.key, { name: event.target.value })}
+                    />
+                  </label>
+                  <label className="field block bg-surface">
+                    <span className="field-label">{gettext('Quantità')}</span>
+                    <input
+                      className="field-input"
+                      inputMode="decimal"
+                      placeholder={gettext('a volontà')}
+                      value={row.quantity}
+                      onChange={(event) =>
+                        change(row.key, { quantity: event.target.value.replace(/[^\d.,]/g, '') })
+                      }
+                    />
+                  </label>
+                  <label className="field block bg-surface">
+                    <span className="field-label">{gettext('Unità')}</span>
+                    <select
+                      className="field-input"
+                      value={row.unit}
+                      onChange={(event) =>
+                        change(row.key, { unit: event.target.value as FoodRow['unit'] })
+                      }
+                    >
+                      {FOOD_UNITS.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {unitLabel(unit, 2)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <IconButton
+                  icon="close"
+                  label={gettext('Togli l’alimento')}
+                  className="mt-2"
+                  onClick={() => setRows((current) => current.filter((r) => r.key !== row.key))}
+                />
+              </div>
+              {swaps.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 px-1">
+                  <span className="text-body-small text-on-surface-variant">
+                    {gettext('Al suo posto:')}
+                  </span>
+                  {swaps.map((swap) => (
+                    <Chip
+                      key={swap.name}
+                      icon="swap_horiz"
+                      selected={row.name === swap.name}
+                      label={`${swap.name} ${formatQuantity(String(swap.quantity), swap.unit as Unit)}`}
+                      onClick={() =>
+                        change(row.key, {
+                          name: swap.name,
+                          quantity: String(swap.quantity).replace('.', ','),
+                          unit: swap.unit === '' ? 'g' : swap.unit,
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+      <button
+        type="button"
+        className="btn-text w-fit"
+        onClick={() => {
+          setRows((current) => [
+            ...current,
+            { key: nextKey, name: '', quantity: '', unit: 'g', from: null },
+          ])
+          setNextKey(nextKey + 1)
+        }}
+      >
+        <Icon name="add" size={20} />
+        {gettext('Aggiungi un alimento')}
+      </button>
+      {meal.recipe && (
+        <p className="flex items-start gap-1 text-body-small text-on-surface-variant">
+          <Icon name="info" size={16} className="mt-0.5 shrink-0" />
+          {interpolate(
+            gettext('Se cambi un alimento si toglie la ricetta scelta (%s): poi ne scegli un’altra.'),
+            [meal.recipe.title],
+          )}
+        </p>
+      )}
+      {sameDish.length > 0 && (
+        <p className="flex items-start gap-1 text-body-small text-on-surface-variant">
+          <Icon name="info" size={16} className="mt-0.5 shrink-0" />
+          {interpolate(gettext('Cambia anche %s: è lo stesso piatto.'), [
+            sameDish
+              .map(
+                (other) =>
+                  `${formatDayShort(other.date)} ${MEAL_OPTIONS.find((o) => o.value === other.slot)?.label.toLowerCase()}`,
+              )
+              .join(', '),
+          ])}
+        </p>
+      )}
+      <ErrorBanner error={update.error} />
+      <div className="flex justify-end gap-2">
+        <button type="button" className="btn-text" onClick={onDone}>
+          {gettext('Annulla')}
+        </button>
+        <button
+          type="button"
+          className="btn-filled"
+          disabled={update.isPending || filled.length === 0}
+          onClick={save}
+        >
+          <Icon name="check" size={20} />
+          {gettext('Salva gli alimenti')}
+        </button>
+      </div>
+    </div>
   )
 }
 

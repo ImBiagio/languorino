@@ -22,13 +22,21 @@ progettata in [docs/progettazione.md](docs/progettazione.md).
 
    ![Cosa mangi: alimenti a persona e ricette suggerite](docs/media/preparazione-cosa-mangi.jpg)
 
-3. **Scegli la ricetta**: tocca quella che cucini (vale anche per il
+3. **Cambia un alimento** se non ti torna (matita del pasto → "Cambia gli
+   alimenti"): sotto ogni alimento ci sono gli equivalenti delle sostituzioni
+   del piano con la grammatura già fatta, e il cambio vale anche per il
+   pranzo-avanzo. Gli alimenti di colazione e merenda (yogurt, frutta secca)
+   non finiscono mai a pranzo e cena.
+
+   ![Cambia gli alimenti: il riso al posto della pasta](docs/media/preparazione-cambia-alimenti.jpg)
+
+4. **Scegli la ricetta**: tocca quella che cucini (vale anche per il
    pranzo-avanzo), o fai scrivere un'idea. "Cosa cucini" somma le porzioni
    per giorno di cottura.
 
    ![Cosa cucini: un piatto per la cena e il pranzo dopo](docs/media/preparazione-cosa-cucini.jpg)
 
-4. **Spesa**: dagli alimenti del piano e, per le ricette approvate, i loro
+5. **Spesa**: dagli alimenti del piano e, per le ricette approvate, i loro
    ingredienti in più.
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
@@ -162,7 +170,8 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/recipe-books/{id}/reread` | rilegge il PDF e aggiorna quantità e passaggi delle ricette che ci sono già, senza rifare le immagini ([ADR 0022](docs/decisions/0022-rilettura-dei-ricettari.md)) |
 | `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | preparazione ([ADR 0007](docs/decisions/0007-piano-alimentare.md), [0023](docs/decisions/0023-piano-e-preparazione-per-ingredienti.md)): si genera una settimana alla volta; `nutritionist_plan` obbligatorio |
-| `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto. Ogni pasto ha `components` (alimenti a persona), `suggestions` (ricette suggerite o idee), `portion`; `recipe_id` approva una ricetta per tutto il piatto |
+| `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto. Ogni pasto ha `components` (alimenti a persona), `suggestions` (ricette suggerite o idee), `portion`; `recipe_id` approva una ricetta per tutto il piatto; `components` cambia gli alimenti di tutto il piatto (toglie suggerimenti e ricetta se cambia un nome, rifiuta allergie e alimenti da evitare) |
+| `GET /api/plans/{id}/meals/{meal_id}/swaps` | per ogni alimento del pasto gli equivalenti delle sostituzioni del piano, con la grammatura in proporzione |
 | `POST /api/plans/{id}/meals/{meal_id}/suggestions/{index}/write` | scrive per intero un'idea suggerita (job `meal_recipe`), che prende il posto dell'idea |
 | `POST /api/plans/{id}/meals/{meal_id}/ideas` `{hint}` | due ricette nuove per quel pasto, scritte dall'AI in un job, da scegliere con il PATCH |
 | `GET/POST /api/nutritionist-plans` (multipart `files`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/confirm` · `POST …/{id}/reread` | piano alimentare del nutrizionista: lettura in un job, revisione, conferma ([ADR 0010](docs/decisions/0010-piano-del-nutrizionista.md)); si usa con `nutritionist_plan` in `POST /api/plans` |

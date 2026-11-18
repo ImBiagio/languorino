@@ -532,6 +532,65 @@ def test_la_sera_cucino_anche_il_pranzo_dopo(
     assert plan.meals.get(date=MONDAY + timedelta(1), slot="dinner").recipe_id is None
 
 
+def test_cambio_un_alimento_del_pasto(
+    user, api, cookbook, diet, gemini, django_capture_on_commit_callbacks
+):
+    diet.rules = {**DIET_RULES, "avoid_foods": ["salmone"]}
+    diet.save(update_fields=["rules"])
+    gemini["pick"] = lambda c, slot, day, wait: {
+        "components": LUNCH,
+        "weekly": ["legumi"],
+        "recipes": [c["Zuppa di ceci"]],
+    }
+    _create(api, user, django_capture_on_commit_callbacks, prep_mode="evening_before")
+    plan = MealPlan.objects.get()
+    monday = plan.meals.get(date=MONDAY, slot="dinner")
+    url = f"{PLANS}/{plan.id}/meals/{monday.id}"
+
+    # Solo le grammature: i suggerimenti restano.
+    more = [{**LUNCH[0], "quantity": 90}, *LUNCH[1:]]
+    response = api(user).patch(url, {"components": more}, format="json")
+    assert response.data["components"] == more and len(response.data["suggestions"]) == 1
+    response = api(user).patch(url, {"components": LUNCH}, format="json")
+    api(user).patch(url, {"recipe_id": str(cookbook["ceci"].id)}, format="json")
+
+    # Gli equivalenti dalle sostituzioni, con la grammatura gia' fatta.
+    swaps = api(user).get(f"{url}/swaps").data["swaps"]
+    assert len(swaps) == 3 and swaps[1] == swaps[2] == []
+    assert swaps[0] == [
+        {"name": "riso", "quantity": 80, "unit": "g", "group": "Cereali"},
+        {"name": "pane", "quantity": 100, "unit": "g", "group": "Cereali"},
+    ]
+
+    chicken = [LUNCH[0], {"name": "pollo", "quantity": 100, "unit": "g"}, LUNCH[2]]
+    response = api(user).patch(url, {"components": chicken}, format="json")
+    assert response.status_code == 200, response.data
+    assert response.data["components"] == chicken and response.data["diet_foods"] == []
+    # La zuppa di ceci era per i ceci: col pollo non si suggerisce ne' resta scelta.
+    assert response.data["suggestions"] == [] and response.data["recipe"] is None
+    # Vale anche per il pranzo-avanzo di martedi', non per la cena di martedi'.
+    tuesday = plan.meals.get(date=MONDAY + timedelta(1), slot="lunch")
+    assert tuesday.components == chicken and tuesday.diet_foods == []
+    assert tuesday.recipe_id is None
+    assert plan.meals.get(date=MONDAY + timedelta(1), slot="dinner").components == LUNCH
+
+    lentils = [*chicken[:1], {"name": "lenticchie lessate", "quantity": 150, "unit": "g"}]
+    response = api(user).patch(url, {"components": lentils}, format="json")
+    assert response.data["diet_foods"] == ["legumi"]
+
+    # A volonta': quantita' vuota, unita' vuota.
+    free = [{"name": "insalata", "quantity": None, "unit": "g"}]
+    response = api(user).patch(url, {"components": free}, format="json")
+    assert response.data["components"] == [{"name": "insalata", "quantity": None, "unit": ""}]
+
+    salmon = [{"name": "salmone", "quantity": 150, "unit": "g"}]
+    response = api(user).patch(url, {"components": salmon}, format="json")
+    assert response.status_code == 400
+    assert "Non puoi mangiarlo: salmone" in str(response.data)
+    response = api(user).patch(url, {"components": []}, format="json")
+    assert response.status_code == 400
+
+
 def test_pranzi_avanzo_solo_la_sera_prima(user, cookbook):
     from apps.plans.generation import leftover_lunches
 

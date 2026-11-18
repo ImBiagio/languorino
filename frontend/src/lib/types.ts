@@ -537,6 +537,11 @@ export interface MealComponent {
   unit: 'g' | 'ml' | 'pz' | ''
 }
 
+/** Un alimento con cui cambiarne uno del pasto, dalle sostituzioni del piano. */
+export interface MealSwap extends MealComponent {
+  group: string
+}
+
 export type MealSuggestion = { recipe: RecipeSummary } | { title: string; idea: string }
 
 export interface PortionLine {

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from apps.plans.foods import (
+    food_matches,
     is_side_food,
     plan_side_foods,
     prepared_rules,
     prepared_weekly,
     side_only_foods,
+    updated_diet_foods,
 )
 from apps.plans.nutritionist import rules_prompt
 
@@ -86,3 +88,24 @@ def test_regole_ridotte_ai_pasti_preparati():
     assert "yogurt, cereali da colazione" in prompt
     # Senza pasti scelti (chat, vecchi usi) le regole restano tutte.
     assert "Yogurt 3 volte" in rules_prompt(RULES, True)
+
+
+def test_alimenti_delle_frequenze():
+    assert food_matches("ceci lessati", "legumi")
+    assert food_matches("lenticchie rosse", "Legumi secchi o in scatola")
+    assert food_matches("tonno al naturale", "Salmone / tonno")
+    assert food_matches("uova", "Uova (4 uova totali)")
+    assert food_matches("petto di pollo", "carne bianca")
+    assert food_matches("parmigiano", "Formaggi")
+    assert not food_matches("pollo", "carne rossa")
+    assert not food_matches("pasta integrale", "legumi")
+
+
+def test_frequenze_dopo_un_cambio():
+    before = [{"name": "pasta"}, {"name": "ceci lessati"}, {"name": "sgombro"}]
+    after = [{"name": "pasta"}, {"name": "pollo"}, {"name": "sgombro"}]
+    weekly = [{"food": "legumi"}, {"food": "carne bianca"}, {"food": "pesce strano"}]
+    foods = ["legumi", "pesce strano"]
+    # Via i legumi coi ceci, dentro la carne bianca col pollo; il pesce che il
+    # codice non riconosce resta com'era, perche' lo sgombro c'e' ancora.
+    assert updated_diet_foods(foods, before, after, weekly) == ["pesce strano", "carne bianca"]

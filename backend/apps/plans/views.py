@@ -18,11 +18,15 @@ from apps.jobs.files import FileRejected, prepare
 from apps.jobs.models import Job
 from apps.jobs.serializers import JobSerializer
 from apps.jobs.views import enqueue_job, save_job_files
+from apps.recipes.matching import normalize
 from apps.recipes.models import Recipe, RecipeIngredient
 
 from .ask import MAX_MESSAGE_CHARS as ASK_MAX_MESSAGE_CHARS
 from .ask import MAX_MESSAGES as ASK_MAX_MESSAGES
+from .foods import updated_diet_foods
+from .generation import Component, Guard, clean_components, nutritionist_of
 from .models import MealPlan, NutritionistPlan, PlannedMeal, PlanShare, current_plan
+from .nutritionist import equivalents_for
 from .serializers import (
     MealPlanDetailSerializer,
     MealPlanSerializer,
@@ -207,9 +211,66 @@ class PlanRetryView(APIView):
         return _detail(request, plan, status.HTTP_202_ACCEPTED)
 
 
+class ComponentInputSerializer(serializers.Serializer):
+    """Un alimento del pasto cambiato a mano; quantita' vuota = a volonta'."""
+
+    name = serializers.CharField(max_length=80)
+    quantity = serializers.FloatField(
+        required=False, allow_null=True, min_value=0.1, max_value=3000
+    )
+    unit = serializers.ChoiceField(choices=["g", "ml", "pz", ""], required=False, default="g")
+
+
+def _meal_rules(meal: PlannedMeal) -> dict:
+    nutritionist = nutritionist_of(meal.plan)
+    return nutritionist.rules if nutritionist else {}
+
+
+def change_components(meal: PlannedMeal, raw, user) -> None:
+    """Gli alimenti del pasto cambiati a mano (ADR 0023): valgono per tutto il
+    piatto, come la ricetta approvata (la cena e il pranzo-avanzo), e le
+    frequenze del pasto si aggiornano. Mai cio' che non puoi mangiare."""
+    if not meal.components:
+        raise serializers.ValidationError(
+            {"components": [_("Questo pasto non è fatto di alimenti.")]}
+        )
+    items = ComponentInputSerializer(data=raw, many=True)
+    items.is_valid(raise_exception=True)
+    components = clean_components([Component(**item) for item in items.validated_data])
+    if not components:
+        raise serializers.ValidationError({"components": [_("Serve almeno un alimento.")]})
+    rules = _meal_rules(meal)
+    guard = Guard(user, rules.get("avoid_foods", []))
+    if problems := [
+        f"{item['name']} ({reason})"
+        for item in components
+        if (reason := guard.problem(item["name"]))
+    ]:
+        raise serializers.ValidationError(
+            {"components": [_("Non puoi mangiarlo: %(foods)s.") % {"foods": ", ".join(problems)}]}
+        )
+    weekly = rules.get("weekly", [])
+    # Ricette suggerite e ricetta scelta erano per gli alimenti di prima: se ne
+    # cambia uno non valgono piu' (pasta e fagioli col pollo), e la spesa
+    # prenderebbe gli ingredienti sbagliati. Restano "Inventa" e il ricettario.
+    # Con le sole grammature cambiate restano.
+    names = {normalize(item["name"]) for item in components}
+    renamed = {normalize(item["name"]) for item in meal.components} != names
+    for other in same_dish(meal):
+        other.diet_foods = updated_diet_foods(
+            other.diet_foods, other.components, components, weekly
+        )
+        other.components = components
+        if renamed:
+            other.suggestions = []
+            other.recipe = None
+        other.save(update_fields=["components", "diet_foods", "suggestions", "recipe"])
+    meal.refresh_from_db()
+
+
 class PlannedMealView(APIView):
-    """Cambiare un pasto a mano: la ricetta approvata (o nessuna), porzioni,
-    giorno di cottura, mangiato."""
+    """Cambiare un pasto a mano: gli alimenti, la ricetta approvata (o
+    nessuna), porzioni, giorno di cottura, mangiato."""
 
     permission_classes = [IsAuthenticated]
 
@@ -224,6 +285,9 @@ class PlannedMealView(APIView):
         serializer = PlannedMealSerializer(meal, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        if "components" in request.data:
+            with transaction.atomic():
+                change_components(meal, request.data["components"], request.user)
         if "recipe_id" in data:
             recipe_id = data.pop("recipe_id")
             recipe = (
@@ -251,6 +315,33 @@ class PlannedMealView(APIView):
         meal = with_meals(plans_of(request.user)).get(pk=pk).meals.get(pk=meal.pk)
         context = suggested_context(request, [meal])
         return Response(PlannedMealSerializer(meal, context=context).data)
+
+
+class PlannedMealSwapsView(APIView):
+    """Per ogni alimento del pasto, quelli con cui cambiarlo secondo le
+    sostituzioni del piano, con la grammatura gia' in proporzione."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: dict})
+    def get(self, request, pk, meal_id):
+        meal = get_object_or_404(
+            PlannedMeal.objects.select_related("plan"),
+            pk=meal_id,
+            plan_id=pk,
+            plan__owner=request.user,
+        )
+        rules = _meal_rules(meal)
+        guard = Guard(request.user, rules.get("avoid_foods", []))
+        swaps = [
+            [
+                item
+                for item in equivalents_for(component, rules, meal.slot)
+                if not guard.problem(item["name"])
+            ]
+            for component in meal.components or []
+        ]
+        return Response({"swaps": swaps})
 
 
 class SuggestionWriteView(APIView):
