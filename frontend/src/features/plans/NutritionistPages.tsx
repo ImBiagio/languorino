@@ -1,7 +1,8 @@
-// Piano del nutrizionista (ADR 0010): si carica il PDF o le foto, l'LLM ne
-// ricava le regole (opzioni per pasto con grammature, frequenze, alimenti
-// liberi e da evitare), l'utente le rivede e conferma; poi si generano i piani
-// da li'.
+// Il piano alimentare, cioe' cosa dovresti mangiare (ADR 0010, ADR 0023): si
+// carica il PDF o le foto del nutrizionista, o lo scrive l'AI dalle linee
+// guida e dal profilo. Le regole (opzioni per pasto con grammature, frequenze,
+// alimenti liberi e da evitare) si rivedono e si confermano; poi la
+// preparazione mette il piano nei giorni, per ingredienti.
 
 import clsx from 'clsx'
 import { useQueryClient } from '@tanstack/react-query'
@@ -12,6 +13,7 @@ import {
   keys,
   useConfirmNutritionistPlan,
   useDeleteNutritionistPlan,
+  useGuidelinesPlan,
   useJob,
   useNutritionistPlan,
   useNutritionistPlans,
@@ -66,6 +68,49 @@ function validity(plan: NutritionistPlan): string {
   return ''
 }
 
+/**
+ * "Dalle linee guida": l'AI scrive il piano alimentare dal profilo (job) e si
+ * apre la bozza da rivedere.
+ */
+export function GuidelinesButton({ className = 'btn-filled' }: { className?: string }) {
+  const navigate = useNavigate()
+  const write = useGuidelinesPlan()
+  const [jobId, setJobId] = useState<string>()
+  const { data: job } = useJob(jobId)
+  const working = write.isPending || job?.status === 'queued' || job?.status === 'running'
+
+  useEffect(() => {
+    if (job?.status === 'ready' && job.result.nutritionist_plan) {
+      navigate(`/piano/nutrizionista/${job.result.nutritionist_plan}`)
+    }
+  }, [job, navigate])
+
+  return (
+    <>
+      <button
+        type="button"
+        className={className}
+        disabled={working}
+        onClick={async () => {
+          try {
+            setJobId((await write.mutateAsync()).id)
+          } catch {
+            // Errore sotto.
+          }
+        }}
+      >
+        <Icon name={working ? 'hourglass_top' : 'nutrition'} size={20} />
+        {working ? gettext('Scrivo il piano…') : gettext('Dalle linee guida')}
+      </button>
+      {job?.status === 'ready' && job.result.problem && (
+        <p className="basis-full text-body-small text-error">{job.result.problem}</p>
+      )}
+      {job?.status === 'failed' && <ErrorBanner error={job.error} />}
+      <ErrorBanner error={write.error} />
+    </>
+  )
+}
+
 /* ---------------------------------------------- /piano/nutrizionista ---- */
 
 export function NutritionistHomePage() {
@@ -95,7 +140,7 @@ export function NutritionistHomePage() {
           label={gettext('Piano')}
           onClick={() => navigate('/piano')}
         />
-        <h1 className="flex-1 text-title-large">{gettext('Piano del nutrizionista')}</h1>
+        <h1 className="flex-1 text-title-large">{gettext('Piano alimentare')}</h1>
       </header>
 
       <div className="grid gap-4">
@@ -103,7 +148,7 @@ export function NutritionistHomePage() {
           <FoodPattern tone="dark" opacity={0.3} />
           <p className="relative max-w-xl text-body-large">
             {gettext(
-              'Carica il piano che ti ha dato il nutrizionista: leggo le opzioni di ogni pasto con le grammature, tu controlli e poi compongo le settimane seguendolo.',
+              'Il piano dice cosa dovresti mangiare: per ogni pasto alimenti e grammature, e quante volte a settimana. Caricalo dal nutrizionista o lo scrivo io dalle linee guida; poi preparo le settimane seguendolo.',
             )}
           </p>
         </section>
@@ -117,12 +162,18 @@ export function NutritionistHomePage() {
                 className="state flex items-center gap-4 rounded-card bg-surface-container-low p-4"
               >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-primary-container text-on-primary-container">
-                  <Icon name="clinical_notes" size={24} />
+                  <Icon
+                    name={plan.source === 'guidelines' ? 'nutrition' : 'clinical_notes'}
+                    size={24}
+                  />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-body-large font-medium">{plan.title}</span>
                   <span className="block text-body-small text-on-surface-variant">
                     {[
+                      plan.source === 'guidelines'
+                        ? gettext('Dalle linee guida')
+                        : gettext('Dal nutrizionista'),
                       plan.status === 'draft' ? gettext('Da rivedere') : gettext('Confermato'),
                       interpolate(ngettext('%s pasto', '%s pasti', plan.rules.meals.length), [
                         plan.rules.meals.length,
@@ -139,10 +190,25 @@ export function NutritionistHomePage() {
           </section>
         )}
 
+        <section className="grid gap-3 rounded-card bg-surface-container-low p-5">
+          <h2 className="flex items-center gap-2 text-title-medium">
+            <Icon name="nutrition" size={22} className="text-primary" />
+            {gettext('Senza nutrizionista')}
+          </h2>
+          <p className="text-body-medium text-on-surface-variant">
+            {gettext(
+              'Lo scrivo dalle Linee guida per una sana alimentazione (CREA) e dalle indicazioni dell’OMS, adattate al tuo profilo: età, peso, attività, obiettivi, allergie e gusti.',
+            )}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <GuidelinesButton />
+          </div>
+        </section>
+
         <section className="grid gap-4 rounded-card bg-surface-container-low p-5">
           <h2 className="flex items-center gap-2 text-title-medium">
             <Icon name="upload_file" size={22} className="text-primary" />
-            {plans?.length ? gettext('Carica un piano nuovo') : gettext('Carica il piano')}
+            {gettext('Dal tuo nutrizionista')}
           </h2>
           <input
             ref={input}
@@ -311,7 +377,7 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
         <IconButton
           icon="arrow_back"
           size="md"
-          label={gettext('Piano del nutrizionista')}
+          label={gettext('Piano alimentare')}
           onClick={() => navigate('/piano/nutrizionista')}
         />
         <h1 className="min-w-0 flex-1 truncate text-title-large">{plan.title}</h1>
@@ -321,8 +387,10 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
           label={gettext('Elimina')}
           onClick={async () => {
             const ok = await confirm({
-              title: gettext('Eliminare il piano del nutrizionista?'),
-              message: gettext('Spariscono anche i file caricati. I piani già generati restano.'),
+              title: gettext('Eliminare il piano alimentare?'),
+              message: gettext(
+                'Spariscono anche i file caricati. Le settimane già preparate restano.',
+              ),
               confirmLabel: gettext('Elimina'),
               icon: 'delete',
               destructive: true,
@@ -339,20 +407,24 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
           <section className="flex items-start gap-3 rounded-row bg-tertiary-container px-4 py-3 text-on-tertiary-container">
             <Icon name="auto_awesome" size={22} />
             <p className="text-body-medium">
-              {gettext(
-                'Letto automaticamente: controlla opzioni e grammature con il piano originale, correggi e conferma.',
-              )}
+              {plan.source === 'guidelines'
+                ? gettext(
+                    'Scritto dalle linee guida e dal tuo profilo: controlla opzioni, grammature e frequenze, cambia quello che non ti torna e conferma. È indicativo: per esigenze di salute decide il medico o un nutrizionista.',
+                  )
+                : gettext(
+                    'Letto automaticamente: controlla opzioni e grammature con il piano originale, correggi e conferma.',
+                  )}
             </p>
           </section>
         ) : (
           <section className="flex flex-wrap items-center gap-3 rounded-row bg-success-container px-4 py-3 text-on-success-container">
             <Icon name="verified" size={22} />
             <p className="min-w-0 flex-1 text-body-medium">
-              {gettext('Confermato: puoi generare piani che lo seguono.')}
+              {gettext('Confermato: puoi preparare le settimane seguendolo.')}
             </p>
             <Link to={`/piano/nuovo?nutrizionista=${plan.id}`} className="btn-filled btn-sm">
               <Icon name="auto_awesome" size={18} />
-              {gettext('Crea un piano da qui')}
+              {gettext('Prepara le settimane')}
             </Link>
           </section>
         )}
@@ -389,7 +461,7 @@ function NutritionistEditor({ plan }: { plan: NutritionistPlan }) {
               <span className="block text-body-large">{gettext('Seguilo alla lettera')}</span>
               <span className="block text-body-small text-on-surface-variant">
                 {strict
-                  ? gettext('Ogni pasto è una delle opzioni del nutrizionista.')
+                  ? gettext('Ogni pasto è una delle opzioni del piano.')
                   : gettext(
                       'Anche piatti equivalenti, con le stesse grammature e frequenze: più varietà.',
                     )}

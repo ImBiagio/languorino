@@ -129,6 +129,9 @@ def _number(raw: str | Decimal) -> str:
 def _portion_text(portion: list[dict]) -> str:
     items = []
     for line in portion:
+        if line.get("quantity") is None:
+            items.append(f"{line['name']} a volontà")
+            continue
         text = f"{line['name']} {_number(line['quantity'])} {line['unit']}"
         if approx := line.get("approx"):
             text += f" (~{_number(approx['quantity'])} {approx['unit']})"
@@ -142,6 +145,8 @@ def _day_total(portions: list[list[dict]]) -> str:
     for portion in portions:
         for line in portion:
             measure = line.get("approx") or line
+            if measure.get("quantity") is None:
+                continue
             totals[(line["name"], measure["unit"])] += Decimal(measure["quantity"])
     return "; ".join(
         f"{name} {_number(round(quantity, 2))} {unit}"
@@ -191,11 +196,14 @@ def plan_text(plan: MealPlan | None, today: date, rules: dict | None = None) -> 
         portions = []
         for meal in sorted(by_day[day], key=lambda m: slot_order.index(m.slot)):
             slot = SLOT_NAMES.get(meal.slot, meal.slot)
-            if meal.recipe is None:
+            if meal.recipe is None and not meal.components:
                 lines.append(
                     f"- {slot}: nessuna ricetta" + (f" ({meal.note})" if meal.note else "")
                 )
                 continue
+            # Per ingredienti (ADR 0023) il pasto e' quello che dice il piano; la
+            # ricetta, se approvata, e' solo come cucinarlo.
+            dish = meal.recipe.title if meal.recipe else "alimenti del piano"
             # "per 2 persone", non "2 porzioni": il modello le confondeva con
             # "cucina per" del profilo, che vale per i piani futuri.
             facts = [f"per {meal.servings} persone" if meal.servings != 1 else "per 1 persona"]
@@ -203,7 +211,7 @@ def plan_text(plan: MealPlan | None, today: date, rules: dict | None = None) -> 
                 facts.append(f"cucinato {_day(meal.cooked_on, today)}")
             if meal.eaten:
                 facts.append("già mangiato")
-            lines.append(f"- {slot}: {meal.recipe.title} ({', '.join(facts)})")
+            lines.append(f"- {slot}: {dish} ({', '.join(facts)})")
             portion = portion_of(meal)
             if portion:
                 lines.append(f"  a persona: {_portion_text(portion)}")

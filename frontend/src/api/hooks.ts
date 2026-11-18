@@ -612,10 +612,13 @@ export function useUpdateMeal(planId: UUID) {
       cooked_on?: string
       eaten?: boolean
     }) => api.patch<PlannedMeal>(`/api/plans/${planId}/meals/${id}`, body),
-    onSuccess: (meal) => {
+    onSuccess: (meal, input) => {
       client.setQueryData<MealPlanDetail>(keys.plan(planId), (plan) =>
         plan ? { ...plan, meals: plan.meals.map((m) => (m.id === meal.id ? meal : m)) } : plan,
       )
+      // Una ricetta approvata vale per tutto il piatto (cena e pranzo-avanzo):
+      // cambiano anche gli altri pasti.
+      if ('recipe_id' in input) void client.invalidateQueries({ queryKey: keys.plan(planId) })
       void client.invalidateQueries({ queryKey: keys.currentPlan })
     },
   })
@@ -804,6 +807,15 @@ export function useReadNutritionistPlan() {
       for (const file of files) form.append('files', file)
       return api.post<Job>('/api/nutritionist-plans', form)
     },
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
+}
+
+/** Il piano alimentare dalle linee guida e dal profilo (job, ADR 0023). */
+export function useGuidelinesPlan() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post<Job>('/api/nutritionist-plans/guidelines'),
     onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
   })
 }
@@ -1036,6 +1048,16 @@ export function cleanLiveCall(name: string, args: Record<string, unknown>) {
     updates: Partial<ProfileDraft>
     preferences: { kind: PreferenceKind; label: string; allergen: string }[]
   }>('/api/profile/interview/proposal', { name, args })
+}
+
+/** Scrive per intero un'idea suggerita per un pasto (job, ADR 0023). */
+export function useWriteSuggestion(planId: UUID) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ mealId, index }: { mealId: number; index: number }) =>
+      api.post<Job>(`/api/plans/${planId}/meals/${mealId}/suggestions/${index}/write`),
+    onSuccess: (job) => client.setQueryData(keys.job(job.id), job),
+  })
 }
 
 /** Idee nuove per un pasto del piano (job): si sceglie poi con useUpdateMeal. */

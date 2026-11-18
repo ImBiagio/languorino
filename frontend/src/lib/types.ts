@@ -419,6 +419,8 @@ export interface Job {
     | 'meal_ideas'
     | 'ask'
     | 'recipe_nutrition'
+    | 'guidelines_plan'
+    | 'meal_recipe'
   status: JobStatus
   result: {
     recipes?: ImportedRecipeDraft[]
@@ -430,8 +432,10 @@ export interface Job {
     ingredients?: string[]
     /** Cosa cucino oggi: le ricette nuove scritte dall'LLM. */
     ideas?: RecipeSummary[]
-    /** Piano del nutrizionista: la bozza creata dalla lettura. */
+    /** Piano del nutrizionista o dalle linee guida: la bozza creata. */
     nutritionist_plan?: UUID
+    /** Ricetta suggerita scritta per un pasto (ADR 0023). */
+    recipe?: RecipeSummary
     /** Intervista e chat: la risposta; per l'intervista anche voce e proposte. */
     reply?: string
     heard?: string
@@ -498,9 +502,8 @@ export interface PlanPayload {
   include_tags: string[]
   exclude_tags: string[]
   goal_note: string
-  nutritionist_plan: UUID | null
-  /** Percentuale di pasti con ricette nuove scritte dall'AI. */
-  new_share: 0 | 25 | 50 | 75 | 100
+  /** Il piano alimentare da seguire (del nutrizionista o dalle linee guida). */
+  nutritionist_plan: UUID
 }
 
 export interface PlannedMeal {
@@ -514,16 +517,33 @@ export interface PlannedMeal {
   /** Perche' il pasto e' vuoto o e' stato cambiato. */
   note: string
   eaten: boolean
-  /** Quanto mangia una persona di ogni ingrediente (senza q.b. e facoltativi). */
+  /** Quanto mangia una persona: gli alimenti del piano o, nei piani di prima,
+   * gli ingredienti della ricetta (senza q.b. e facoltativi). */
   portion: PortionLine[]
-  /** Con il piano del nutrizionista: le dosi a persona secondo la dieta. */
+  /** Piani di prima col nutrizionista: le dosi a persona come testo. */
   diet_portion: string
+  /** Il pasto per ingredienti (ADR 0023); vuoto nei piani di prima. */
+  components: MealComponent[]
+  /** Gli alimenti delle frequenze settimanali che il pasto contiene. */
+  diet_foods: string[]
+  /** Fino a due ricette suggerite: vere o idee da scrivere. */
+  suggestions: MealSuggestion[]
 }
+
+/** Un alimento del pasto a persona; `quantity` null = a volonta'. */
+export interface MealComponent {
+  name: string
+  quantity: number | null
+  unit: 'g' | 'ml' | 'pz' | ''
+}
+
+export type MealSuggestion = { recipe: RecipeSummary } | { title: string; idea: string }
 
 export interface PortionLine {
   name: string
-  quantity: string
-  unit: Unit
+  /** null = a volonta'. */
+  quantity: string | null
+  unit: Unit | ''
   /** Per pezzi e cucchiai: il peso o il volume, se il catalogo lo sa. */
   approx?: { quantity: string; unit: Unit }
 }
@@ -546,8 +566,13 @@ export interface MealPlan {
     goal_note: string
     nutritionist_plan?: UUID | null
   }
-  /** Il piano del nutrizionista seguito, se c'e'. */
-  nutritionist: { id: UUID; title: string } | null
+  /** Il piano alimentare seguito (del nutrizionista o dalle linee guida). */
+  nutritionist: {
+    id: UUID
+    title: string
+    source: DietSource
+    weekly: { food: string; times: number }[]
+  } | null
   weeks_done: number
   weeks_total: number
   error: string
@@ -642,9 +667,13 @@ export interface SubstitutionGroup {
   note: string
 }
 
+/** Da dove viene il piano alimentare (ADR 0023). */
+export type DietSource = 'nutritionist' | 'guidelines'
+
 export interface NutritionistPlan {
   id: UUID
   title: string
+  source: DietSource
   status: 'draft' | 'confirmed'
   /** Alla lettera: solo le opzioni del nutrizionista. */
   strict: boolean

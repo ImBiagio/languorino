@@ -19,6 +19,8 @@ from apps.recipes.models import Recipe, RecipeBook
 
 pytestmark = pytest.mark.django_db
 PLANS = "/api/plans"
+# Il piano alimentare scelto dal fixture ``diet``: senza, la preparazione non si fa.
+DIET: dict = {}
 MONDAY = date.today() + timedelta(days=(7 - date.today().weekday()) % 7 or 7)
 
 
@@ -88,8 +90,40 @@ def _recipe(
     return serializer.save(owner=user, **extra)
 
 
+DIET_RULES = {
+    "meals": [
+        {"slot": "breakfast", "options": ["200 ml latte + 30 g fiocchi d'avena"]},
+        {"slot": "lunch", "options": ["80 g pasta integrale + 150 g ceci lessati + 200 g verdura"]},
+        {"slot": "dinner", "options": ["150 g pesce + 200 g verdura + 50 g pane"]},
+    ],
+    "substitutions": [
+        {"group": "Cereali", "equivalents": ["80 g pasta", "80 g riso", "100 g pane"], "note": ""}
+    ],
+    "weekly": [{"food": "legumi", "times": 3}],
+    "free_foods": ["verdura"],
+    "avoid_foods": [],
+    "notes": "",
+}
+
+
 @pytest.fixture
-def cookbook(user):
+def diet(user):
+    from apps.plans.models import NutritionistPlan
+
+    plan = NutritionistPlan.objects.create(
+        owner=user,
+        title="Piano dalle linee guida",
+        source=NutritionistPlan.Source.GUIDELINES,
+        status=NutritionistPlan.Status.CONFIRMED,
+        rules=DIET_RULES,
+    )
+    DIET["id"] = str(plan.id)
+    yield plan
+    DIET.clear()
+
+
+@pytest.fixture
+def cookbook(user, diet):
     return {
         "ceci": _recipe(user, "Zuppa di ceci", tags=["legumi"]),
         "salmone": _recipe(user, "Salmone al forno", ["salmone"], keeps=1),
@@ -111,6 +145,8 @@ def _settings(**extra):
         "minutes": 45,
         "difficulty": "medium",
     }
+    if DIET:
+        base["nutritionist_plan"] = DIET["id"]
     return {**base, **extra}
 
 
@@ -167,20 +203,34 @@ def test_candidati_dai_ricettari_pdf(user, cookbook):
     assert "Altro PDF" not in {r.title for r in candidate_recipes(both)}
 
 
-# --- generazione con Gemini finto ---------------------------------------------------------------
+# --- generazione per ingredienti con Gemini finto (ADR 0023) ------------------------------
 
 
 SLOT_LINE = re.compile(r"- (\d{4}-\d\d-\d\d) \([^)]*\), [^[]+\[(\w+)\], attesa (\d+)")
 CANDIDATE = re.compile(r"\[(\d+)\] ([^—\n]+?) —")
+LUNCH = [
+    {"name": "pasta integrale", "quantity": 80, "unit": "g"},
+    {"name": "ceci lessati", "quantity": 150, "unit": "g"},
+    {"name": "zucchine", "quantity": 200, "unit": "g"},
+]
 
 
 @pytest.fixture
 def gemini(monkeypatch):
-    """``state["pick"](titolo_candidati, slot, giorno)`` -> numero o titolo nuovo."""
-    from apps.plans import generation
+    """``state["pick"](candidati, slot, giorno, attesa)``: un numero (ricetta
+    suggerita), un titolo (idea), un dict (campi di MealChoice) o None (saltato).
+    ``state["repair"](prompt)`` risponde alla correzione delle frequenze."""
+    from apps.plans import generation, suggestions
     from apps.plans.generation import MealChoice, WeekChoices
 
-    state = {"prompts": [], "kwargs": [], "new": [], "overloaded": 0, "pick": None, "diet": None}
+    state = {
+        "prompts": [],
+        "kwargs": [],
+        "new": [],
+        "overloaded": 0,
+        "pick": None,
+        "repair": None,
+    }
 
     def fake_generate(contents, schema, **kwargs):
         prompt = contents[0]
@@ -203,21 +253,26 @@ def gemini(monkeypatch):
         if state["overloaded"]:
             state["overloaded"] -= 1
             raise AIOverloaded("Gemini è sovraccarico.")
+        if "non tornano" in prompt:
+            return (state["repair"](prompt) if state["repair"] else WeekChoices(meals=[])), "finto"
         candidates = {title.strip(): int(n) for n, title in CANDIDATE.findall(prompt)}
         meals = []
         for day, slot, wait in SLOT_LINE.findall(prompt):
             choice = state["pick"](candidates, slot, date.fromisoformat(day), int(wait))
-            # Dosi della dieta e alimenti delle frequenze, se il test li vuole.
-            diet = state["diet"](slot, date.fromisoformat(day)) if state["diet"] else {}
+            if choice is None:
+                continue
+            fields = {"components": LUNCH}
             if isinstance(choice, int):
-                meals.append(MealChoice(date=day, slot=slot, recipe=choice, **diet))
-            elif choice:
-                meals.append(
-                    MealChoice(date=day, slot=slot, new_recipe=choice, idea="leggera", **diet)
-                )
+                fields["recipes"] = [choice]
+            elif isinstance(choice, str):
+                fields.update(idea=choice, idea_note="leggera")
+            else:
+                fields.update(choice)
+            meals.append(MealChoice(date=day, slot=slot, **fields))
         return WeekChoices(meals=meals), "finto"
 
     monkeypatch.setattr(generation, "generate", fake_generate)
+    monkeypatch.setattr(suggestions, "generate", fake_generate)
     monkeypatch.setattr("apps.plans.tasks.OVERLOAD_PAUSE", 0)
     return state
 
@@ -227,67 +282,101 @@ def _create(api, user, capture, **extra):
         return api(user).post(PLANS, _settings(**extra), format="json")
 
 
-def test_settimana_generata(user, api, cookbook, gemini, django_capture_on_commit_callbacks):
+def _week_prompts(gemini):
+    return [p for p in gemini["prompts"] if "Pasti da comporre" in p]
+
+
+def test_settimana_per_ingredienti(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
     def pick(candidates, slot, day, wait):
-        if slot == "lunch":
-            return candidates["Zuppa di ceci"]
-        return "Zucchine ripiene" if day.weekday() < 3 else candidates["Frittata"]
+        return {"recipes": [candidates["Zuppa di ceci"]], "idea": "Pasta e ceci", "weekly": []}
 
     gemini["pick"] = pick
     response = _create(api, user, django_capture_on_commit_callbacks)
     assert response.status_code == 202, response.data
     plan = MealPlan.objects.get()
     assert (plan.status, plan.weeks_done) == (MealPlan.Status.DRAFT, 1)
-    meals = list(plan.meals.select_related("recipe"))
+    meals = list(plan.meals.all())
     assert len(meals) == 14
-    assert {meal.servings for meal in meals} == {2}
-    # Una ricetta nuova scritta una volta sola per tre cene, fuori dal ricettario.
-    assert gemini["new"] == ["Zucchine ripiene"]
-    new = Recipe.objects.get(title="Zucchine ripiene")
-    assert (new.source, new.in_cookbook, new.status) == ("plan", False, "draft")
-    assert sum(1 for meal in meals if meal.recipe_id == new.id) == 3
-    # Nel prompt c'e' il profilo ridotto, mai email o nome.
-    assert user.email not in gemini["prompts"][0]
-    # La settimana chiede il massimo di token: col default di cornhub Gemini la
-    # troncava con cinque pasti al giorno.
+    # Il pasto e' fatto di alimenti a persona; la ricetta non e' scelta: e' suggerita.
+    assert all(meal.components == LUNCH and meal.recipe_id is None for meal in meals)
+    assert meals[0].suggestions == [
+        {"recipe": str(cookbook["ceci"].id)},
+        {"title": "Pasta e ceci", "idea": ""},
+    ]
+    # Nessuna ricetta scritta durante la generazione: le idee si scrivono quando si aprono.
+    assert gemini["new"] == []
+    week = _week_prompts(gemini)[0]
+    assert "Piano alimentare dalle linee guida" in week
+    assert "80 g pasta integrale + 150 g ceci lessati" in week and "legumi 3 volte" in week
+    assert "Cereali: 80 g pasta = 80 g riso = 100 g pane" in week
+    assert user.email not in week
+    # La settimana chiede il massimo di token: con cinque pasti al giorno serve.
     assert gemini["kwargs"][0]["max_output_tokens"] == 32_000
     detail = api(user).get(f"{PLANS}/{plan.id}").data
-    assert len(detail["meals"]) == 14
-    assert detail["meals"][0]["recipe"]["title"]
+    first = detail["meals"][0]
+    assert first["recipe"] is None
+    assert first["portion"][0] == {"name": "pasta integrale", "quantity": "80", "unit": "g"}
+    assert first["suggestions"][0]["recipe"]["title"] == "Zuppa di ceci"
+    assert first["suggestions"][1] == {"title": "Pasta e ceci", "idea": ""}
+    assert detail["nutritionist"]["weekly"] == [{"food": "legumi", "times": 3}]
+    assert detail["nutritionist"]["source"] == "guidelines"
 
 
-def test_ricetta_nuova_con_allergene_scartata(
-    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+def test_serve_un_piano_alimentare(user, api, cookbook):
+    from apps.plans.models import NutritionistPlan
+
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
+        missing = api(user).post(PLANS, _settings(nutritionist_plan=None), format="json")
+        assert missing.status_code == 400
+        NutritionistPlan.objects.update(status=NutritionistPlan.Status.DRAFT)
+        draft = api(user).post(PLANS, _settings(), format="json")
+        assert draft.status_code == 400
+
+
+def test_alimenti_vietati_tolti_dai_pasti(
+    user, api, cookbook, gemini, diet, django_capture_on_commit_callbacks
 ):
     profile = Profile.objects.create(user=user)
-    FoodPreference.objects.create(profile=profile, kind="allergy", label="eggs", allergen="eggs")
-    gemini["pick"] = lambda c, slot, day, wait: (
-        "Torta di uova" if slot == "dinner" else c["Zuppa di ceci"]
-    )
+    FoodPreference.objects.create(profile=profile, kind="allergy", label="gamberi")
+    diet.rules = {**DIET_RULES, "avoid_foods": ["salmone"]}
+    diet.save()
+
+    def pick(candidates, slot, day, wait):
+        if slot == "lunch":
+            return {"components": [*LUNCH, {"name": "gamberi", "quantity": 100, "unit": "g"}]}
+        if day == MONDAY:
+            return {"components": [{"name": "salmone", "quantity": 150, "unit": "g"}]}
+        return {"components": [{"name": "merluzzo", "quantity": 150, "unit": "g"}]}
+
+    gemini["pick"] = pick
     _create(api, user, django_capture_on_commit_callbacks)
     plan = MealPlan.objects.get()
-    # L'LLM l'ha scritta con le uova: il codice la toglie e riempie le cene con
-    # ricette gia' sicure (mai la frittata, che ha le uova).
-    assert not Recipe.all_objects.filter(title="Torta di uova").exists()
-    dinners = plan.meals.filter(slot="dinner").select_related("recipe")
-    assert all(meal.recipe_id for meal in dinners)
-    assert "Frittata" not in {meal.recipe.title for meal in dinners}
-    # Nel prompt della ricetta nuova c'era il divieto.
-    assert any("NON deve contenere" in p and "eggs" in p for p in gemini["prompts"])
+    lunch = plan.meals.get(date=MONDAY, slot="lunch")
+    assert lunch.components == LUNCH
+    assert "gamberi" in lunch.note
+    # La cena di lunedi' era solo salmone: niente di mangiabile, la riempie il codice.
+    dinner = plan.meals.get(date=MONDAY, slot="dinner")
+    assert dinner.components == [{"name": "merluzzo", "quantity": 150, "unit": "g"}]
+    assert "Ripreso da un altro giorno" in dinner.note
+    names = {item["name"] for meal in plan.meals.all() for item in meal.components}
+    assert not names & {"gamberi", "salmone"}
+    assert "Allergie e intolleranze (MAI): gamberi" in _week_prompts(gemini)[0]
 
 
-def test_prep_e_giorni_in_frigo(user, api, cookbook, gemini, django_capture_on_commit_callbacks):
-    # Il salmone regge un giorno: con attesa 2 si cucina il giorno stesso.
-    gemini["pick"] = lambda c, slot, day, wait: (
-        c["Salmone al forno"] if wait == 2 else c["Zuppa di ceci"]
-    )
+def test_suggerimenti_che_non_reggono_il_frigo(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    gemini["pick"] = lambda c, slot, day, wait: c["Salmone al forno"]
     _create(api, user, django_capture_on_commit_callbacks, prep_mode="every_3")
     plan = MealPlan.objects.get()
-    salmon = plan.meals.filter(recipe__title="Salmone al forno")
-    assert salmon.exists()
-    assert all(meal.cooked_on == meal.date and meal.note for meal in salmon)
-    soup = plan.meals.get(date=MONDAY + timedelta(1), slot="lunch")
-    assert soup.cooked_on == MONDAY  # ceci: tre giorni in frigo, si prepara lunedi'
+    salmon = {"recipe": str(cookbook["salmone"].id)}
+    # Il salmone regge un giorno: suggerito solo dove si mangia entro un giorno.
+    for meal in plan.meals.all():
+        wait = (meal.date - meal.cooked_on).days
+        assert (salmon in meal.suggestions) == (wait <= 1)
+    assert plan.meals.get(date=MONDAY + timedelta(1), slot="lunch").cooked_on == MONDAY
 
 
 def test_un_mese_a_settimane(user, api, cookbook, gemini, django_capture_on_commit_callbacks):
@@ -295,10 +384,7 @@ def test_un_mese_a_settimane(user, api, cookbook, gemini, django_capture_on_comm
     _create(api, user, django_capture_on_commit_callbacks, days=28)
     plan = MealPlan.objects.get()
     assert (plan.status, plan.weeks_done, plan.meals.count()) == ("draft", 4, 56)
-    week_prompts = [p for p in gemini["prompts"] if "Pasti da riempire" in p]
-    assert len(week_prompts) == 4
-    # Dalla seconda settimana sa cosa ha gia' messo.
-    assert "ha gia' mangiato: Zuppa di ceci" in week_prompts[1]
+    assert len(_week_prompts(gemini)) == 4
 
 
 def test_gemini_sovraccarico_riprova(
@@ -310,51 +396,25 @@ def test_gemini_sovraccarico_riprova(
     assert MealPlan.objects.get().status == "draft"
 
 
-def test_varieta_calcolata_dal_codice(user, cookbook):
-    from apps.plans.generation import variety_needs
-    from apps.plans.schedule import plan_dates
-
-    days = plan_dates(MONDAY, 7)
-    rows = schedule(MONDAY, days, ["breakfast", "lunch", "dinner"], "none")
-    candidates = list(Recipe.objects.filter(owner=user))
-    # 14 pranzi e cene: almeno 7 ricette diverse, ce ne sono 4 -> 3 nuove;
-    # 7 colazioni: almeno 3 diverse, c'e' solo il porridge -> 2 nuove.
-    assert variety_needs(rows, candidates) == {"main": 3, "other": 2}
-
-
-def test_prompt_chiede_le_ricette_che_mancano(
-    user, api, cookbook, gemini, django_capture_on_commit_callbacks
-):
-    gemini["pick"] = lambda c, slot, day, wait: (
-        c["Frittata"] if slot != "breakfast" else c["Porridge"]
-    )
-    _create(api, user, django_capture_on_commit_callbacks, slots=["breakfast", "lunch", "dinner"])
-    week = next(p for p in gemini["prompts"] if "Pasti da riempire" in p)
-    assert "inventa ALMENO 3 ricette nuove per pranzi e cene" in week
-    assert "inventa ALMENO 2 ricette nuove per colazioni" in week
-
-
 def test_pasti_saltati_riempiti_dal_codice(
     user, api, cookbook, gemini, django_capture_on_commit_callbacks
 ):
-    # L'LLM riempie solo il lunedi': il resto lo completa il codice, senza
-    # mai usare ricette vietate e rispettando il pasto (niente porridge a cena).
+    breakfast = [{"name": "latte", "quantity": 200, "unit": "ml"}]
+
     def pick(c, slot, day, wait):
         if day != MONDAY:
             return None
-        return c["Porridge"] if slot == "breakfast" else c["Zuppa di ceci"]
+        return {"components": breakfast} if slot == "breakfast" else c["Zuppa di ceci"]
 
     gemini["pick"] = pick
     _create(api, user, django_capture_on_commit_callbacks, slots=["breakfast", "lunch", "dinner"])
     plan = MealPlan.objects.get()
-    meals = list(plan.meals.select_related("recipe"))
-    assert all(meal.recipe_id for meal in meals)
-    breakfasts = {meal.recipe.title for meal in meals if meal.slot == "breakfast"}
-    assert breakfasts == {"Porridge"}
-    mains = [meal.recipe.title for meal in meals if meal.slot != "breakfast"]
-    assert "Porridge" not in mains
-    # Le meno usate prima: le quattro ricette di pranzo/cena girano.
-    assert len(set(mains)) == 4
+    meals = list(plan.meals.all())
+    # Colazioni con la colazione, pranzi e cene con pranzi e cene.
+    assert all(meal.components for meal in meals)
+    assert all(m.components == breakfast for m in meals if m.slot == "breakfast")
+    assert all(m.components == LUNCH for m in meals if m.slot != "breakfast")
+    assert all("Ripreso" in m.note for m in meals if m.date != MONDAY)
 
 
 def test_piatti_esclusi_nominati_nel_prompt(
@@ -362,19 +422,93 @@ def test_piatti_esclusi_nominati_nel_prompt(
 ):
     gemini["pick"] = lambda c, slot, day, wait: c["Frittata"]
     _create(api, user, django_capture_on_commit_callbacks, exclude_tags=["del cuore"])
-    week = next(p for p in gemini["prompts"] if "Pasti da riempire" in p)
-    assert "nemmeno come ricetta nuova: Pasta al pomodoro" in week
+    assert "nemmeno come idea: Pasta al pomodoro" in _week_prompts(gemini)[0]
 
 
-def test_senza_ricette_le_inventa(user, api, gemini, django_capture_on_commit_callbacks):
-    gemini["pick"] = lambda c, slot, day, wait: f"Piatto {slot} {day.weekday()}"
-    _create(api, user, django_capture_on_commit_callbacks, days=7, slots=["dinner"])
+def test_frequenze_corrette_da_una_seconda_chiamata(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    from apps.plans.generation import MealChoice, WeekChoices
+
+    gemini["pick"] = lambda c, slot, day, wait: {"weekly": ["Legumi"]}
+    asked = []
+
+    def repair(prompt):
+        asked.append(prompt)
+        # Toglie i legumi da tutti i pasti tranne tre pranzi.
+        return WeekChoices(
+            meals=[
+                MealChoice(
+                    date=(MONDAY + timedelta(n)).isoformat(),
+                    slot=slot,
+                    components=[{"name": "riso", "quantity": 80, "unit": "g"}],
+                    weekly=[],
+                )
+                for n in range(7)
+                for slot in ("lunch", "dinner")
+                if not (slot == "lunch" and n < 3)
+            ]
+        )
+
+    gemini["repair"] = repair
+    _create(api, user, django_capture_on_commit_callbacks)
+    assert "- legumi: 14 volte, il piano dice 3" in asked[0]
     plan = MealPlan.objects.get()
-    assert plan.meals.filter(recipe__isnull=False).count() == 7
-    assert len(gemini["new"]) == 7
+    with_legumes = [meal for meal in plan.meals.all() if meal.diet_foods == ["legumi"]]
+    assert len(with_legumes) == 3
+    assert not [meal for meal in plan.meals.all() if "Oltre" in meal.note]
 
 
-# --- API ---------------------------------------------------------------------------------------
+def test_frequenze_oltre_restano_come_nota(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    gemini["pick"] = lambda c, slot, day, wait: {"weekly": ["legumi"]}
+    _create(api, user, django_capture_on_commit_callbacks)
+    plan = MealPlan.objects.get()
+    noted = [meal for meal in plan.meals.order_by("date", "slot") if "Oltre" in meal.note]
+    # I primi tre pasti coi legumi vanno bene, gli altri undici no.
+    assert len(noted) == 11
+    assert "legumi 3 volte a settimana" in noted[0].note
+
+
+def test_la_sera_cucino_anche_il_pranzo_dopo(
+    user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    dinner = [{"name": "riso", "quantity": 80, "unit": "g"}]
+
+    def pick(c, slot, day, wait):
+        if slot == "dinner":
+            return {"components": dinner, "recipes": [c["Zuppa di ceci"]], "weekly": ["legumi"]}
+        return {}
+
+    gemini["pick"] = pick
+    _create(api, user, django_capture_on_commit_callbacks, prep_mode="evening_before")
+    week = _week_prompts(gemini)[0]
+    # Solo il primo pranzo si compone; le cene sanno che fanno anche il pranzo.
+    assert len(re.findall(r"\[lunch\]", week)) == 1
+    assert "fa anche il pranzo di domani" in week and "contano DUE volte" in week
+    plan = MealPlan.objects.get()
+    tuesday = plan.meals.get(date=MONDAY + timedelta(1), slot="lunch")
+    assert tuesday.components == dinner and tuesday.cooked_on == MONDAY
+    assert tuesday.note.startswith("Avanzo della cena di ieri")
+    assert tuesday.suggestions == [{"recipe": str(cookbook["ceci"].id)}]
+    # Le frequenze si contano sui pasti: 6 cene-avanzo valgono 12, piu' l'ultima cena.
+    assert sum(1 for meal in plan.meals.all() if meal.diet_foods == ["legumi"]) == 13
+    # Approvare la ricetta della cena la approva anche per il pranzo di domani.
+    monday_dinner = plan.meals.get(date=MONDAY, slot="dinner")
+    url = f"{PLANS}/{plan.id}/meals/{monday_dinner.id}"
+    response = api(user).patch(url, {"recipe_id": str(cookbook["ceci"].id)}, format="json")
+    assert response.status_code == 200, response.data
+    tuesday.refresh_from_db()
+    assert tuesday.recipe_id == cookbook["ceci"].id and tuesday.components == dinner
+    assert plan.meals.get(date=MONDAY + timedelta(1), slot="dinner").recipe_id is None
+
+
+def test_pranzi_avanzo_solo_la_sera_prima(user, cookbook):
+    from apps.plans.generation import leftover_lunches
+
+    assert len(leftover_lunches(_plan(user, prep_mode="evening_before"))) == 6
+    assert leftover_lunches(_plan(user, prep_mode="none")) == {}
 
 
 @pytest.mark.parametrize(
@@ -416,7 +550,7 @@ def test_nessun_piano_corrente(user, api):
     assert api(user).get(f"{PLANS}/current").status_code == 204
 
 
-def test_cambiare_un_pasto(
+def test_approvare_una_ricetta_suggerita(
     user, other_user, api, cookbook, gemini, django_capture_on_commit_callbacks
 ):
     gemini["pick"] = lambda c, slot, day, wait: c["Frittata"]
@@ -428,6 +562,9 @@ def test_cambiare_un_pasto(
     )
     assert response.status_code == 200, response.data
     assert (response.data["recipe"]["title"], response.data["servings"]) == ("Zuppa di ceci", 3)
+    # Gli alimenti restano quelli del piano: la ricetta dice solo come cucinarli.
+    assert response.data["components"] == LUNCH
+    assert response.data["suggestions"][0]["recipe"]["title"] == "Frittata"
     assert api(user).patch(url, {"recipe_id": None}, format="json").data["recipe"] is None
     late = (meal.date + timedelta(1)).isoformat()
     assert api(user).patch(url, {"cooked_on": late}, format="json").status_code == 400
@@ -436,17 +573,62 @@ def test_cambiare_un_pasto(
     assert api(other_user).patch(url, {"servings": 1}, format="json").status_code == 404
 
 
+def test_scrivere_un_idea_suggerita(
+    user, other_user, api, cookbook, gemini, django_capture_on_commit_callbacks
+):
+    from apps.jobs.models import Job
+
+    gemini["pick"] = lambda c, slot, day, wait: "Pasta e ceci"
+    plan_id = _create(api, user, django_capture_on_commit_callbacks, prep_mode="every_2").data[
+        "id"
+    ]
+    meal = PlannedMeal.objects.get(plan_id=plan_id, date=MONDAY, slot="lunch")
+    url = f"{PLANS}/{plan_id}/meals/{meal.id}/suggestions"
+    with django_capture_on_commit_callbacks(execute=True):
+        response = api(user).post(f"{url}/0/write")
+    assert response.status_code == 202, response.data
+    job = Job.objects.get(id=response.data["id"])
+    assert job.status == Job.Status.READY, job.error
+    recipe = Recipe.objects.get(title="Pasta e ceci")
+    assert job.result["recipe"]["id"] == str(recipe.id)
+    assert (recipe.source, recipe.in_cookbook, recipe.servings) == ("plan", False, 2)
+    prompt = gemini["prompts"][-1]
+    assert "pasta integrale 80 g, ceci lessati 150 g, zucchine 200 g" in prompt
+    assert "Idea: leggera" in prompt
+    assert gemini["kwargs"][-1]["feature"] == "meal_recipe"
+    assert gemini["kwargs"][-1]["fast"] is True
+    # L'idea diventa la ricetta in tutti i pasti dello stesso piatto (cucinati lunedi').
+    for same in PlannedMeal.objects.filter(plan_id=plan_id, cooked_on=MONDAY):
+        assert same.suggestions == [{"recipe": str(recipe.id)}]
+    assert PlannedMeal.objects.get(
+        plan_id=plan_id, date=MONDAY + timedelta(2), slot="lunch"
+    ).suggestions == [{"title": "Pasta e ceci", "idea": "leggera"}]
+    # Non e' approvata: il pasto non ha ancora una ricetta.
+    meal.refresh_from_db()
+    assert meal.recipe_id is None
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
+        assert api(user).post(f"{url}/5/write").status_code == 404
+        assert api(other_user).post(f"{url}/0/write").status_code == 404
+
+
 def test_rifare_e_eliminare(user, api, cookbook, gemini, django_capture_on_commit_callbacks):
     gemini["pick"] = lambda c, slot, day, wait: "Zucchine ripiene"
     plan_id = _create(api, user, django_capture_on_commit_callbacks).data["id"]
+    meal = PlannedMeal.objects.filter(plan_id=plan_id).first()
+    with django_capture_on_commit_callbacks(execute=True):
+        api(user).post(f"{PLANS}/{plan_id}/meals/{meal.id}/suggestions/0/write")
+    assert Recipe.objects.filter(title="Zucchine ripiene").exists()
     gemini["pick"] = lambda c, slot, day, wait: c["Frittata"]
     with django_capture_on_commit_callbacks(execute=True):
         assert api(user).post(f"{PLANS}/{plan_id}/regenerate").status_code == 202
     plan = MealPlan.objects.get()
-    assert set(plan.meals.values_list("recipe__title", flat=True)) == {"Frittata"}
+    frittata = {"recipe": str(cookbook["frittata"].id)}
+    assert all(meal.suggestions == [frittata] for meal in plan.meals.all())
+    with django_capture_on_commit_callbacks(execute=True):
+        api(user).post(f"{PLANS}/{plan_id}/meals/{plan.meals.first().id}/suggestions/0/write")
     assert api(user).delete(f"{PLANS}/{plan_id}").status_code == 204
     assert not MealPlan.all_objects.exists()
-    # Le ricette scritte per il piano e mai salvate se ne vanno; il ricettario resta.
+    # Il ricettario resta.
     assert Recipe.objects.filter(in_cookbook=True).count() == 5
 
 
@@ -595,51 +777,28 @@ def test_generare_dal_piano_del_nutrizionista(
     nutritionist = NutritionistPlan.objects.create(
         owner=user,
         title="Piano della dottoressa",
+        status=NutritionistPlan.Status.CONFIRMED,
         rules={
             "meals": [{"slot": "lunch", "options": ["80 g pasta + verdure"]}],
-            "substitutions": [
-                {"group": "Carboidrati", "equivalents": ["80 g pasta", "100 g pane"], "note": ""}
-            ],
             "weekly": [{"food": "legumi", "times": 3}],
             "avoid_foods": ["salmone", "uova"],
         },
     )
-    # Ancora bozza: non si puo' usare.
-    draft = _create(
-        api, user, django_capture_on_commit_callbacks, nutritionist_plan=str(nutritionist.id)
-    )
-    assert draft.status_code == 400
-    nutritionist.status = NutritionistPlan.Status.CONFIRMED
-    nutritionist.save()
 
     def pick(candidates, slot, day, wait):
         assert "Salmone al forno" not in candidates and "Frittata" not in candidates
-        return "Frittatona di uova" if day.weekday() == 0 else candidates["Zuppa di ceci"]
+        return candidates["Zuppa di ceci"]
 
     gemini["pick"] = pick
     response = _create(
         api, user, django_capture_on_commit_callbacks, nutritionist_plan=str(nutritionist.id)
     )
     assert response.status_code == 202, response.data
-    assert response.data["nutritionist"] == {
-        "id": str(nutritionist.id),
-        "title": "Piano della dottoressa",
-    }
-    week = gemini["prompts"][0]
+    assert response.data["nutritionist"]["title"] == "Piano della dottoressa"
+    assert response.data["nutritionist"]["source"] == "nutritionist"
+    week = _week_prompts(gemini)[0]
     assert "Piano del nutrizionista" in week and "80 g pasta + verdure" in week
-    assert "ALLA LETTERA" in week and "legumi 3 volte" in week
-    # Le sostituzioni, con la grammatura di ogni equivalente, arrivano alla
-    # settimana e alla ricetta nuova (prima stavano solo nelle note).
-    assert "Carboidrati: 80 g pasta = 100 g pane" in week
-    assert "grammatura scritta per l'equivalente" in week
-    # La ricetta nuova con le uova (da evitare) e' scartata: il pasto lo riempie il codice.
-    assert not Recipe.objects.filter(title="Frittatona di uova").exists()
-    written = gemini["prompts"][1]
-    assert "80 g pasta + verdure" in written and "evitare: salmone, uova" in written
-    assert "80 g pasta = 100 g pane" in written
-    plan = MealPlan.objects.get(id=response.data["id"])
-    titles = {meal.recipe.title for meal in plan.meals.select_related("recipe") if meal.recipe}
-    assert titles and not titles & {"Salmone al forno", "Frittata", "Frittatona di uova"}
+    assert "ALLA LETTERA" in week and "Da evitare: salmone, uova" in week
 
 
 def test_file_del_piano_del_nutrizionista_tenuti(
@@ -659,249 +818,6 @@ def test_file_del_piano_del_nutrizionista_tenuti(
     assert not JobFile.objects.exists()
 
 
-def test_alla_lettera_i_buchi_solo_con_le_scelte_dell_llm(
-    user, api, cookbook, gemini, django_capture_on_commit_callbacks
-):
-    from apps.plans.models import NutritionistPlan
-
-    nutritionist = NutritionistPlan.objects.create(
-        owner=user,
-        title="Piano",
-        status=NutritionistPlan.Status.CONFIRMED,
-        rules={"meals": [{"slot": "lunch", "options": ["legumi"]}]},
-    )
-
-    def pick(candidates, slot, day, wait):
-        # Sceglie solo il lunedi'; gli altri giorni li salta.
-        return candidates["Zuppa di ceci"] if day.weekday() == 0 else None
-
-    gemini["pick"] = pick
-    response = _create(
-        api,
-        user,
-        django_capture_on_commit_callbacks,
-        slots=["lunch"],
-        nutritionist_plan=str(nutritionist.id),
-    )
-    plan = MealPlan.objects.get(id=response.data["id"])
-    titles = {meal.recipe.title for meal in plan.meals.select_related("recipe")}
-    assert titles == {"Zuppa di ceci"}
-
-
-def test_grammature_a_persona(user, api, gemini, django_capture_on_commit_callbacks):
-    from apps.recipes.serializers import RecipeSerializer
-
-    serializer = RecipeSerializer(
-        data={
-            "title": "Pasta e zucchine",
-            "servings": 4,
-            "meal_slots": ["lunch", "dinner"],
-            "ingredients": [
-                {"name": "pasta", "quantity": "320", "unit": "g"},
-                {"name": "zucchine", "quantity": "2", "unit": "pz"},
-                {"name": "olio extravergine d'oliva", "quantity": "2", "unit": "tbsp"},
-                {"name": "sale", "unit": "to_taste"},
-                {"name": "basilico", "quantity": "5", "unit": "g", "optional": True},
-            ],
-        },
-        context={},
-    )
-    serializer.is_valid(raise_exception=True)
-    serializer.save(owner=user)
-    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Pasta e zucchine"]
-    response = _create(api, user, django_capture_on_commit_callbacks, servings=2)
-    meal = api(user).get(f"{PLANS}/{response.data['id']}").data["meals"][0]
-    assert meal["servings"] == 2
-    # A persona, non per le porzioni del pasto: senza "q.b." e facoltativi.
-    assert meal["portion"] == [
-        {"name": "pasta", "quantity": "80.00", "unit": "g"},
-        {
-            "name": "zucchina",
-            "quantity": "0.50",
-            "unit": "pz",
-            "approx": {"quantity": "100", "unit": "g"},
-        },
-        {
-            "name": "olio extravergine d'oliva",
-            "quantity": "0.50",
-            "unit": "tbsp",
-            "approx": {"quantity": "8", "unit": "ml"},
-        },
-    ]
-
-
-def test_la_sera_cucino_anche_il_pranzo_dopo(
-    user, api, cookbook, gemini, django_capture_on_commit_callbacks
-):
-    """Il pranzo e' l'avanzo della cena prima: una cottura sola, anche fra due settimane."""
-    asked = []
-    dinners = ["Zuppa di ceci", "Frittata", "Pasta al pomodoro"]
-
-    def pick(candidates, slot, day, wait):
-        asked.append((day, slot, wait))
-        if slot == "lunch":
-            return candidates["Frittata"]
-        return candidates[dinners[day.toordinal() % 3]]
-
-    gemini["pick"] = pick
-    response = _create(
-        api,
-        user,
-        django_capture_on_commit_callbacks,
-        days=14,
-        prep_mode="evening_before",
-    )
-    plan = MealPlan.objects.get(id=response.data["id"])
-    assert plan.status == MealPlan.Status.DRAFT
-    # A Gemini si chiede solo il primo pranzo; le cene devono reggere un giorno.
-    assert [(day, slot) for day, slot, _w in asked if slot == "lunch"] == [(MONDAY, "lunch")]
-    last = MONDAY + timedelta(days=13)
-    assert all(wait == (0 if day == last else 1) for day, slot, wait in asked if slot == "dinner")
-    meals = {(m.date, m.slot): m for m in plan.meals.select_related("recipe")}
-    assert len(meals) == 28
-    for offset in range(1, 14):
-        day = MONDAY + timedelta(days=offset)
-        lunch, dinner = meals[(day, "lunch")], meals[(day - timedelta(days=1), "dinner")]
-        assert lunch.recipe_id == dinner.recipe_id, day
-        assert lunch.cooked_on == dinner.cooked_on == day - timedelta(days=1)
-    # Anche il pranzo del primo lunedi' della seconda settimana viene dalla domenica.
-    second_monday = MONDAY + timedelta(days=7)
-    assert (
-        meals[(second_monday, "lunch")].recipe_id
-        == meals[(second_monday - timedelta(days=1), "dinner")].recipe_id
-    )
-
-
-def test_pranzi_avanzo_solo_la_sera_prima(user, cookbook):
-    from apps.plans.generation import leftover_lunches
-
-    assert len(leftover_lunches(_plan(user, prep_mode="evening_before"))) == 6
-    assert leftover_lunches(_plan(user, prep_mode="none")) == {}
-
-
-def test_alla_lettera_pranzo_avanzo_unisce_le_due_opzioni(
-    user, api, cookbook, gemini, django_capture_on_commit_callbacks
-):
-    """Con il nutrizionista alla lettera e "la sera cucino anche il pranzo
-    dopo" il pranzo resta l'avanzo della cena (prima si cucinavano due piatti
-    diversi): il piatto unisce a occhio l'opzione del pranzo e quella della cena."""
-    from apps.plans.models import NutritionistPlan
-
-    nutritionist = NutritionistPlan.objects.create(
-        owner=user,
-        title="Piano",
-        status=NutritionistPlan.Status.CONFIRMED,
-        rules={
-            "meals": [
-                {"slot": "lunch", "options": ["90 g cereali + 60 g legumi"]},
-                {"slot": "dinner", "options": ["300 g pesce bianco + 60 g pane"]},
-            ]
-        },
-    )
-
-    def pick(candidates, slot, day, wait):
-        if slot == "dinner" and day == MONDAY:
-            return "Orzo e merluzzo"
-        return candidates["Zuppa di ceci"]
-
-    gemini["pick"] = pick
-    response = _create(
-        api,
-        user,
-        django_capture_on_commit_callbacks,
-        prep_mode="evening_before",
-        nutritionist_plan=str(nutritionist.id),
-    )
-    plan = MealPlan.objects.get(id=response.data["id"])
-    assert "piatto unico" in gemini["prompts"][0]
-    written = gemini["prompts"][1]
-    assert "anche il pranzo del giorno dopo" in written
-    assert "90 g cereali + 60 g legumi" in written and "300 g pesce bianco" in written
-    meals = {(m.date, m.slot): m for m in plan.meals.select_related("recipe")}
-    tuesday = MONDAY + timedelta(days=1)
-    assert meals[(tuesday, "lunch")].recipe.title == "Orzo e merluzzo"
-    assert meals[(tuesday, "lunch")].cooked_on == MONDAY
-
-
-def test_dosi_della_dieta_e_frequenze_contate_sui_pasti(
-    user, api, cookbook, gemini, django_capture_on_commit_callbacks
-):
-    """Con il nutrizionista ogni pasto porta le dosi a persona della dieta
-    (anche con una ricetta senza quantita'), il pranzo-avanzo quelle della sua
-    cena, e i pasti oltre le frequenze settimanali (contate sui pasti, non sui
-    piatti) hanno una nota."""
-    from apps.plans.models import NutritionistPlan
-
-    nutritionist = NutritionistPlan.objects.create(
-        owner=user,
-        title="Piano",
-        status=NutritionistPlan.Status.CONFIRMED,
-        rules={
-            "meals": [
-                {"slot": "lunch", "options": ["90 g riso + 60 g legumi"]},
-                {"slot": "dinner", "options": ["300 g merluzzo + 220 g patate"]},
-            ],
-            "weekly": [{"food": "Patate", "times": 3}],
-        },
-    )
-    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
-    gemini["diet"] = lambda slot, day: (
-        {"portion": "45 g riso,  150 g merluzzo, 110 g patate", "weekly": ["patate", "dolci"]}
-        if slot == "dinner"
-        else {"portion": "90 g riso, 60 g legumi"}
-    )
-    response = _create(
-        api,
-        user,
-        django_capture_on_commit_callbacks,
-        prep_mode="evening_before",
-        nutritionist_plan=str(nutritionist.id),
-    )
-    week = gemini["prompts"][0]
-    assert "conta DUE volte" in week and '"portion"' in week
-    plan = MealPlan.objects.get(id=response.data["id"])
-    meals = {(m.date, m.slot): m for m in plan.meals.all()}
-    monday_lunch = meals[(MONDAY, "lunch")]
-    assert (monday_lunch.diet_portion, monday_lunch.diet_foods) == ("90 g riso, 60 g legumi", [])
-    tuesday, wednesday = MONDAY + timedelta(days=1), MONDAY + timedelta(days=2)
-    # Il pranzo-avanzo ha le dosi della cena; "dolci" non e' nelle frequenze.
-    assert meals[(tuesday, "lunch")].diet_portion == "45 g riso, 150 g merluzzo, 110 g patate"
-    assert meals[(tuesday, "lunch")].diet_foods == ["Patate"]
-    # Lunedi' cena, martedi' cena e pranzo: 3 volte. Mercoledi' a cena e' la quarta.
-    assert "Oltre le frequenze" not in meals[(tuesday, "lunch")].note
-    assert "Patate 3 volte" in meals[(wednesday, "dinner")].note
-    detail = api(user).get(f"{PLANS}/{plan.id}").data
-    shown = next(m for m in detail["meals"] if m["id"] == monday_lunch.id)
-    assert shown["diet_portion"] == "90 g riso, 60 g legumi"
-    # Cambiato il piatto, le dosi della dieta non valgono piu'.
-    recipe = Recipe.objects.get(title="Frittata")
-    changed = api(user).patch(
-        f"{PLANS}/{plan.id}/meals/{monday_lunch.id}", {"recipe_id": str(recipe.id)}, format="json"
-    )
-    assert changed.status_code == 200, changed.data
-    assert changed.data["diet_portion"] == ""
-
-
-@pytest.mark.parametrize(
-    ("share", "phrase"),
-    [(0, "Usa le ricette candidate"), (50, "Circa il 50%"), (100, "Non usare le candidate")],
-)
-def test_percentuale_di_ricette_nuove(
-    user, api, cookbook, gemini, django_capture_on_commit_callbacks, share, phrase
-):
-    gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
-    response = _create(api, user, django_capture_on_commit_callbacks, new_share=share)
-    assert response.status_code == 202, response.data
-    assert MealPlan.objects.get().settings["new_share"] == share
-    assert phrase in gemini["prompts"][0]
-
-
-def test_percentuale_non_ammessa(user, api):
-    with override_settings(CORNHUB_APP_TOKEN="token-test"):
-        response = api(user).post(PLANS, _settings(new_share=33), format="json")
-    assert response.status_code == 400
-
-
 def test_idee_per_un_pasto(
     user, api, cookbook, gemini, django_capture_on_commit_callbacks, monkeypatch
 ):
@@ -910,19 +826,10 @@ def test_idee_per_un_pasto(
     from apps.recipes.importing import ImportedRecipes
 
     gemini["pick"] = lambda candidates, slot, day, wait: candidates["Zuppa di ceci"]
-    nutritionist = NutritionistPlan.objects.create(
-        owner=user,
-        title="N",
-        status=NutritionistPlan.Status.CONFIRMED,
-        strict=False,
-        rules={
-            "meals": [{"slot": "dinner", "options": ["150 g pesce + verdure"]}],
-            "avoid_foods": ["uova"],
-        },
+    NutritionistPlan.objects.filter(id=DIET["id"]).update(
+        rules={**DIET_RULES, "avoid_foods": ["uova"]}
     )
-    plan_id = _create(
-        api, user, django_capture_on_commit_callbacks, nutritionist_plan=str(nutritionist.id)
-    ).data["id"]
+    plan_id = _create(api, user, django_capture_on_commit_callbacks).data["id"]
     meal = PlannedMeal.objects.filter(plan_id=plan_id, slot="dinner").first()
     prompts = []
 
@@ -931,13 +838,13 @@ def test_idee_per_un_pasto(
         return ImportedRecipes(
             recipes=[
                 ImportedRecipe(
-                    title="Orata al cartoccio",
+                    title="Pasta e ceci al rosmarino",
                     servings=2,
-                    ingredients=[ImportedIngredient(name="orata", quantity="300", unit="g")],
-                    steps=["Inforna."],
+                    ingredients=[ImportedIngredient(name="ceci", quantity="300", unit="g")],
+                    steps=["Cuoci."],
                 ),
                 ImportedRecipe(
-                    title="Frittata di zucchine",  # uova: il nutrizionista dice di evitarle
+                    title="Frittata di zucchine",  # uova: il piano dice di evitarle
                     servings=2,
                     ingredients=[ImportedIngredient(name="uova", quantity="4", unit="pz")],
                     steps=["Sbatti."],
@@ -948,23 +855,15 @@ def test_idee_per_un_pasto(
     monkeypatch.setattr("apps.plans.swap.generate", fake)
     url = f"{PLANS}/{plan_id}/meals/{meal.id}/ideas"
     with django_capture_on_commit_callbacks(execute=True):
-        response = api(user).post(url, {"hint": "  qualcosa  col pesce "}, format="json")
+        response = api(user).post(url, {"hint": "  qualcosa  di caldo "}, format="json")
     assert response.status_code == 202, response.data
     job = Job.objects.get(id=response.data["id"])
     assert job.status == Job.Status.READY, job.error
-    assert [idea["title"] for idea in job.result["ideas"]] == ["Orata al cartoccio"]
+    assert [idea["title"] for idea in job.result["ideas"]] == ["Pasta e ceci al rosmarino"]
     prompt, kwargs = prompts[0]
     assert kwargs["fast"] is True and kwargs["feature"] == "meal_ideas"
-    assert '"qualcosa col pesce"' in prompt and "150 g pesce + verdure" in prompt
-    assert "Zuppa di ceci" in prompt  # gia' nel piano: da non ripetere
-    idea = Recipe.objects.get(title="Orata al cartoccio")
-    assert (idea.source, idea.in_cookbook, "dinner" in idea.meal_slots) == ("plan", False, True)
-    # Scelta: entra nel pasto come qualsiasi altra ricetta.
-    api(user).patch(
-        f"{PLANS}/{plan_id}/meals/{meal.id}", {"recipe_id": str(idea.id)}, format="json"
-    )
-    meal.refresh_from_db()
-    assert meal.recipe_id == idea.id
+    # Le idee cucinano gli alimenti del pasto.
+    assert '"qualcosa di caldo"' in prompt and "pasta integrale 80 g" in prompt
 
 
 def test_idee_per_un_pasto_degli_altri(
@@ -1044,6 +943,55 @@ def test_rileggere_dai_file(user, api, reading, django_capture_on_commit_callbac
     with override_settings(CORNHUB_APP_TOKEN="token-test"):
         assert api(UserFactory()).post(url).status_code == 404
 
+
+# --- piano dalle linee guida (ADR 0023) ---------------------------------------------------
+
+
+def test_piano_dalle_linee_guida(
+    user, other_user, api, monkeypatch, django_capture_on_commit_callbacks
+):
+    from apps.jobs.models import Job
+    from apps.plans.models import NutritionistPlan
+    from apps.plans.nutritionist import NutritionistMeal, NutritionistReading, WeeklyFrequency
+
+    profile = Profile.objects.create(user=user, meal_slots=["lunch", "dinner"], sex="f")
+    FoodPreference.objects.create(profile=profile, kind="allergy", label="gamberi")
+    calls = []
+
+    def fake(contents, schema, **kwargs):
+        calls.append((contents[0], kwargs))
+        return NutritionistReading(
+            title="Piano dalle linee guida",
+            meals=[
+                NutritionistMeal(slot="breakfast", options=["200 ml latte"]),
+                NutritionistMeal(slot="lunch", options=["80 g pasta + 150 g legumi + verdura"]),
+                NutritionistMeal(slot="dinner", options=["150 g pesce + verdura + 50 g pane"]),
+            ],
+            weekly=[WeeklyFrequency(food="legumi", times=4)],
+            notes="Indicativo: per esigenze di salute decide il medico.",
+        ), "finto"
+
+    monkeypatch.setattr("apps.plans.guidelines.generate", fake)
+    with override_settings(CORNHUB_APP_TOKEN="token-test"):
+        with django_capture_on_commit_callbacks(execute=True):
+            response = api(user).post(f"{NUTRITIONIST}/guidelines")
+    assert response.status_code == 202, response.data
+    job = Job.objects.get(id=response.data["id"])
+    assert job.status == Job.Status.READY, job.error
+    plan = NutritionistPlan.objects.get(owner=user)
+    assert job.result == {"nutritionist_plan": str(plan.id), "problem": ""}
+    assert (plan.source, plan.status) == ("guidelines", "draft")
+    # Solo i pasti della sua giornata.
+    assert [meal["slot"] for meal in plan.rules["meals"]] == ["lunch", "dinner"]
+    assert plan.rules["weekly"] == [{"food": "legumi", "times": 4}]
+    prompt, kwargs = calls[0]
+    assert kwargs["feature"] == "diet_guidelines"
+    assert "CREA" in prompt and "pranzo [lunch], cena [dinner]" in prompt
+    assert "Allergie e intolleranze (MAI): gamberi" in prompt
+    assert user.email not in prompt
+    detail = api(user).get(f"{NUTRITIONIST}/{plan.id}").data
+    assert detail["source"] == "guidelines" and detail["files"] == []
+    assert api(other_user).get(f"{NUTRITIONIST}/{plan.id}").status_code == 404
 
 
 @pytest.mark.parametrize("fails", [False, True])

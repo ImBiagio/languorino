@@ -1,13 +1,35 @@
 # Languorino
 
 Cosa mangio questa settimana? Languorino parte dal profilo (gusti, allergie,
-obiettivi, stile di vita, anche raccontati a voce in un'intervista), genera il piano alimentare con il meal prep (anche seguendo quello del
-nutrizionista), tiene
+obiettivi, stile di vita, anche raccontati a voce in un'intervista), parte dal
+piano alimentare (del nutrizionista o scritto dalle linee guida) e prepara le
+settimane per ingredienti con il meal prep, con le ricette suggerite; tiene
 il ricettario di casa (anche dalle foto delle ricette scritte a mano),
 calcola la spesa e, dalla foto del frigo, dice cosa cucinare oggi. Alla chat
 "Chiedi a Languorino" si chiede quanto mangiare a pranzo e cena o cosa dice il
 piano del nutrizionista. Cosa fa in [docs/specifica.md](docs/specifica.md), come è
 progettata in [docs/progettazione.md](docs/progettazione.md).
+
+## Come si usa
+
+1. **Piano alimentare** (Piano → "Il tuo piano alimentare"): carica il piano
+   del nutrizionista in PDF o foto, oppure "Dalle linee guida" e lo scrive
+   l'AI dal profilo. Si controllano opzioni, grammature e frequenze e si
+   conferma.
+2. **Nuova preparazione**: giorni, pasti, porzioni, meal prep. Ogni pasto
+   arriva come alimenti e quantità a persona; sotto, le ricette suggerite e le
+   frequenze della settimana ("legumi 3/3").
+
+   ![Cosa mangi: alimenti a persona e ricette suggerite](docs/media/preparazione-cosa-mangi.jpg)
+
+3. **Scegli la ricetta**: tocca quella che cucini (vale anche per il
+   pranzo-avanzo), o fai scrivere un'idea. "Cosa cucini" somma le porzioni
+   per giorno di cottura.
+
+   ![Cosa cucini: un piatto per la cena e il pranzo dopo](docs/media/preparazione-cosa-cucini.jpg)
+
+4. **Spesa**: dagli alimenti del piano e, per le ricette approvate, i loro
+   ingredienti in più.
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
 Tailwind con token Material 3, tutto in Docker Compose
@@ -98,8 +120,8 @@ backend/
     │                    import da foto (importing.py), calorie e macro (nutrition.py), ricettari PDF letti a pezzi (books.py, tasks.py), condivisione (sharing.py)
     ├── ai/              adattatore verso il gateway AI di cornhub (eccezioni di sempre)
     ├── jobs/            lavori lunghi su Celery (coda "ai"): file, stato, bozza, conferma
-    ├── plans/           piano alimentare: calendario del prep (schedule.py), generazione a settimane (generation.py),
-    │                    piano del nutrizionista letto da PDF/foto (nutritionist.py), chat su profilo e piano (ask.py), piano condiviso in sola lettura (sharing.py)
+    ├── plans/           preparazione: calendario del prep (schedule.py), settimane per ingredienti (generation.py), ricette suggerite (suggestions.py),
+    │                    piano alimentare letto da PDF/foto (nutritionist.py) o dalle linee guida (guidelines.py), chat su profilo e piano (ask.py), piano condiviso in sola lettura (sharing.py)
     ├── community/       ricette pubbliche: profili /u/<handle> (profiles.py), voti, commenti con foto (ADR 0017)
     ├── shopping/        lista della spesa: somme e conversioni dal piano (aggregate.py), ricalcolo
     └── kitchen/         cosa cucino oggi: foto del frigo, ricette che si possono fare, idee nuove (cook_today.py), pulizia delle idee mai salvate
@@ -139,10 +161,12 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/recipe-books/{id}/images` | foto delle ricette ritagliate dal PDF e illustrazioni AI per le altre; parte anche da sola a fine lettura ([ADR 0015](docs/decisions/0015-immagini-dei-ricettari-pdf.md)) |
 | `POST /api/recipe-books/{id}/reread` | rilegge il PDF e aggiorna quantità e passaggi delle ricette che ci sono già, senza rifare le immagini ([ADR 0022](docs/decisions/0022-rilettura-dei-ricettari.md)) |
 | `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
-| `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | piano alimentare ([ADR 0007](docs/decisions/0007-piano-alimentare.md)): si genera una settimana alla volta |
-| `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto (ogni pasto ha `portion`: grammature a persona) |
+| `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | preparazione ([ADR 0007](docs/decisions/0007-piano-alimentare.md), [0023](docs/decisions/0023-piano-e-preparazione-per-ingredienti.md)): si genera una settimana alla volta; `nutritionist_plan` obbligatorio |
+| `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto. Ogni pasto ha `components` (alimenti a persona), `suggestions` (ricette suggerite o idee), `portion`; `recipe_id` approva una ricetta per tutto il piatto |
+| `POST /api/plans/{id}/meals/{meal_id}/suggestions/{index}/write` | scrive per intero un'idea suggerita (job `meal_recipe`), che prende il posto dell'idea |
 | `POST /api/plans/{id}/meals/{meal_id}/ideas` `{hint}` | due ricette nuove per quel pasto, scritte dall'AI in un job, da scegliere con il PATCH |
-| `GET/POST /api/nutritionist-plans` (multipart `files`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/confirm` · `POST …/{id}/reread` | piano del nutrizionista: lettura in un job, revisione, conferma ([ADR 0010](docs/decisions/0010-piano-del-nutrizionista.md)); si usa con `nutritionist_plan` in `POST /api/plans` |
+| `GET/POST /api/nutritionist-plans` (multipart `files`) · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/confirm` · `POST …/{id}/reread` | piano alimentare del nutrizionista: lettura in un job, revisione, conferma ([ADR 0010](docs/decisions/0010-piano-del-nutrizionista.md)); si usa con `nutritionist_plan` in `POST /api/plans` |
+| `POST /api/nutritionist-plans/guidelines` | piano alimentare dalle linee guida CREA/OMS e dal profilo (job `guidelines_plan`), da rivedere come l'altro ([ADR 0023](docs/decisions/0023-piano-e-preparazione-per-ingredienti.md)) |
 | `GET/POST /api/plan-shares` `{email}` · `DELETE …/{id}` · `GET …/{id}/plan` · `GET …/{id}/recipes/{recipe_id}` | piano fatto vedere a un altro account, in sola lettura ([ADR 0019](docs/decisions/0019-piano-condiviso-in-sola-lettura.md)) |
 | `POST /api/ask` `{messages}` | una domanda alla chat "Chiedi a Languorino": job con la risposta da profilo, piano e piano del nutrizionista ([ADR 0016](docs/decisions/0016-chiedi-a-languorino.md)) |
 | `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)) |

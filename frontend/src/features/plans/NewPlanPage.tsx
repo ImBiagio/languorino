@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   useBooks,
@@ -30,18 +30,14 @@ import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { NutritionistPlan, PlanPayload, Profile } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
 import { DIFFICULTY_OPTIONS } from '../recipes/options'
+import { GuidelinesButton } from './NutritionistPages'
 import { formatDayLong, nextMondayIso, todayIso } from './dates'
 import { MINUTES_OPTIONS, PREP_OPTIONS } from './options'
 
-const SHARE_OPTIONS: { value: PlanPayload['new_share']; label: string }[] = [
-  { value: 0, label: gettext('Solo le mie') },
-  { value: 25, label: '25%' },
-  { value: 50, label: gettext('Metà') },
-  { value: 75, label: '75%' },
-  { value: 100, label: gettext('Tutte nuove') },
-]
-
-/** "Nuovo piano": le scelte con cui l'LLM compone le settimane. */
+/**
+ * "Nuova preparazione": le scelte con cui l'LLM mette il piano alimentare nei
+ * giorni, per ingredienti, e sceglie le ricette da suggerire (ADR 0023).
+ */
 export function NewPlanPage() {
   const { data: profile } = useProfile()
   if (!profile) return <Skeleton className="m-5 h-72 rounded-card md:m-8" />
@@ -69,23 +65,21 @@ function NewPlanForm({ profile }: { profile: Profile }) {
     books: [],
     include_tags: [],
     exclude_tags: [],
-    goal_note: profile.goals_note,
-    nutritionist_plan: null,
-    new_share: 25,
+    goal_note: '',
+    nutritionist_plan: '',
   }))
   const set = (changes: Partial<PlanPayload>) => setPlan((current) => ({ ...current, ...changes }))
-  // Seguire il piano del nutrizionista non tocca i pasti scelti: le sue regole
+  // Seguire il piano alimentare non tocca i pasti scelti: le sue regole
   // valgono per quelli che ci sono. Prima li sostituiva con tutti i suoi, in
   // silenzio, e colazione e merende tornavano anche se l'utente le aveva tolte.
-  const follow = (chosen: NutritionistPlan | null) => set({ nutritionist_plan: chosen?.id ?? null })
-  // Arrivati da "Crea un piano da qui": il piano del nutrizionista gia' scelto.
+  const follow = (chosen: NutritionistPlan) => set({ nutritionist_plan: chosen.id })
+  // Arrivati da "Prepara le settimane": quel piano gia' scelto; se no il piu' recente.
   const preset = useRef(params.get('nutrizionista'))
   useEffect(() => {
-    const chosen = confirmed.find((item) => item.id === preset.current)
-    if (chosen) {
-      preset.current = null
-      follow(chosen)
-    }
+    if (!confirmed.length || (plan.nutritionist_plan && !preset.current)) return
+    const chosen = confirmed.find((item) => item.id === preset.current) ?? confirmed[0]
+    preset.current = null
+    follow(chosen)
   })
   const gate = useAiGate('plan_week', { count: Math.ceil(plan.days / 7) })
   const errors = create.error instanceof ApiError ? create.error.fieldErrors() : {}
@@ -104,7 +98,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           label={gettext('Annulla')}
           onClick={() => navigate('/piano')}
         />
-        <h1 className="flex-1 text-title-large">{gettext('Nuovo piano')}</h1>
+        <h1 className="flex-1 text-title-large">{gettext('Nuova preparazione')}</h1>
       </header>
 
       <div className="grid gap-4">
@@ -112,7 +106,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           <FoodPattern tone="dark" opacity={0.3} />
           <p className="relative max-w-xl text-body-large">
             {gettext(
-              'Scegli come vuoi organizzarti: compongo io le settimane dalle tue ricette, tenendo conto del profilo, di allergie e gusti.',
+              'Metto il tuo piano alimentare nei giorni: per ogni pasto ingredienti e quantità a persona, con il meal prep che preferisci. Sotto ti suggerisco le ricette per cucinarli.',
             )}
           </p>
         </section>
@@ -155,29 +149,52 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           </div>
         </Card>
 
-        {confirmed.length > 0 && (
-          <Card title={gettext('Piano del nutrizionista')} icon="clinical_notes">
-            {confirmed.map((item) => (
-              <SourceToggle
-                key={item.id}
-                icon="clinical_notes"
-                label={item.title}
-                hint={
-                  item.strict
-                    ? gettext('Alla lettera: ogni pasto è una delle sue opzioni')
-                    : gettext('Con piatti equivalenti, stesse grammature')
-                }
-                checked={plan.nutritionist_plan === item.id}
-                onChange={(checked) => follow(checked ? item : null)}
-              />
-            ))}
-            <p className="text-body-small text-on-surface-variant">
-              {gettext(
-                'Le sue opzioni, frequenze e alimenti da evitare prendono il posto dell’obiettivo; le ricette che non trovo le scrivo seguendo le sue grammature.',
-              )}
-            </p>
-          </Card>
-        )}
+        <Card title={gettext('Il piano da seguire')} icon="nutrition">
+          {confirmed.length ? (
+            <>
+              {confirmed.map((item) => (
+                <SourceToggle
+                  key={item.id}
+                  icon={item.source === 'guidelines' ? 'nutrition' : 'clinical_notes'}
+                  label={item.title}
+                  hint={[
+                    item.source === 'guidelines'
+                      ? gettext('Dalle linee guida')
+                      : gettext('Dal nutrizionista'),
+                    item.strict
+                      ? gettext('alla lettera')
+                      : gettext('con alimenti equivalenti'),
+                  ].join(' · ')}
+                  checked={plan.nutritionist_plan === item.id}
+                  onChange={() => follow(item)}
+                />
+              ))}
+              <p className="text-body-small text-on-surface-variant">
+                {gettext(
+                  'Ogni pasto segue le sue opzioni e grammature; frequenze e alimenti da evitare li controllo io.',
+                )}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-body-medium text-on-surface-variant">
+                {gettext(
+                  'Prima serve il piano alimentare: cosa dovresti mangiare, con quantità e frequenze. Lo scrivo io dalle linee guida o lo carichi dal tuo nutrizionista; poi torni qui.',
+                )}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <GuidelinesButton />
+                <Link to="/piano/nutrizionista" className="btn-outlined">
+                  <Icon name="clinical_notes" size={20} />
+                  {gettext('Dal nutrizionista')}
+                </Link>
+              </div>
+            </>
+          )}
+          {errors.nutritionist_plan && (
+            <p className="text-body-small text-error">{errors.nutritionist_plan}</p>
+          )}
+        </Card>
 
         <Card title={gettext('Pasti e porzioni')} icon="restaurant">
           <div className="flex flex-wrap gap-2">
@@ -265,7 +282,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
           </div>
         </Card>
 
-        <Card title={gettext('Da dove prendo le ricette')} icon="menu_book">
+        <Card title={gettext('Da dove prendo le ricette da suggerire')} icon="menu_book">
           <SourceToggle
             icon="menu_book"
             label={gettext('Il mio ricettario')}
@@ -291,33 +308,11 @@ function NewPlanForm({ profile }: { profile: Profile }) {
               }
             />
           ))}
-          <div>
-            <p className="mb-2 text-body-large">{gettext('Quante ricette nuove?')}</p>
-            <div className="flex flex-wrap gap-2">
-              {SHARE_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  selected={plan.new_share === option.value}
-                  onClick={() => set({ new_share: option.value })}
-                />
-              ))}
-            </div>
-            <p className="mt-2 text-body-small text-on-surface-variant">
-              {plan.new_share === 0
-                ? gettext(
-                    'Uso le tue ricette; ne scrivo di nuove solo se mancano per variare o per un pasto.',
-                  )
-                : plan.new_share === 100
-                  ? gettext('Scrivo io tutte le ricette: le trovi nel piano e puoi salvarle.')
-                  : interpolate(
-                      gettext(
-                        'Circa il %s dei pasti con ricette nuove scritte da me, il resto dalle tue. Le nuove le puoi salvare.',
-                      ),
-                      [`${plan.new_share}%`],
-                    )}
-            </p>
-          </div>
+          <p className="text-body-small text-on-surface-variant">
+            {gettext(
+              'Sotto ogni pasto ti suggerisco le ricette che usano quegli ingredienti; se non ce ne sono, un’idea che scrivo per intero quando la apri.',
+            )}
+          </p>
           {(errors.books || noSource) && (
             <p className="text-body-small text-error">
               {errors.books || gettext('Scegli almeno una fonte.')}
@@ -349,11 +344,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
         </Card>
 
         <Card
-          title={
-            plan.nutritionist_plan
-              ? gettext('Qualcosa da aggiungere?')
-              : gettext('Cosa vuoi ottenere?')
-          }
+          title={gettext('Qualcosa da aggiungere?')}
           icon="flag"
         >
           <Field
@@ -371,19 +362,21 @@ function NewPlanForm({ profile }: { profile: Profile }) {
 
         <ErrorBanner error={create.error} />
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {/* Una chiamata per settimana, piu' le ricette nuove che servono. */}
-          <AiCost
-            feature="plan_week"
-            count={Math.ceil(plan.days / 7)}
-            note={gettext('Più le ricette nuove, circa 9 a settimana se servono.')}
-          />
+          {/* Una chiamata per settimana (due se le frequenze vanno corrette). */}
+          <AiCost feature="plan_week" count={Math.ceil(plan.days / 7)} />
           <button type="button" className="btn-text" onClick={() => navigate('/piano')}>
             {gettext('Annulla')}
           </button>
           <button
             type="button"
             className="btn-filled"
-            disabled={!gate.allowed || create.isPending || !plan.slots.length || noSource}
+            disabled={
+              !gate.allowed ||
+              create.isPending ||
+              !plan.slots.length ||
+              noSource ||
+              !plan.nutritionist_plan
+            }
             onClick={async () => {
               try {
                 const created = await create.mutateAsync(plan)
@@ -394,7 +387,7 @@ function NewPlanForm({ profile }: { profile: Profile }) {
             }}
           >
             <Icon name="auto_awesome" size={20} />
-            {gettext('Crea il piano')}
+            {gettext('Prepara le settimane')}
             {gate.large && <AiKeyIcon />}
           </button>
         </div>

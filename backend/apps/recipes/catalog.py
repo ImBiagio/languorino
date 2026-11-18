@@ -355,12 +355,23 @@ CATALOG: list[Item] = [
     pantry("ceci secchi", "dried chickpeas", aliases=("ceci",)),
     pantry("ceci in scatola", "canned chickpeas", aliases=("ceci lessati",)),
     pantry("fagioli secchi", "dried beans", aliases=("fagioli borlotti", "fagioli cannellini")),
+    # "Lessati" pesano come in scatola, non come secchi: il piano per
+    # ingredienti (ADR 0023) li scrive cosi', e da secchi la spesa triplicava.
     pantry(
         "fagioli in scatola",
         "canned beans",
-        aliases=("fagioli lessati", "borlotti in scatola", "cannellini in scatola"),
+        aliases=(
+            "fagioli lessati",
+            "borlotti in scatola",
+            "cannellini in scatola",
+            "fagioli borlotti lessati",
+            "fagioli cannellini lessati",
+            "borlotti lessati",
+            "cannellini lessati",
+        ),
     ),
     pantry("lenticchie", "lentils", aliases=("lenticchie rosse", "lenticchie secche")),
+    pantry("lenticchie in scatola", "canned lentils", aliases=("lenticchie lessate",)),
     pantry("piselli surgelati", "frozen peas", aliases=("piselli",), category=FROZEN),
     pantry("edamame", "edamame", ("soy",), category=FROZEN),
     pantry("tofu", "tofu", ("soy",), days=10),

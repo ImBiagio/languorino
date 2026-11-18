@@ -68,7 +68,7 @@ flowchart LR
 | `users` | c'è già: account, auth, lingua |
 | `profiles` | profilo alimentare: dati fisici, obiettivi, stile di vita, preferenze, allergie |
 | `recipes` | ricette, ingredienti, tag, immagini, condivisione |
-| `plans` | piano alimentare, pasti, sessioni di prep, piano del nutrizionista |
+| `plans` | piano alimentare (del nutrizionista o dalle linee guida), preparazione, pasti per ingredienti, ricette suggerite |
 | `shopping` | liste della spesa e generazione dal piano |
 | `jobs` | i lavori lunghi: import, generazioni, con stato, file in ingresso e bozza in uscita |
 | `ai` | client Gemini, prompt, schemi, registro delle chiamate |
@@ -192,22 +192,28 @@ piano si archivia.
 **PlannedMeal**: `plan`, `date`, `slot`, `recipe`, `servings`, `cooked_on`
 (data in cui si cucina: uguale a `date` se si cucina al momento, prima se
 viene dal prep), `prep_session` (FK facoltativa), `eaten` (bool, per il diario).
-Con il piano del nutrizionista anche `diet_portion` (le dosi a persona della
-dieta, testo scritto dall'LLM) e `diet_foods` (gli alimenti delle frequenze
-settimanali che il pasto contiene), vedi ADR 0010.
+Dalla preparazione per ingredienti (ADR 0023) il pasto è `components` (gli
+alimenti a persona: `name`, `quantity`, `unit` g/ml/pz, quantità nulla = a
+volontà), `suggestions` (fino a due ricette suggerite `{recipe}` o idee
+`{title, idea}`) e `diet_foods` (gli alimenti delle frequenze settimanali che
+il pasto contiene, contati dal codice); `recipe` è la ricetta approvata
+dall'utente. I piani di prima hanno solo `recipe` e, col nutrizionista,
+`diet_portion` (le dosi a persona scritte dall'LLM, ADR 0010).
 
 **PrepSession**: `plan`, `date`, `minutes_available`, `max_difficulty`,
 `guide` (JSON: i passi in ordine per cucinare insieme tutto quello della
 sessione, scritti dall'LLM), `shareable_token` (il prep si può condividere,
 il piano no).
 
-**NutritionistPlan**: il piano del nutrizionista letto dal PDF.
+**NutritionistPlan**: il piano alimentare, cioè cosa dovresti mangiare: letto
+dal PDF del nutrizionista o scritto dall'LLM dalle linee guida (ADR 0023).
 
 | Campo | Note |
 |---|---|
-| `owner`, `file` | il PDF o le foto originali restano |
+| `owner`, `file` | il PDF o le foto originali restano (solo dal nutrizionista) |
+| `source` | `nutritionist` o `guidelines` |
 | `valid_from`, `valid_to` | |
-| `rules` | JSON strutturato: per ogni pasto le opzioni con grammature ("pranzo: 80 g pasta integrale + verdure a volontà + 10 g olio"), le frequenze settimanali ("legumi 3 volte", "pesce 2 volte"), gli alimenti liberi e quelli da evitare |
+| `rules` | JSON strutturato: per ogni pasto le opzioni con grammature ("pranzo: 80 g pasta integrale + verdure a volontà + 10 g olio"), le frequenze settimanali ("legumi 3 volte", "pesce 2 volte"), le sostituzioni, gli alimenti liberi e quelli da evitare |
 | `strict` | `true`: il piano segue le opzioni alla lettera; `false`: l'LLM può scegliere ricette equivalenti rispettando grammature e frequenze |
 | `status` | `draft` / `confirmed` |
 

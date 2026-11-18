@@ -8,7 +8,7 @@ from pydantic import ValidationError as PydanticError
 from rest_framework import serializers
 
 from apps.profiles.models import MEAL_SLOT_ORDER, MealSlot
-from apps.recipes.models import Difficulty, RecipeBook, Unit
+from apps.recipes.models import Difficulty, Recipe, RecipeBook, Unit
 from apps.recipes.serializers import RecipeListSerializer
 from apps.shopping.aggregate import TO_BASE
 
@@ -37,19 +37,22 @@ class PlanSettingsSerializer(serializers.Serializer):
         child=serializers.CharField(max_length=40), required=False, default=list, max_length=12
     )
     goal_note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
-    nutritionist_plan = serializers.UUIDField(required=False, allow_null=True, default=None)
-    # Quanti pasti con ricette nuove scritte dall'LLM, in percentuale; il resto
-    # dalle fonti scelte (ricettario, ricettari PDF).
+    # Il piano da seguire (ADR 0023): del nutrizionista o dalle linee guida.
+    # La preparazione lo mette nei giorni per ingredienti: senza non si fa.
+    nutritionist_plan = serializers.UUIDField(
+        error_messages={"required": _("Scegli il piano alimentare da seguire.")}
+    )
+    # Quanti pasti con ricette nuove scritte dall'LLM, in percentuale. Dalla
+    # preparazione per ingredienti (ADR 0023) non si usa piu': le ricette sono
+    # suggerimenti; resta per chi chiama l'API come prima.
     new_share = serializers.ChoiceField(choices=(0, 25, 50, 75, 100), default=25)
 
     def validate_nutritionist_plan(self, value):
-        if value is None:
-            return None
         user = self.context["request"].user
         if not NutritionistPlan.objects.filter(
             owner=user, id=value, status=NutritionistPlan.Status.CONFIRMED
         ).exists():
-            raise serializers.ValidationError(_("Piano del nutrizionista non trovato."))
+            raise serializers.ValidationError(_("Piano alimentare non trovato o da confermare."))
         return str(value)
 
     def validate_start_date(self, value: date) -> date:
@@ -104,6 +107,7 @@ class PlannedMealSerializer(serializers.ModelSerializer):
     recipe = RecipeListSerializer(read_only=True)
     recipe_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
     portion = serializers.SerializerMethodField()
+    suggestions = serializers.SerializerMethodField()
 
     class Meta:
         model = PlannedMeal
@@ -119,12 +123,52 @@ class PlannedMealSerializer(serializers.ModelSerializer):
             "eaten",
             "portion",
             "diet_portion",
+            "components",
+            "diet_foods",
+            "suggestions",
         ]
-        read_only_fields = ["id", "date", "slot", "note", "portion", "diet_portion"]
+        read_only_fields = [
+            "id",
+            "date",
+            "slot",
+            "note",
+            "portion",
+            "diet_portion",
+            "components",
+            "diet_foods",
+            "suggestions",
+        ]
+
+    def get_suggestions(self, meal: PlannedMeal) -> list[dict]:
+        """Le ricette suggerite: quelle vere con la card, le idee col titolo.
+        Una ricetta che non c'e' piu' (cancellata) si salta."""
+        known = self.context.get("suggested")
+        out = []
+        for item in meal.suggestions or []:
+            if item.get("recipe"):
+                if known is None:
+                    recipe = Recipe.all_objects.filter(id=item["recipe"]).first()
+                else:
+                    recipe = known.get(item["recipe"])
+                if recipe is not None:
+                    out.append({"recipe": RecipeListSerializer(recipe, context=self.context).data})
+            elif item.get("title"):
+                out.append({"title": item["title"], "idea": item.get("idea", "")})
+        return out
 
     def get_portion(self, meal: PlannedMeal) -> list[dict]:
-        """Quanto mangia una persona di ogni ingrediente: la ricetta divisa per
-        le sue porzioni. Senza "q.b." e facoltativi: servono le grammature."""
+        """Quanto mangia una persona: gli alimenti del piano (ADR 0023) o, nei
+        piani di prima, la ricetta divisa per le sue porzioni. Senza "q.b." e
+        facoltativi: servono le grammature."""
+        if meal.components:
+            return [
+                {
+                    "name": item["name"],
+                    "quantity": None if item.get("quantity") is None else str(item["quantity"]),
+                    "unit": item.get("unit") or "",
+                }
+                for item in meal.components
+            ]
         recipe = meal.recipe
         if recipe is None:
             return []
@@ -195,7 +239,15 @@ class MealPlanSerializer(serializers.ModelSerializer):
         if not chosen:
             return None
         found = NutritionistPlan.objects.filter(owner=plan.owner, id=chosen).first()
-        return {"id": str(found.id), "title": found.title} if found else None
+        if found is None:
+            return None
+        # Le frequenze servono al contatore della settimana ("legumi 3/3").
+        return {
+            "id": str(found.id),
+            "title": found.title,
+            "source": found.source,
+            "weekly": found.rules.get("weekly", []),
+        }
 
     def get_end_date(self, plan: MealPlan) -> date:
         return plan.start_date + timedelta(days=plan.days - 1)
@@ -217,6 +269,7 @@ class NutritionistPlanSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "source",
             "status",
             "strict",
             "valid_from",
@@ -226,7 +279,7 @@ class NutritionistPlanSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "status", "files", "created_at", "updated_at"]
+        read_only_fields = ["id", "source", "status", "files", "created_at", "updated_at"]
 
     def get_files(self, plan: NutritionistPlan) -> list[dict]:
         if plan.job is None:

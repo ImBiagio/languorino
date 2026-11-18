@@ -97,6 +97,16 @@ class PlannedMeal(models.Model):
     # Gli alimenti delle frequenze settimanali del nutrizionista che il pasto
     # contiene (coi nomi delle sue regole): servono a contarle sui pasti.
     diet_foods = models.JSONField(default=list, blank=True)
+    # Il pasto per ingredienti (ADR 0023): cosa si mangia a persona secondo il
+    # piano, ``[{"name", "quantity", "unit"}]`` (quantita' nulla = a volonta').
+    # Viene prima della ricetta: ``recipe`` e' quella approvata dall'utente,
+    # che aggiunge alla spesa i suoi ingredienti in piu'. Vuoto nei piani nati
+    # prima, fatti di sole ricette.
+    components = models.JSONField(default=list, blank=True)
+    # Le ricette suggerite per questi ingredienti, al massimo due:
+    # ``{"recipe": id}`` (dal ricettario o gia' scritta) o ``{"title", "idea"}``
+    # (un'idea, scritta per intero solo quando l'utente la apre).
+    suggestions = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ["date", "slot"]
@@ -109,7 +119,11 @@ class PlannedMeal(models.Model):
 
 
 class NutritionistPlan(BaseModel):
-    """Il piano del nutrizionista letto da PDF o foto (progettazione 4.3, ADR 0010).
+    """Il piano alimentare: cosa dovresti mangiare (ADR 0010, ADR 0023).
+
+    Il nome viene dalla prima versione, quando c'era solo quello del
+    nutrizionista letto da PDF o foto; oggi puo' anche nascere dalle linee
+    guida (``source``). La "preparazione" (``MealPlan``) lo segue.
 
     Nasce bozza dalla lettura dell'LLM e vale solo dopo la conferma. ``rules``
     ha la forma di ``nutritionist.NutritionistRules``: per ogni pasto le
@@ -121,9 +135,17 @@ class NutritionistPlan(BaseModel):
         DRAFT = "draft", _("Da rivedere")
         CONFIRMED = "confirmed", _("Confermato")
 
+    class Source(models.TextChoices):
+        NUTRITIONIST = "nutritionist", _("Dal nutrizionista")
+        GUIDELINES = "guidelines", _("Dalle linee guida")
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="nutritionist_plans"
     )
+    # Da dove viene "cosa dovresti mangiare" (ADR 0023): letto dai file del
+    # nutrizionista o scritto dall'AI dalle linee guida (CREA, OMS) e dal
+    # profilo. Stessa forma, stessa revisione, stesso uso nella preparazione.
+    source = models.CharField(max_length=12, choices=Source.choices, default=Source.NUTRITIONIST)
     job = models.OneToOneField(
         "jobs.Job",
         on_delete=models.SET_NULL,
