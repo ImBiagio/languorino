@@ -20,9 +20,10 @@ from pydantic import BaseModel, Field
 
 from apps.ai.client import file_part, generate
 from apps.recipes.importing import LANGUAGES, _parse_number
-from apps.recipes.matching import _word_variants, normalize, variants
+from apps.recipes.matching import normalize, variants
 from apps.recipes.models import Recipe
 
+from .foods import MAIN_SLOTS, prepared_rules, same_food, side_rule
 from .generation import SLOT_NAMES
 
 Slot = Literal["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner"]
@@ -229,12 +230,21 @@ SWAP_RULE = (
 )
 
 
-def rules_prompt(rules: dict, strict: bool, title: str = "Piano del nutrizionista") -> str:
+def rules_prompt(
+    rules: dict,
+    strict: bool,
+    title: str = "Piano del nutrizionista",
+    slots: list[str] | None = None,
+) -> str:
     """Il blocco del prompt della settimana con le regole del piano.
 
     La settimana si compone per ingredienti (ADR 0023): ogni pasto e' un'opzione
     del piano con le sue grammature; le ricette vengono dopo, come suggerimenti.
+    Con ``slots`` solo i pasti che si preparano, e le frequenze che contano li'
+    (``foods.prepared_rules``): la merenda resta fuori da pranzo e cena.
     """
+    side = side_rule(rules) if slots and set(slots) & set(MAIN_SLOTS) else ""
+    rules = prepared_rules(rules, slots)
     lines = [f"{title}, da rispettare (grammature a persona):"]
     for meal in rules.get("meals", []):
         lines.append(f"- {SLOT_NAMES.get(meal['slot'], meal['slot'])}, una di queste:")
@@ -253,6 +263,8 @@ def rules_prompt(rules: dict, strict: bool, title: str = "Piano del nutrizionist
         lines.append("- Da evitare: " + ", ".join(avoid) + ".")
     if notes := rules.get("notes"):
         lines.append(f"- Note: {notes}")
+    if side:
+        lines.append(side)
     has_swaps = bool(rules.get("substitutions"))
     if strict:
         lines.append(
@@ -308,8 +320,6 @@ EQUIVALENT = re.compile(
 )
 UNIT_FAMILY = {"g": "g", "gr": "g", "kg": "g", "ml": "ml", "l": "ml", "pz": "pz", "": "pz"}
 UNIT_FACTOR = {"kg": 1000, "l": 1000}
-# Parole che non dicono quale alimento e': "petto di pollo" e' "pollo".
-STOP_WORDS = {"di", "del", "della", "al", "alla", "con", "e", "in", "a", "da"}
 
 
 def parse_equivalent(text: str) -> tuple[Decimal, str, str] | None:
@@ -324,25 +334,6 @@ def parse_equivalent(text: str) -> tuple[Decimal, str, str] | None:
     quantity *= UNIT_FACTOR.get(unit, 1)
     name = re.sub(r"\(.*?\)", "", match["name"]).strip()
     return quantity, UNIT_FAMILY[unit], name
-
-
-def _words(text: str) -> set[str]:
-    words = set()
-    for word in normalize(text).replace("'", " ").split():
-        if word not in STOP_WORDS:
-            words.update(_word_variants(word))
-    return words
-
-
-def same_food(line_name: str, equivalent_name: str) -> bool:
-    """ "pasta integrale" e' "pasta", "petto di pollo" e' "pollo", "couscous" e'
-    "cous cous": tutte le parole dell'equivalente stanno nel nome del pasto."""
-    if normalize(line_name).replace(" ", "") == normalize(equivalent_name).replace(" ", ""):
-        return True
-    wanted = set(normalize(equivalent_name).replace("'", " ").split())
-    wanted -= STOP_WORDS
-    have = _words(line_name)
-    return bool(wanted) and all(set(_word_variants(word)) & have for word in wanted)
 
 
 def _amount(value: Decimal, family: str) -> str:

@@ -471,6 +471,34 @@ def test_frequenze_oltre_restano_come_nota(
     assert "legumi 3 volte a settimana" in noted[0].note
 
 
+def test_niente_yogurt_a_pranzo_e_cena(
+    user, api, cookbook, diet, gemini, django_capture_on_commit_callbacks
+):
+    # Il piano ha lo yogurt a merenda e 3 volte a settimana, ma si preparano
+    # solo pranzi e cene: non deve finirci per far tornare le frequenze.
+    diet.rules = {
+        **DIET_RULES,
+        "meals": [
+            *DIET_RULES["meals"],
+            {"slot": "afternoon_snack", "options": ["125 g yogurt + 150 g frutta"]},
+        ],
+        "weekly": [{"food": "yogurt", "times": 3}],
+    }
+    diet.save(update_fields=["rules"])
+    yogurt = [*LUNCH, {"name": "yogurt greco", "quantity": 125, "unit": "g"}]
+    gemini["pick"] = lambda c, slot, day, wait: {"components": yogurt, "weekly": ["yogurt"]}
+    _create(api, user, django_capture_on_commit_callbacks)
+    week = _week_prompts(gemini)[0]
+    assert "yogurt 3 volte" not in week and "125 g yogurt" not in week
+    assert "MAI gli alimenti di colazione, spuntini e merende (yogurt" in week
+    # Nessuna correzione delle frequenze: lo yogurt non conta su pranzi e cene.
+    assert not [p for p in gemini["prompts"] if "non tornano" in p]
+    plan = MealPlan.objects.get()
+    assert all(meal.components == LUNCH for meal in plan.meals.all())
+    response = api(user).get(f"{PLANS}/{plan.id}")
+    assert response.data["nutritionist"]["weekly"] == []
+
+
 def test_la_sera_cucino_anche_il_pranzo_dopo(
     user, api, cookbook, gemini, django_capture_on_commit_callbacks
 ):

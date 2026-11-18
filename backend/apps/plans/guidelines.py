@@ -55,7 +55,9 @@ Come scriverlo:
   ognuna un pasto completo con alimenti e grammature a persona (es. "80 g pasta
   integrale + 150 g legumi lessati + 200 g verdura + 10 ml olio"). Pranzo e cena
   equilibrati: cereali, una fonte di proteine, verdura, olio. Alterna le fonti di
-  proteine fra le opzioni.
+  proteine fra le opzioni. Yogurt, latte, frutta, frutta secca, cereali da
+  colazione, biscotti e crackers vanno a colazione e negli spuntini, MAI nelle
+  opzioni di pranzo e cena.
 - "weekly": le frequenze a settimana per legumi, pesce, carne bianca, carne
   rossa, uova, formaggi (e salumi se li prevedi), coi numeri adatti a lei.
 - "substitutions": i gruppi di equivalenti con la grammatura di ciascuno (es.

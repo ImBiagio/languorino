@@ -12,6 +12,7 @@ from apps.recipes.models import Difficulty, Recipe, RecipeBook, Unit
 from apps.recipes.serializers import RecipeListSerializer
 from apps.shopping.aggregate import TO_BASE
 
+from .foods import prepared_weekly
 from .models import MealPlan, NutritionistPlan, PlannedMeal, PrepMode
 from .nutritionist import NutritionistRules, clean_rules
 
@@ -246,7 +247,7 @@ class MealPlanSerializer(serializers.ModelSerializer):
             "id": str(found.id),
             "title": found.title,
             "source": found.source,
-            "weekly": found.rules.get("weekly", []),
+            "weekly": prepared_weekly(found.rules, plan.settings.get("slots")),
         }
 
     def get_end_date(self, plan: MealPlan) -> date:

@@ -39,6 +39,7 @@ from apps.recipes.matching import normalize, variants
 from apps.recipes.models import Recipe, RecipeIngredient
 from apps.recipes.services import PreferenceIndex, match_ingredient, recipe_allergens
 
+from .foods import is_side_food, prepared_weekly, side_only_foods, side_rule
 from .models import MealPlan, NutritionistPlan, PlannedMeal
 from .schedule import plan_dates, schedule
 
@@ -472,14 +473,17 @@ def _diet_foods(names: list[str], nutritionist: NutritionistPlan | None) -> list
     return list(dict.fromkeys(known[normalize(n)] for n in names if normalize(n) in known))
 
 
-def frequency_targets(nutritionist: NutritionistPlan | None, days: int) -> dict[str, int]:
+def frequency_targets(
+    nutritionist: NutritionistPlan | None, days: int, slots: list[str] | None = None
+) -> dict[str, int]:
     """Quante volte ogni alimento delle frequenze in questi giorni (una
-    settimana corta ne ha in proporzione)."""
+    settimana corta ne ha in proporzione). Solo le frequenze dei pasti che si
+    preparano: "yogurt 3 volte" non si conta su pranzi e cene."""
     if nutritionist is None:
         return {}
     return {
         item["food"]: round(item["times"] * days / 7)
-        for item in nutritionist.rules.get("weekly", [])
+        for item in prepared_weekly(nutritionist.rules, slots)
     }
 
 
@@ -529,17 +533,19 @@ def week_rows(plan: MealPlan, week: int) -> list[dict]:
     )
 
 
-def _rules_block(nutritionist: NutritionistPlan | None) -> str:
+def _rules_block(nutritionist: NutritionistPlan | None, slots: list[str] | None = None) -> str:
     from .nutritionist import rules_prompt
 
     if nutritionist is None:
+        if slots and set(slots) & MAIN_SLOTS:
+            return NO_RULES + "\n" + side_rule({})
         return NO_RULES
     title = (
         "Piano alimentare dalle linee guida"
         if nutritionist.source == NutritionistPlan.Source.GUIDELINES
         else "Piano del nutrizionista"
     )
-    return rules_prompt(nutritionist.rules, nutritionist.strict, title)
+    return rules_prompt(nutritionist.rules, nutritionist.strict, title, slots)
 
 
 class Week:
@@ -567,6 +573,9 @@ class Week:
         self.profile, self.forbidden = profile_summary(plan)
         avoid = self.nutritionist.rules.get("avoid_foods", []) if self.nutritionist else []
         self.guard = Guard(plan.owner, avoid)
+        self.slots = list(plan.settings.get("slots", []))
+        # Yogurt e frutta secca restano a colazione e merenda (foods.py).
+        self.side_foods = side_only_foods(self.nutritionist.rules if self.nutritionist else {})
         self.meals: dict[tuple, dict] = {}
 
     def candidates_text(self) -> str:
@@ -582,7 +591,14 @@ class Week:
             row = self.wanted.get(key)
             if row is None:
                 continue
-            components, removed = self.guard.clean(clean_components(choice.components))
+            components = clean_components(choice.components)
+            if choice.slot in MAIN_SLOTS:
+                components = [
+                    item
+                    for item in components
+                    if not is_side_food(item["name"], self.side_foods)
+                ]
+            components, removed = self.guard.clean(components)
             if not components:
                 continue  # niente di mangiabile: lo riempie ``fill``
             note = ""
@@ -672,7 +688,7 @@ class Week:
                 f"- {food}: {count} volte, il piano dice {targets[food]}"
                 for food, count in problems.items()
             ),
-            rules=_rules_block(self.nutritionist),
+            rules=_rules_block(self.nutritionist, self.slots),
             candidates=self.candidates_text(),
             forbidden=", ".join(self.forbidden) or "nessuna",
         )
@@ -702,7 +718,7 @@ def generate_week(plan: MealPlan, week: int) -> None:
     excluded = excluded_titles(plan)
     prompt = WEEK_PROMPT.format(
         profile=state.profile,
-        rules=_rules_block(state.nutritionist),
+        rules=_rules_block(state.nutritionist, state.slots),
         goal=goal,
         servings=options.get("servings", 1),
         slots=_slot_lines(state.rows),
@@ -728,7 +744,9 @@ def generate_week(plan: MealPlan, week: int) -> None:
     state.take(choices)
     state.fill()
 
-    targets = frequency_targets(state.nutritionist, len({row["date"] for row in state.all_rows}))
+    targets = frequency_targets(
+        state.nutritionist, len({row["date"] for row in state.all_rows}), state.slots
+    )
     if problems := frequency_problems(state.with_leftovers(), targets):
         try:
             state.repair(problems, targets)
