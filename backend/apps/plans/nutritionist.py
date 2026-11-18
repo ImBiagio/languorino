@@ -23,7 +23,7 @@ from apps.recipes.importing import LANGUAGES, _parse_number
 from apps.recipes.matching import normalize, variants
 from apps.recipes.models import Recipe
 
-from .foods import MAIN_SLOTS, note_slots, prepared_rules, same_food, side_rule
+from .foods import MAIN_SLOTS, food_matches, note_slots, prepared_rules, same_food, side_rule
 from .generation import SLOT_NAMES
 
 Slot = Literal["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner"]
@@ -350,9 +350,78 @@ def _amount(value: Decimal, family: str) -> str:
     return f"{rounded} {family}"
 
 
+MAX_SWAPS = 24
+
+
+def _split_members(text: str) -> list[str]:
+    out = []
+    for part in re.split(r",|;|\boppure\b|\bo\b", text):
+        # "riso nero/rosso/basmati" -> "riso nero": basta il primo.
+        part = part.split("/")[0].replace("…", " ").replace("..", " ")
+        part = " ".join(part.split()).strip(" .-")
+        if part and not re.search(r"\d", part) and len(part) <= 40:
+            out.append(part.lower())
+    return out
+
+
+def food_members(text: str) -> tuple[str, list[str]]:
+    """Il nome e gli alimenti elencati dentro una voce del piano:
+    "Pesce bianco: merluzzo, sogliola, orata..." e "Cereali a chicco (riso,
+    farro, orzo..)" sono un alimento a scelta fra quelli, con la stessa
+    grammatura. Senza leggerli "merluzzo" non era "pesce bianco" (2026-11-18)."""
+    members: list[str] = []
+    for inner in re.findall(r"\((.*?)\)", text):
+        if "," in inner:
+            members += _split_members(inner)
+    head = re.sub(r"\(.*?\)", "", text)
+    if ":" in head:
+        head, rest = head.split(":", 1)
+        members += _split_members(rest)
+    return " ".join(head.split()).strip(" -"), list(dict.fromkeys(members))
+
+
+def _entry(text: str):
+    """``(quantita', famiglia, nome, alimenti elencati)`` di una voce con grammatura."""
+    match = EQUIVALENT.match(text or "")
+    parsed = parse_equivalent(text)
+    if not match or parsed is None:
+        return None
+    head, members = food_members(match["name"])
+    return parsed[0], parsed[1], head, members
+
+
+def _is(name: str, entry) -> bool:
+    """Se l'alimento e' quello della voce: il nome ("Pane integrale o
+    multicereali" vale per "pane integrale") o uno degli alimenti elencati."""
+    heads = [entry[2], *re.split(r"\s+o\s+", entry[2])]
+    return any(same_food(name, head) for head in heads) or any(
+        same_food(name, member) for member in entry[3]
+    )
+
+
+def _groups_for(rules: dict, slot: str | None) -> list[dict]:
+    """I gruppi di sostituzioni che valgono per il pasto e, se il pasto e'
+    noto, le voci delle sue opzioni ("300 g Pesce bianco: merluzzo, ...")
+    come gruppi di un elemento: i loro alimenti si scambiano fra loro."""
+    groups = [
+        group
+        for group in rules.get("substitutions", [])
+        # "a merenda": a pranzo quel gruppo non vale.
+        if not (slot and (only := note_slots(group.get("note", ""))) and slot not in only)
+    ]
+    if slot:
+        for option in slot_options(rules, slot):
+            for item in re.split(r"\s+\+\s+", option):
+                head, members = food_members(item)
+                if members:
+                    groups.append({"group": head, "note": "", "equivalents": [item]})
+    return groups
+
+
 def _swap_groups(line: dict, rules: dict, slot: str | None = None):
-    """``(gruppo, [(nome, quantita', famiglia)])`` per ogni gruppo di sostituzioni
-    che contiene l'alimento della riga, con le grammature in proporzione."""
+    """``(gruppo, voce dell'alimento, fattore, altre voci)`` per ogni gruppo che
+    contiene l'alimento della riga: le grammature delle altre voci vanno
+    moltiplicate per il fattore."""
     unit = line.get("unit", "")
     if line.get("quantity") is None:
         return  # "a volonta'": non c'e' niente da sostituire in proporzione
@@ -364,28 +433,39 @@ def _swap_groups(line: dict, rules: dict, slot: str | None = None):
     if family is None:
         return
     quantity *= UNIT_FACTOR.get(unit, 1)
-    for group in rules.get("substitutions", []):
-        # "a merenda": a pranzo quel gruppo non vale.
-        if slot and (only := note_slots(group.get("note", ""))) and slot not in only:
+    groups = [
+        (group, [entry for text in group["equivalents"] if (entry := _entry(text))])
+        for group in _groups_for(rules, slot)
+    ]
+    exact = any(_is(line["name"], entry) for _group, entries in groups for entry in entries)
+    for group, entries in groups:
+        # La voce dell'alimento; se il piano non lo nomina mai, quella del suo
+        # gruppo ("ceci" e' "Legumi secchi"). Il tonno, che c'e', non diventa
+        # "pesce bianco".
+        if exact:
+            base = next((entry for entry in entries if _is(line["name"], entry)), None)
+        else:
+            base = next((entry for entry in entries if food_matches(line["name"], entry[2])), None)
+        if base is None or base[1] != family:
             continue
-        parsed = [(text, parse_equivalent(text)) for text in group["equivalents"]]
-        base = next(
-            (eq for _, eq in parsed if eq and same_food(line["name"], eq[2])),
-            None,
-        )
-        if base is None:
-            continue
-        base_quantity, base_family, _name = base
-        if base_family != family:
-            continue
-        factor = quantity / base_quantity
         others = [
-            (eq[2], eq[0] * factor, eq[1])
-            for _, eq in parsed
-            if eq and eq is not base and not same_food(line["name"], eq[2])
+            entry
+            for entry in entries
+            if entry is not base and not _is(line["name"], entry) and entry[2] != base[2]
         ]
-        if others:
-            yield group, others
+        yield group, base, quantity / base[0], others
+
+
+def siblings(name: str, rules: dict, slot: str) -> list[str]:
+    """Gli altri alimenti della stessa voce: per "merluzzo" in "Pesce bianco:
+    merluzzo, sogliola, orata" sogliola e orata, con la stessa grammatura."""
+    out: list[str] = []
+    for group in _groups_for(rules, slot):
+        for text in group["equivalents"]:
+            entry = _entry(text)
+            if entry and any(same_food(name, member) for member in entry[3]):
+                out += [m for m in entry[3] if not same_food(name, m) and m not in out]
+    return out
 
 
 def swaps_for(line: dict, rules: dict) -> list[str]:
@@ -394,36 +474,49 @@ def swaps_for(line: dict, rules: dict) -> list[str]:
     grammatura in proporzione: 50 g di pane con "80 g pasta = 100 g pane"
     diventano 40 g di pasta. Il conto lo fa il codice, non la chat."""
     out = []
-    for group, others in _swap_groups(line, rules):
+    for group, _base, factor, others in _swap_groups(line, rules):
+        if not others:
+            continue
         note = f", {group['note']}" if group.get("note") else ""
         out.append(
             f"{group['group']}{note}: "
-            + ", ".join(f"{name} {_amount(value, family)}" for name, value, family in others)
+            + ", ".join(
+                f"{_label(entry)} {_amount(entry[0] * factor, entry[1])}" for entry in others
+            )
         )
     return out
 
 
+def _label(entry) -> str:
+    return f"{entry[2]}: {', '.join(entry[3])}" if entry[3] else entry[2]
+
+
 def equivalents_for(component: dict, rules: dict, slot: str) -> list[dict]:
     """Gli alimenti con cui cambiare un alimento del pasto, gia' con la
-    grammatura giusta (``{name, quantity, unit, group}``): un tocco nella
-    preparazione e la pasta diventa 100 g di pane."""
+    grammatura giusta (``{name, quantity, unit, group}``): prima gli altri
+    della stessa voce (merluzzo -> sogliola, stessa grammatura), poi le
+    sostituzioni (merluzzo 300 g -> pollo 250 g, ceci secchi 80 g)."""
     out: list[dict] = []
-    seen: set[str] = set()
-    for group, others in _swap_groups(component, rules, slot):
-        for name, value, family in others:
-            name = " ".join(name.split()).strip(" -")
-            key = normalize(name)
-            if not name or key in seen:
-                continue
-            seen.add(key)
-            rounded = _round(value, family)
-            number = int(rounded) if rounded == int(rounded) else float(rounded)
-            out.append(
-                {
-                    "name": name[:1].lower() + name[1:80],
-                    "quantity": number,
-                    "unit": family,
-                    "group": group["group"],
-                }
-            )
-    return out
+    seen = {normalize(component["name"])}
+
+    def add(name: str, value: Decimal, family: str, group: str) -> None:
+        name = " ".join(name.split()).strip(" -")
+        if not name or normalize(name) in seen or same_food(component["name"], name):
+            return
+        seen.add(normalize(name))
+        rounded = _round(value, family)
+        number = int(rounded) if rounded == int(rounded) else float(rounded)
+        out.append(
+            {"name": name[:1].lower() + name[1:80], "quantity": number, "unit": family,
+             "group": group}
+        )
+
+    found = list(_swap_groups(component, rules, slot))
+    for _group, base, factor, _others in found:
+        for member in base[3]:
+            add(member, base[0] * factor, base[1], base[2])
+    for group, _base, factor, others in found:
+        for entry in others:
+            for name in entry[3] or [entry[2]]:
+                add(name, entry[0] * factor, entry[1], group["group"])
+    return out[:MAX_SWAPS]

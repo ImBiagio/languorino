@@ -59,6 +59,17 @@ piatto. Le frequenze del pasto si aggiornano per gruppi ("ceci" conta per
 "legumi"). Se cambia un nome, suggerimenti e ricetta scelta si tolgono: erano
 per gli alimenti di prima.
 
+**Aggiornamento 2026-11-18, varietà.** Un piano con una sola opzione di cena
+("300 g Pesce bianco: merluzzo, sogliola, orata...") e la cena che fa anche il
+pranzo dopo ha dato merluzzo in 9 pasti su 14. Ora le voci con un elenco si
+leggono (`nutritionist.food_members`): gli alimenti elencati si scambiano fra
+loro con la stessa grammatura, e valgono come la voce nelle sostituzioni.
+La stessa proteina sta al massimo in 2 piatti a settimana: il prompt lo
+chiede, la correzione lo segnala all'LLM, e se non basta il codice
+(`Week.rotate`) passa agli altri alimenti della stessa voce. Le sere della
+cena-avanzo alternano l'opzione del pranzo e quella della cena. Nel pasto la
+matita apre gli alimenti, il libro la ricetta.
+
 **Perché:** chi ha un piano del nutrizionista deve rispettarlo per alimenti e
 quantità, non per ricette. Prima ogni pasto era una ricetta e le dosi della
 dieta ci stavano sopra come testo (`diet_portion`). Le frequenze le contava

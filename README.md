@@ -22,10 +22,11 @@ progettata in [docs/progettazione.md](docs/progettazione.md).
 
    ![Cosa mangi: alimenti a persona e ricette suggerite](docs/media/preparazione-cosa-mangi.jpg)
 
-3. **Cambia un alimento** se non ti torna (matita del pasto → "Cambia gli
-   alimenti"): sotto ogni alimento ci sono gli equivalenti delle sostituzioni
-   del piano con la grammatura già fatta, e il cambio vale anche per il
-   pranzo-avanzo. Gli alimenti di colazione e merenda (yogurt, frutta secca)
+3. **Cambia un alimento** se non ti torna (matita del pasto; il libro accanto
+   è per la ricetta): sotto ogni alimento ci sono gli altri della stessa voce
+   del piano ("Pesce bianco: merluzzo, sogliola, orata") e le sostituzioni, con
+   la grammatura già fatta, e il cambio vale anche per il pranzo-avanzo. La
+   stessa proteina sta al massimo in 2 piatti a settimana. Gli alimenti di colazione e merenda (yogurt, frutta secca)
    non finiscono mai a pranzo e cena.
 
    ![Cambia gli alimenti: il riso al posto della pasta](docs/media/preparazione-cambia-alimenti.jpg)

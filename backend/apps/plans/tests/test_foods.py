@@ -109,3 +109,72 @@ def test_frequenze_dopo_un_cambio():
     # Via i legumi coi ceci, dentro la carne bianca col pollo; il pesce che il
     # codice non riconosce resta com'era, perche' lo sgombro c'e' ancora.
     assert updated_diet_foods(foods, before, after, weekly) == ["pesce strano", "carne bianca"]
+
+
+DINNER = {
+    "meals": [
+        {
+            "slot": "dinner",
+            "options": [
+                "300 g Pesce bianco: merluzzo, sogliola, orata... + 60 g Pane integrale o "
+                "multicereali + 200 g Verdura"
+            ],
+        },
+        {"slot": "lunch", "options": ["90 g Cereali a chicco (riso, farro, orzo..) + 60 g Legumi"]},
+    ],
+    "substitutions": [
+        {
+            "group": "Fonti proteiche",
+            "note": "a cena",
+            "equivalents": [
+                "300 g Pesce bianco: merluzzo, sogliola, orata...",
+                "170 g Tonno",
+                "250 g Carne bianca: petto di pollo o tacchino",
+                "80 g Legumi secchi",
+            ],
+        },
+        {"group": "Pane", "note": "a cena", "equivalents": ["60 g Pane integrale", "220 g Patate"]},
+    ],
+    "weekly": [],
+}
+
+
+def _names(component, slot):
+    from apps.plans.nutritionist import equivalents_for
+
+    return [(e["name"], e["quantity"]) for e in equivalents_for(component, DINNER, slot)]
+
+
+def test_equivalenti_dalle_voci_con_elenco():
+    from apps.plans.nutritionist import food_members, siblings
+
+    assert food_members("Carne bianca: petto di pollo o tacchino, coniglio") == (
+        "Carne bianca",
+        ["petto di pollo", "tacchino", "coniglio"],
+    )
+    # Prima gli altri pesci della voce, stessa grammatura; poi le sostituzioni.
+    assert _names({"name": "merluzzo", "quantity": 300, "unit": "g"}, "dinner") == [
+        ("sogliola", 300),
+        ("orata", 300),
+        ("tonno", 170),
+        ("petto di pollo", 250),
+        ("tacchino", 250),
+        ("legumi secchi", 80),
+    ]
+    # Il tonno c'e' col suo nome: non e' "pesce bianco".
+    assert _names({"name": "tonno", "quantity": 170, "unit": "g"}, "dinner")[0] == (
+        "merluzzo",
+        300,
+    )
+    assert _names({"name": "pane integrale", "quantity": 60, "unit": "g"}, "dinner") == [
+        ("patate", 220)
+    ]
+    # I ceci non sono nominati: valgono come "Legumi secchi".
+    assert ("tonno", 213) in _names({"name": "ceci secchi", "quantity": 100, "unit": "g"}, "dinner")
+    assert [n for n, _q in _names({"name": "riso", "quantity": 90, "unit": "g"}, "lunch")] == [
+        "farro",
+        "orzo",
+    ]
+    assert siblings("merluzzo", DINNER, "dinner") == ["sogliola", "orata"]
+    # Il gruppo "a cena" non vale a pranzo.
+    assert _names({"name": "merluzzo", "quantity": 300, "unit": "g"}, "lunch") == []

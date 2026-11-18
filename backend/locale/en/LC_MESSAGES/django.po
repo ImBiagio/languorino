@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 14:32+0100\n"
+"POT-Creation-Date: 2026-11-18 15:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -226,32 +226,32 @@ msgstr "At most %(n)d photos."
 msgid "Qui servono foto, non PDF."
 msgstr "Photos only here, not PDFs."
 
-#: apps/plans/generation.py:515
+#: apps/plans/generation.py:529
 #, python-format
 msgid "%(food)s %(times)s volta"
 msgid_plural "%(food)s %(times)s volte"
 msgstr[0] "%(food)s %(times)s time"
 msgstr[1] "%(food)s %(times)s times"
 
-#: apps/plans/generation.py:519
+#: apps/plans/generation.py:533
 #, python-format
 msgid "Oltre le frequenze del piano (%(rules)s a settimana)."
 msgstr "Over the plan's frequencies (%(rules)s a week)."
 
-#: apps/plans/generation.py:606
+#: apps/plans/generation.py:647
 #, python-format
 msgid "Tolto perché non puoi mangiarlo: %(foods)s."
 msgstr "Removed because you can't eat it: %(foods)s."
 
-#: apps/plans/generation.py:639
+#: apps/plans/generation.py:680
 msgid "Ripreso da un altro giorno della settimana: cambialo se vuoi."
 msgstr "Taken from another day of the week: change it if you like."
 
-#: apps/plans/generation.py:663
+#: apps/plans/generation.py:704
 msgid "Avanzo della cena di ieri."
 msgstr "Leftovers from last night's dinner."
 
-#: apps/plans/generation.py:764
+#: apps/plans/generation.py:881
 msgid "Nessuna proposta per questo pasto: componilo tu."
 msgstr "No proposal for this meal: put it together yourself."
 

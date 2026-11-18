@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 14:32+0100\n"
+"POT-Creation-Date: 2026-11-18 15:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -974,7 +974,9 @@ msgstr "Start over"
 msgid ""
 "Controlla i pasti: cambia gli alimenti che non ti tornano, scegli le "
 "ricette, poi attiva: comparirà in “Oggi”."
-msgstr "Check the meals: change the foods that don't suit you, pick the recipes, then activate: it will show up in “Today”."
+msgstr ""
+"Check the meals: change the foods that don't suit you, pick the recipes, "
+"then activate: it will show up in “Today”."
 
 msgid "Rifare la preparazione?"
 msgstr "Redo the meal prep?"
@@ -1043,8 +1045,11 @@ msgstr "check it"
 msgid "A porzione:"
 msgstr "Per serving:"
 
-msgid "Cambia alimenti o ricetta"
-msgstr "Change foods or recipe"
+msgid "Cambia gli alimenti"
+msgstr "Change the foods"
+
+msgid "Scegli la ricetta"
+msgstr "Choose the recipe"
 
 msgid "Cambia il pasto"
 msgstr "Change the meal"
@@ -1081,9 +1086,6 @@ msgstr "Save servings"
 msgid "Cosa mangi, a persona"
 msgstr "What you eat, per person"
 
-msgid "Cambia gli alimenti"
-msgstr "Change the foods"
-
 msgid "Oppure un’altra ricetta con questi ingredienti"
 msgstr "Or another recipe with these ingredients"
 
@@ -1112,6 +1114,10 @@ msgstr "Remove the food"
 
 msgid "Al suo posto:"
 msgstr "Instead:"
+
+#, javascript-format
+msgid "Altri %s"
+msgstr "%s more"
 
 msgid "Aggiungi un alimento"
 msgstr "Add a food"

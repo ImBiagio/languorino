@@ -23,6 +23,7 @@ essere vario:
 from __future__ import annotations
 
 import logging
+import re
 from datetime import date, timedelta
 from typing import Literal
 
@@ -39,7 +40,7 @@ from apps.recipes.matching import normalize, variants
 from apps.recipes.models import Recipe, RecipeIngredient
 from apps.recipes.services import PreferenceIndex, match_ingredient, recipe_allergens
 
-from .foods import is_side_food, prepared_weekly, side_only_foods, side_rule
+from .foods import food_matches, is_side_food, prepared_weekly, side_only_foods, side_rule
 from .models import MealPlan, NutritionistPlan, PlannedMeal
 from .schedule import plan_dates, schedule
 
@@ -48,6 +49,11 @@ logger = logging.getLogger(__name__)
 MAX_CANDIDATES = 150
 MAX_COMPONENTS = 12
 MAX_SUGGESTIONS = 2
+# Lo stesso alimento proteico (merluzzo, ceci) in quanti piatti a settimana:
+# senza un tetto la settimana usciva tutta merluzzo (2026-11-18).
+MAX_SAME_DISHES = 2
+PROTEIN_GROUPS = ("pesce", "carne", "uova", "formaggi", "legumi", "salumi")
+PROTEIN_WORDS = ("tofu", "tempeh", "seitan")
 MAIN_SLOTS = {MealSlot.LUNCH, MealSlot.DINNER}
 # Senza "giorni in frigo" una ricetta si da' buona per due giorni.
 DEFAULT_KEEPS_DAYS = 2
@@ -287,6 +293,10 @@ Regole:
   50 g", "ceci lessati 150 g"): cambia la spesa.
 - Rispetta le frequenze a settimana, contate sui pasti; alterna le opzioni e non
   ripetere lo stesso pasto due giorni di fila.
+- VARIA le fonti di proteine: lo stesso alimento (es. merluzzo, ceci, pollo) al
+  massimo in {max_same} piatti a settimana. Se una voce elenca piu' alimenti
+  ("Pesce bianco: merluzzo, sogliola, orata"), scegline ogni volta uno diverso;
+  usa le sostituzioni per alternare pesce, legumi, carne bianca, uova.
 - Meal prep: pasti con lo stesso giorno di cottura possono essere lo stesso piatto
   cucinato una volta sola, e allora hanno gli stessi "components". Con attesa N
   scegli alimenti che reggono N giorni in frigo (pesce meglio ad attesa 0 o 1).
@@ -306,7 +316,10 @@ LEFTOVERS_RULE = """- La sera si cucina la cena in doppia porzione: meta' e' il 
   domani" sono un piatto unico per tutti e due i pasti: ogni porzione unisce, a
   occhio, meta' di un'opzione del pranzo e meta' di una della cena (per esempio
   cereali e legumi del pranzo con la verdura della cena), e nelle frequenze
-  contano DUE volte. Devono restare buone il giorno dopo.
+  contano DUE volte. Devono restare buone il giorno dopo. Alterna le sere: alcune
+  partono dall'opzione del pranzo (es. cereali e legumi), altre da quella della
+  cena, cosi' nella settimana ci sono gli alimenti di tutti e due i pasti e la
+  stessa proteina non torna a pranzo e a cena per giorni.
 """
 
 NO_RULES = """Nessun piano alimentare scelto: segui le porzioni standard delle linee guida
@@ -318,10 +331,11 @@ formaggi 2-3."""
 REPAIR_PROMPT = """Hai composto questa settimana per ingredienti (a persona):
 {week}
 
-Le frequenze a settimana del piano, contate sui pasti, non tornano:
+Questi conti della settimana non tornano:
 {problems}
 
-Cambia SOLO i pasti che servono perche' tornino, senza toccare quelli segnati
+Cambia SOLO i pasti che servono perche' tornino (per variare usa gli altri
+alimenti della stessa voce o le sostituzioni, con le loro grammature), senza toccare quelli segnati
 "avanzo" (si cambia la cena da cui vengono, che conta due volte). Rispondi col
 JSON con solo i pasti cambiati, nello stesso formato di prima (components,
 weekly, recipes, idea, idea_note), con la loro data e il loro pasto.
@@ -522,6 +536,32 @@ def _over_notes(keys: list[tuple], meals: dict[tuple, dict], targets) -> dict[tu
     return over
 
 
+def is_protein(name: str) -> bool:
+    """Se l'alimento e' una fonte di proteine (pesce, carne, uova, formaggi,
+    legumi, tofu...): quelli che non devono ripetersi tutta la settimana."""
+    key = normalize(name)
+    return any(word in key.split() for word in PROTEIN_WORDS) or any(
+        food_matches(name, group) for group in PROTEIN_GROUPS
+    )
+
+
+def _renamed(suggestions: list[dict], changed: dict[str, str]) -> list[dict]:
+    """I suggerimenti di un piatto a cui il codice ha cambiato un alimento: le
+    idee col nome nuovo ("Merluzzo al forno" -> "Sogliola al forno"), le
+    ricette no (erano per l'alimento di prima)."""
+    out = []
+    for item in suggestions:
+        if item.get("recipe"):
+            continue
+        title, idea = item.get("title", ""), item.get("idea", "")
+        for old, new in changed.items():
+            pattern = re.compile(re.escape(old), re.IGNORECASE)
+            title = pattern.sub(new, title)
+            idea = pattern.sub(new, idea)
+        out.append({"title": title[:1].upper() + title[1:], "idea": idea})
+    return out
+
+
 # --- 4. una settimana dall'inizio alla fine -----------------------------------------------
 
 
@@ -577,6 +617,7 @@ class Week:
         # Yogurt e frutta secca restano a colazione e merenda (foods.py).
         self.side_foods = side_only_foods(self.nutritionist.rules if self.nutritionist else {})
         self.meals: dict[tuple, dict] = {}
+        self.row_of = {(row["date"].isoformat(), row["slot"]): row for row in self.all_rows}
 
     def candidates_text(self) -> str:
         return (
@@ -665,9 +706,74 @@ class Week:
                 }
         return out
 
-    def repair(self, problems: dict[str, int], targets: dict[str, int]) -> None:
+    def dishes(self, meals: dict[tuple, dict]) -> dict[tuple, list[tuple]]:
+        """I piatti: i pasti con lo stesso giorno di cottura e gli stessi
+        alimenti (la cena e il suo pranzo-avanzo, una sessione di prep)."""
+        out: dict[tuple, list[tuple]] = {}
+        for key in sorted(meals):
+            row = self.row_of.get(key)
+            cooked = row["cooked_on"] if row else key[0]
+            out.setdefault((str(cooked), repr(meals[key]["components"])), []).append(key)
+        return out
+
+    def repeated(self, meals: dict[tuple, dict]) -> dict[str, int]:
+        """``{alimento: piatti}`` per le proteine in piu' di MAX_SAME_DISHES piatti."""
+        counts: dict[str, int] = {}
+        names: dict[str, str] = {}
+        for keys in self.dishes(meals).values():
+            for item in meals[keys[0]]["components"]:
+                if is_protein(item["name"]):
+                    key = normalize(item["name"])
+                    names.setdefault(key, item["name"])
+                    counts[key] = counts.get(key, 0) + 1
+        return {names[key]: n for key, n in counts.items() if n > MAX_SAME_DISHES}
+
+    def rotate(self) -> None:
+        """La garanzia del codice sulla varieta': dal terzo piatto con la stessa
+        proteina, un altro alimento della stessa voce del piano con la stessa
+        grammatura (merluzzo -> sogliola -> orata). Se la voce non elenca
+        altro, il piatto resta com'e'."""
+        from .nutritionist import siblings
+
+        rules = self.nutritionist.rules if self.nutritionist else {}
+        used: dict[str, int] = {}
+        for _dish, keys in sorted(self.dishes(self.meals).items()):
+            meal = self.meals[keys[0]]
+            slot = keys[0][1]
+            components, changed = [], {}
+            for item in meal["components"]:
+                key = normalize(item["name"])
+                if is_protein(item["name"]) and used.get(key, 0) >= MAX_SAME_DISHES:
+                    options = [
+                        name
+                        for name in siblings(item["name"], rules, slot)
+                        if used.get(normalize(name), 0) < MAX_SAME_DISHES
+                        and not self.guard.problem(name)
+                    ]
+                    if options:
+                        pick = min(options, key=lambda name: used.get(normalize(name), 0))
+                        changed[item["name"]] = pick
+                        item = {**item, "name": pick}
+                        key = normalize(pick)
+                used[key] = used.get(key, 0) + 1
+                components.append(item)
+            if changed:
+                for key in keys:
+                    self.meals[key] = {
+                        **self.meals[key],
+                        "components": components,
+                        "suggestions": _renamed(meal["suggestions"], changed),
+                    }
+
+    def repair(
+        self,
+        problems: dict[str, int],
+        targets: dict[str, int],
+        repeated: dict[str, int] | None = None,
+    ) -> None:
         """Una seconda chiamata che cambia solo i pasti che servono perche' le
-        frequenze tornino. Quello che resta fuori diventa una nota."""
+        frequenze tornino e le proteine non si ripetano. Quello che resta fuori
+        diventa una nota (frequenze) o lo cambia ``rotate`` (varieta')."""
         meals = self.with_leftovers()
         lines = []
         for key in sorted(meals):
@@ -685,8 +791,15 @@ class Week:
         prompt = REPAIR_PROMPT.format(
             week="\n".join(lines),
             problems="\n".join(
-                f"- {food}: {count} volte, il piano dice {targets[food]}"
-                for food, count in problems.items()
+                [
+                    f"- {food}: {count} volte, il piano dice {targets[food]}"
+                    for food, count in problems.items()
+                ]
+                + [
+                    f"- {food}: in {count} piatti, al massimo {MAX_SAME_DISHES} a settimana: "
+                    "varia con un altro alimento"
+                    for food, count in (repeated or {}).items()
+                ]
             ),
             rules=_rules_block(self.nutritionist, self.slots),
             candidates=self.candidates_text(),
@@ -726,6 +839,7 @@ def generate_week(plan: MealPlan, week: int) -> None:
         leftovers=LEFTOVERS_RULE if state.leftovers else "",
         minutes=options.get("minutes", 45),
         difficulty=DIFFICULTY_NAMES.get(options.get("difficulty", "medium"), "media"),
+        max_same=MAX_SAME_DISHES,
         avoid=(
             "\n- Non suggerire questi piatti, nemmeno come idea: " + "; ".join(excluded) + "."
             if excluded
@@ -747,12 +861,15 @@ def generate_week(plan: MealPlan, week: int) -> None:
     targets = frequency_targets(
         state.nutritionist, len({row["date"] for row in state.all_rows}), state.slots
     )
-    if problems := frequency_problems(state.with_leftovers(), targets):
+    problems = frequency_problems(state.with_leftovers(), targets)
+    repeated = state.repeated(state.with_leftovers())
+    if problems or repeated:
         try:
-            state.repair(problems, targets)
+            state.repair(problems, targets, repeated)
         except Exception:
             # La correzione e' un di piu': senza, restano le note sui pasti.
             logger.warning("Correzione delle frequenze del piano %s non riuscita", plan.id)
+    state.rotate()
     meals = state.with_leftovers()
     over = _over_notes(sorted(meals), meals, targets)
 

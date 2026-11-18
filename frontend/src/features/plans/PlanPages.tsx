@@ -532,7 +532,8 @@ export function EatView({
   editable?: boolean
 }) {
   const byDay = useMemo(() => mealsByDay(plan), [plan])
-  const [editing, setEditing] = useState<PlannedMeal | null>(null)
+  // La matita apre gli alimenti; il libro la ricetta.
+  const [editing, setEditing] = useState<{ meal: PlannedMeal; foods: boolean } | null>(null)
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       {days.map((day) => (
@@ -556,13 +557,21 @@ export function EatView({
               <MealRow
                 key={meal.id}
                 meal={meal}
-                onEdit={editable ? () => setEditing(meal) : undefined}
+                onEdit={editable ? () => setEditing({ meal, foods: false }) : undefined}
+                onFoods={editable ? () => setEditing({ meal, foods: true }) : undefined}
               />
             ))}
           </ul>
         </section>
       ))}
-      {editing && <ChangeMealDialog plan={plan} meal={editing} onClose={() => setEditing(null)} />}
+      {editing && (
+        <ChangeMealDialog
+          plan={plan}
+          meal={editing.meal}
+          onlyFoods={editing.foods}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   )
 }
@@ -619,7 +628,17 @@ export function Portion({
   )
 }
 
-export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => void }) {
+export function MealRow({
+  meal,
+  onEdit,
+  onFoods,
+}: {
+  meal: PlannedMeal
+  /** La ricetta (o, nei piani di prima, il pasto). */
+  onEdit?: () => void
+  /** Gli alimenti del pasto (piani per ingredienti). */
+  onFoods?: () => void
+}) {
   const recipeLink = useContext(RecipeLinkContext)
   const slot = MEAL_OPTIONS.find((option) => option.value === meal.slot)
   const recipe = meal.recipe
@@ -699,12 +718,17 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
           </p>
         )}
       </div>
-      {onEdit && (
-        <IconButton
-          icon={byIngredients ? 'edit' : 'swap_horiz'}
-          label={byIngredients ? gettext('Cambia alimenti o ricetta') : gettext('Cambia il pasto')}
-          onClick={onEdit}
-        />
+      {byIngredients && (onFoods || onEdit) ? (
+        <div className="flex shrink-0 flex-col">
+          {onFoods && (
+            <IconButton icon="edit" label={gettext('Cambia gli alimenti')} onClick={onFoods} />
+          )}
+          {onEdit && (
+            <IconButton icon="menu_book" label={gettext('Scegli la ricetta')} onClick={onEdit} />
+          )}
+        </div>
+      ) : (
+        onEdit && <IconButton icon="swap_horiz" label={gettext('Cambia il pasto')} onClick={onEdit} />
       )}
     </li>
   )
@@ -920,15 +944,18 @@ type Source = 'cookbook' | 'books' | 'ai'
 function ChangeMealDialog({
   plan,
   meal: initial,
+  onlyFoods = false,
   onClose,
 }: {
   plan: MealPlanDetail
   meal: PlannedMeal
+  /** Aperto dalla matita: solo gli alimenti, e salvando si chiude. */
+  onlyFoods?: boolean
   onClose: () => void
 }) {
   // Il pasto aggiornato: dopo un cambio di alimenti il dialog resta aperto.
   const meal = plan.meals.find((item) => item.id === initial.id) ?? initial
-  const [editingFoods, setEditingFoods] = useState(false)
+  const [editingFoods, setEditingFoods] = useState(onlyFoods && meal.components.length > 0)
   const update = useUpdateMeal(plan.id)
   const [servings, setServings] = useState(meal.servings)
   const { data: cookbook } = useRecipes({})
@@ -961,7 +988,11 @@ function ChangeMealDialog({
   if (editingFoods) {
     return (
       <Modal open onClose={onClose} title={title}>
-        <FoodsEditor plan={plan} meal={meal} onDone={() => setEditingFoods(false)} />
+        <FoodsEditor
+          plan={plan}
+          meal={meal}
+          onDone={onlyFoods ? onClose : () => setEditingFoods(false)}
+        />
       </Modal>
     )
   }
@@ -1073,6 +1104,7 @@ function ChangeMealDialog({
 
 const MAIN_SLOTS = new Set(['lunch', 'dinner'])
 const FOOD_UNITS = ['g', 'ml', 'pz'] as const
+const SWAPS_SHOWN = 6
 
 type FoodRow = {
   key: number
@@ -1112,6 +1144,8 @@ function FoodsEditor({
   const { data } = useMealSwaps(plan.id, meal.id)
   const [rows, setRows] = useState<FoodRow[]>(() => meal.components.map(toRow))
   const [nextKey, setNextKey] = useState(meal.components.length)
+  // Le righe con tutti gli equivalenti aperti: di solito bastano i primi.
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const sameDish = plan.meals.filter(
     (other) =>
       other.id !== meal.id &&
@@ -1144,7 +1178,9 @@ function FoodsEditor({
       </p>
       <ul className="grid gap-2">
         {rows.map((row) => {
-          const swaps = row.from === null ? [] : (data?.swaps[row.from] ?? [])
+          const all = row.from === null ? [] : (data?.swaps[row.from] ?? [])
+          const open = expanded.has(row.key) || all.length <= SWAPS_SHOWN + 1
+          const swaps = open ? all : all.slice(0, SWAPS_SHOWN)
           return (
             <li key={row.key} className="rounded-row bg-surface-container-low p-2">
               <div className="flex items-start gap-1">
@@ -1215,6 +1251,14 @@ function FoodsEditor({
                       }
                     />
                   ))}
+                  {!open && (
+                    <Chip
+                      variant="assist"
+                      icon="expand_more"
+                      label={interpolate(gettext('Altri %s'), [all.length - SWAPS_SHOWN])}
+                      onClick={() => setExpanded((current) => new Set(current).add(row.key))}
+                    />
+                  )}
                 </div>
               )}
             </li>

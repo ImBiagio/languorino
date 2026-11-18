@@ -491,12 +491,60 @@ def test_niente_yogurt_a_pranzo_e_cena(
     week = _week_prompts(gemini)[0]
     assert "yogurt 3 volte" not in week and "125 g yogurt" not in week
     assert "MAI gli alimenti di colazione, spuntini e merende (yogurt" in week
-    # Nessuna correzione delle frequenze: lo yogurt non conta su pranzi e cene.
-    assert not [p for p in gemini["prompts"] if "non tornano" in p]
+    # Lo yogurt non e' fra i conti da correggere: non conta su pranzi e cene.
+    assert not [p for p in gemini["prompts"] if "non tornano" in p and "- yogurt" in p]
     plan = MealPlan.objects.get()
     assert all(meal.components == LUNCH for meal in plan.meals.all())
     response = api(user).get(f"{PLANS}/{plan.id}")
     assert response.data["nutritionist"]["weekly"] == []
+
+
+def test_niente_merluzzo_tutta_la_settimana(
+    user, api, cookbook, diet, gemini, django_capture_on_commit_callbacks
+):
+    from apps.plans.generation import WeekChoices
+
+    # Il piano dice "pesce bianco: merluzzo, sogliola, ..." e l'LLM sceglieva
+    # sempre merluzzo (2026-11-18): al massimo 2 piatti, poi gli altri pesci.
+    diet.rules = {
+        **DIET_RULES,
+        "meals": [
+            DIET_RULES["meals"][1],
+            {
+                "slot": "dinner",
+                "options": [
+                    "300 g Pesce bianco: merluzzo, sogliola, platessa, orata + 60 g pane"
+                ],
+            },
+        ],
+    }
+    diet.save(update_fields=["rules"])
+    cod = [
+        {"name": "merluzzo", "quantity": 300, "unit": "g"},
+        {"name": "pane", "quantity": 60, "unit": "g"},
+    ]
+
+    def pick(c, slot, day, wait):
+        if slot == "dinner":
+            return {"components": cod, "idea": "Merluzzo al forno"}
+        return {"components": [LUNCH[0], LUNCH[2]]}
+
+    asked = []
+    gemini["pick"] = pick
+    gemini["repair"] = lambda prompt: asked.append(prompt) or WeekChoices(meals=[])
+    _create(api, user, django_capture_on_commit_callbacks)
+    # Prima la correzione dell'LLM...
+    assert "- merluzzo: in 7 piatti, al massimo 2 a settimana" in asked[0]
+    # ...poi, se non basta, il codice: stessa grammatura, altri pesci della voce.
+    plan = MealPlan.objects.get()
+    dinners = list(plan.meals.filter(slot="dinner").order_by("date"))
+    fish = [meal.components[0]["name"] for meal in dinners]
+    assert fish[:2] == ["merluzzo", "merluzzo"]
+    assert max(fish.count(name) for name in set(fish)) == 2
+    assert set(fish) == {"merluzzo", "sogliola", "platessa", "orata"}
+    assert all(meal.components[0]["quantity"] == 300 for meal in dinners)
+    sole = next(meal for meal in dinners if meal.components[0]["name"] == "sogliola")
+    assert sole.suggestions == [{"title": "Sogliola al forno", "idea": ""}]
 
 
 def test_la_sera_cucino_anche_il_pranzo_dopo(
