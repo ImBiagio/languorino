@@ -31,6 +31,7 @@ from .serializers import (
     PlanSettingsSerializer,
 )
 from .sharing import share_plan, visible_settings
+from .suggestions import same_dish, suggested_recipe_ids
 from .tasks import enqueue_plan
 
 
@@ -54,9 +55,20 @@ def with_meals(queryset):
     )
 
 
+def suggested_context(request, meals) -> dict:
+    """Il contesto dei serializer con le ricette suggerite gia' caricate."""
+    ids = suggested_recipe_ids(meals)
+    recipes = Recipe.all_objects.select_related("book").prefetch_related("tags")
+    return {
+        "request": request,
+        "suggested": {str(recipe.id): recipe for recipe in recipes.filter(id__in=ids)},
+    }
+
+
 def _detail(request, plan: MealPlan, code=status.HTTP_200_OK) -> Response:
     plan = with_meals(plans_of(request.user)).get(pk=plan.pk)
-    return Response(MealPlanDetailSerializer(plan, context={"request": request}).data, status=code)
+    context = suggested_context(request, plan.meals.all())
+    return Response(MealPlanDetailSerializer(plan, context=context).data, status=code)
 
 
 class PlanListView(APIView):
@@ -115,12 +127,16 @@ class PlanDetailView(APIView):
     def delete(self, request, pk):
         plan = get_object_or_404(plans_of(request.user), pk=pk)
         with transaction.atomic():
-            # Le ricette scritte per il piano e mai salvate se ne vanno con lui.
-            written = Recipe.objects.filter(
-                owner=request.user,
-                source=Recipe.Source.PLAN,
-                in_cookbook=False,
-                id__in=plan.meals.values("recipe_id"),
+            # Le ricette scritte per il piano e mai salvate se ne vanno con lui,
+            # anche quelle suggerite e scritte ma mai approvate.
+            used = {str(pk) for pk in plan.meals.values_list("recipe_id", flat=True) if pk}
+            written = list(
+                Recipe.objects.filter(
+                    owner=request.user,
+                    source=Recipe.Source.PLAN,
+                    in_cookbook=False,
+                    id__in=used | suggested_recipe_ids(plan.meals.all()),
+                )
             )
             plan.delete(hard=True)
             for recipe in written:
@@ -192,7 +208,8 @@ class PlanRetryView(APIView):
 
 
 class PlannedMealView(APIView):
-    """Cambiare un pasto a mano: un'altra ricetta, nessuna, porzioni, giorno di cottura."""
+    """Cambiare un pasto a mano: la ricetta approvata (o nessuna), porzioni,
+    giorno di cottura, mangiato."""
 
     permission_classes = [IsAuthenticated]
 
@@ -209,18 +226,65 @@ class PlannedMealView(APIView):
         data = serializer.validated_data
         if "recipe_id" in data:
             recipe_id = data.pop("recipe_id")
-            meal.recipe = (
-                get_object_or_404(Recipe, pk=recipe_id, owner=request.user) if recipe_id else None
+            recipe = (
+                get_object_or_404(Recipe, pk=recipe_id, owner=request.user)
+                if recipe_id
+                else None
             )
-            meal.note = "" if meal.recipe else _("Pasto libero.")
-            # Le dosi della dieta erano per il piatto di prima.
-            meal.diet_portion = ""
-            meal.diet_foods = []
+            if meal.components:
+                # Per ingredienti (ADR 0023): la ricetta approvata vale per tutto
+                # il piatto (la cena e il suo pranzo-avanzo, la sessione di prep);
+                # gli alimenti del piano restano quelli.
+                for other in same_dish(meal):
+                    other.recipe = recipe
+                    other.save(update_fields=["recipe"])
+                meal.refresh_from_db()
+            else:
+                meal.recipe = recipe
+                meal.note = "" if meal.recipe else _("Pasto libero.")
+                # Le dosi della dieta erano per il piatto di prima.
+                meal.diet_portion = ""
+                meal.diet_foods = []
         for field, value in data.items():
             setattr(meal, field, value)
         meal.save()
         meal = with_meals(plans_of(request.user)).get(pk=pk).meals.get(pk=meal.pk)
-        return Response(PlannedMealSerializer(meal, context={"request": request}).data)
+        context = suggested_context(request, [meal])
+        return Response(PlannedMealSerializer(meal, context=context).data)
+
+
+class SuggestionWriteView(APIView):
+    """Scrive per intero un'idea suggerita per un pasto (job): la ricetta
+    prende il posto dell'idea, e si apre per approvarla."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: JobSerializer})
+    def post(self, request, pk, meal_id, index):
+        plan = get_object_or_404(plans_of(request.user), pk=pk)
+        meal = get_object_or_404(plan.meals, id=meal_id)
+        if not 0 <= index < len(meal.suggestions or []):
+            raise Http404
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.MEAL_RECIPE,
+                input={
+                    "plan": str(plan.id),
+                    "meal": meal.id,
+                    "index": index,
+                    "language": (get_language() or "it")[:2],
+                },
+            )
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
 
 
 # --- piano del nutrizionista (ADR 0010) ---------------------------------------------------
@@ -282,6 +346,31 @@ class NutritionistPlanListView(APIView):
         return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
 
 
+class GuidelinesPlanView(APIView):
+    """POST: il piano alimentare dalle linee guida e dal profilo (job, ADR 0023).
+    Nasce da rivedere, come quello letto dai file del nutrizionista."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "ai"
+
+    @extend_schema(request=None, responses={202: JobSerializer})
+    def post(self, request):
+        if not is_enabled():
+            return Response(
+                {"detail": _("La lettura con l'intelligenza artificiale non è configurata.")},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        with transaction.atomic():
+            job = Job.objects.create(
+                owner=request.user,
+                kind=Job.Kind.GUIDELINES_PLAN,
+                input={"language": (get_language() or "it")[:2]},
+            )
+            enqueue_job(job)
+        job.refresh_from_db()
+        return Response(JobSerializer(job).data, status=status.HTTP_202_ACCEPTED)
+
+
 class NutritionistPlanDetailView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
@@ -303,7 +392,7 @@ class NutritionistPlanDetailView(APIView):
 
     @extend_schema(responses={204: None})
     def delete(self, request, pk):
-        """Via il piano e i file da cui e' stato letto; i piani generati restano."""
+        """Via il piano e i file da cui e' stato letto; le preparazioni restano."""
         plan = self._get(request, pk)
         with transaction.atomic():
             job = plan.job
@@ -509,7 +598,8 @@ class SharedPlanView(APIView):
         if plan is None:
             return Response({"owner": _person(share.owner), "plan": None})
         plan = with_meals(plans_of(share.owner)).get(pk=plan.pk)
-        data = MealPlanDetailSerializer(plan, context={"request": request}).data
+        context = suggested_context(request, plan.meals.all())
+        data = MealPlanDetailSerializer(plan, context=context).data
         data["settings"] = visible_settings(plan.settings)
         data["nutritionist"] = None
         data["error"] = ""

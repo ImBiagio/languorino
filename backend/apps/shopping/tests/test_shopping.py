@@ -280,3 +280,51 @@ def test_liste_degli_altri(user, other_user, api, plan):
     )
     other = {"plan": str(plan.id)}
     assert api(other_user).post(SHOP, other, format="json").status_code == 400
+
+
+def test_spesa_dagli_alimenti_del_piano(user):
+    """Per ingredienti (ADR 0023): gli alimenti del piano per le porzioni e,
+    solo con la ricetta approvata, i suoi ingredienti in piu'."""
+    pasta_e_ceci = _recipe(
+        user,
+        "Pasta e ceci",
+        2,
+        [("pasta", "160", "g"), ("ceci lessati", "300", "g"), ("cipolla", "50", "g")],
+    )
+    plan = MealPlan.objects.create(
+        owner=user, start_date=START, days=7, status="active", settings={"servings": 2}
+    )
+    components = [
+        {"name": "pasta", "quantity": 80, "unit": "g"},
+        {"name": "ceci lessati", "quantity": 150, "unit": "g"},
+        {"name": "zucchine", "quantity": 200, "unit": "g"},
+        {"name": "rucola", "quantity": None, "unit": ""},
+    ]
+    suggestion = [{"recipe": str(pasta_e_ceci.id)}]
+    for day, recipe in ((START, None), (START + timedelta(1), pasta_e_ceci)):
+        PlannedMeal.objects.create(
+            plan=plan,
+            date=day,
+            slot="lunch",
+            servings=2,
+            cooked_on=day,
+            components=components,
+            suggestions=suggestion,
+            recipe=recipe,
+        )
+    items = _items(plan, days=2)
+    assert items[("pasta", "g")]["quantity"] == 320
+    # Le zucchine si contano a pezzi nel catalogo: 800 g convertiti.
+    courgette = Ingredient.objects.get(name="zucchina")
+    expected = convert(Decimal(800), "g", courgette)
+    assert items[("zucchina", expected[1])]["quantity"] == round_up(*expected)
+    assert items[("rucola", "")]["quantity"] is None
+    # La cipolla viene dalla ricetta approvata del secondo giorno, per 2 porzioni;
+    # la pasta e i ceci della ricetta no: li decide il piano.
+    onion = Ingredient.objects.get(name="cipolla")
+    onion_key = ("cipolla", convert(Decimal(50), "g", onion)[1])
+    assert items[onion_key]["quantity"] == round_up(*convert(Decimal(50), "g", onion))
+    assert items[onion_key]["sources"] == [
+        {"date": (START + timedelta(1)).isoformat(), "slot": "lunch", "recipe": "Pasta e ceci"}
+    ]
+    assert items[("pasta", "g")]["sources"][0]["recipe"] == "Pasta e ceci"

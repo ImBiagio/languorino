@@ -7,7 +7,7 @@ import { Chip, EmptyState, Icon } from '../../components/ui'
 import { useAuth } from '../../lib/auth'
 import { gettext, interpolate, intlLocale } from '../../lib/i18n'
 import { addDays, formatDayLong, formatWeekday, todayIso } from '../plans/dates'
-import { MealRow } from '../plans/PlanPages'
+import { MealRow, dishName } from '../plans/PlanPages'
 import { GOAL_OPTIONS, preferenceLabel } from '../profile/options'
 
 /**
@@ -27,7 +27,10 @@ export function HomePage() {
       .sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot))
   // Cosa si cucina oggi per i giorni dopo (meal prep).
   const prepToday = (plan?.meals ?? []).filter(
-    (meal) => meal.cooked_on === today && meal.date !== today && meal.recipe,
+    (meal) =>
+      meal.cooked_on === today &&
+      meal.date !== today &&
+      (meal.recipe || meal.components.length > 0),
   )
   const restrictions =
     profile?.preferences.filter((item) => item.kind === 'allergy' || item.kind === 'intolerance') ??
@@ -130,12 +133,18 @@ export function HomePage() {
                 <ul className="grid gap-1 text-body-medium">
                   {prepToday.map((meal) => (
                     <li key={meal.id}>
-                      <Link
-                        to={`/ricette/${meal.recipe!.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {meal.recipe!.title}
-                      </Link>{' '}
+                      {meal.recipe ? (
+                        <Link
+                          to={`/ricette/${meal.recipe.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {meal.recipe.title}
+                        </Link>
+                      ) : (
+                        <Link to={`/piano/${plan!.id}`} className="font-medium hover:underline">
+                          {dishName(meal)}
+                        </Link>
+                      )}{' '}
                       {interpolate(gettext('per %s'), [formatWeekday(meal.date)])}
                     </li>
                   ))}

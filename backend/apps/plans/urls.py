@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     AskView,
+    GuidelinesPlanView,
     NutritionistPlanConfirmView,
     NutritionistPlanDetailView,
     NutritionistPlanListView,
@@ -18,6 +19,7 @@ from .views import (
     PlanShareListView,
     SharedPlanRecipeView,
     SharedPlanView,
+    SuggestionWriteView,
 )
 
 urlpatterns = [
@@ -34,6 +36,12 @@ urlpatterns = [
         PlannedMealIdeasView.as_view(),
         name="plan-meal-ideas",
     ),
+    path(
+        "plans/<uuid:pk>/meals/<int:meal_id>/suggestions/<int:index>/write",
+        SuggestionWriteView.as_view(),
+        name="plan-meal-suggestion-write",
+    ),
+    path("nutritionist-plans/guidelines", GuidelinesPlanView.as_view(), name="guidelines-plan"),
     path(
         "nutritionist-plans/<uuid:pk>/reread",
         NutritionistPlanRereadView.as_view(),

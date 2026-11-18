@@ -161,6 +161,37 @@ def _recipe_nutrition(job: Job) -> None:
     job.result = {"recipe": RecipeSerializer(recipe, context={}).data}
 
 
+def _guidelines_plan(job: Job) -> None:
+    from apps.plans.guidelines import write_guidelines
+    from apps.plans.models import NutritionistPlan
+
+    result = write_guidelines(job.owner, language=job.input.get("language", "it"))
+    job.model = result["model"]
+    if not result["rules"]["meals"]:
+        job.result = {"problem": _("Non sono riuscito a scrivere il piano. Riprova.")}
+        return
+    plan = NutritionistPlan.objects.create(
+        owner=job.owner,
+        job=job,
+        title=result["title"],
+        source=NutritionistPlan.Source.GUIDELINES,
+        rules=result["rules"],
+    )
+    job.result = {"nutritionist_plan": str(plan.id), "problem": ""}
+
+
+def _meal_recipe(job: Job) -> None:
+    from apps.plans.models import PlannedMeal
+    from apps.plans.suggestions import write_suggestion
+    from apps.recipes.serializers import RecipeListSerializer
+
+    meal = PlannedMeal.objects.select_related("plan").get(
+        id=job.input["meal"], plan_id=job.input["plan"], plan__owner=job.owner
+    )
+    recipe = write_suggestion(meal, job.input["index"], language=job.input.get("language", "it"))
+    job.result = {"recipe": RecipeListSerializer(recipe, context={}).data}
+
+
 RUNNERS = {
     Job.Kind.IMPORT_RECIPES: _import_recipes,
     Job.Kind.FRIDGE_SCAN: _fridge_scan,
@@ -171,6 +202,8 @@ RUNNERS = {
     Job.Kind.MEAL_IDEAS: _meal_ideas,
     Job.Kind.ASK: _ask,
     Job.Kind.RECIPE_NUTRITION: _recipe_nutrition,
+    Job.Kind.GUIDELINES_PLAN: _guidelines_plan,
+    Job.Kind.MEAL_RECIPE: _meal_recipe,
 }
 
 

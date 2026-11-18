@@ -32,7 +32,7 @@ import { gettext, interpolate, ngettext } from '../../lib/i18n'
 import type { MealPlanDetail } from '../../lib/types'
 import { formatQuantity } from '../recipes/options'
 import { addDays, formatRange, todayIso } from './dates'
-import { CookView, EatView, RecipeLinkContext } from './PlanPages'
+import { CookView, EatView, RecipeLinkContext, SuggestionLinksContext } from './PlanPages'
 
 /* ------------------------------------------- dialogo "fallo vedere" ---- */
 
@@ -185,7 +185,10 @@ export function SharedPlanPage() {
       </Link>
       {data.plan ? (
         <RecipeLinkContext.Provider value={(id) => `/piano/condivisi/${shareId}/ricette/${id}`}>
-          <ReadOnlyPlan plan={data.plan} owner={data.owner.name} />
+          {/* Si aprono solo le ricette approvate: le suggerite restano dell'altro. */}
+          <SuggestionLinksContext.Provider value={false}>
+            <ReadOnlyPlan plan={data.plan} owner={data.owner.name} />
+          </SuggestionLinksContext.Provider>
         </RecipeLinkContext.Provider>
       ) : (
         <EmptyState

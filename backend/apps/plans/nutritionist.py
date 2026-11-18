@@ -229,9 +229,13 @@ SWAP_RULE = (
 )
 
 
-def rules_prompt(rules: dict, strict: bool) -> str:
-    """Il blocco del prompt della settimana con le regole del nutrizionista."""
-    lines = ["Piano del nutrizionista, da rispettare:"]
+def rules_prompt(rules: dict, strict: bool, title: str = "Piano del nutrizionista") -> str:
+    """Il blocco del prompt della settimana con le regole del piano.
+
+    La settimana si compone per ingredienti (ADR 0023): ogni pasto e' un'opzione
+    del piano con le sue grammature; le ricette vengono dopo, come suggerimenti.
+    """
+    lines = [f"{title}, da rispettare (grammature a persona):"]
     for meal in rules.get("meals", []):
         lines.append(f"- {SLOT_NAMES.get(meal['slot'], meal['slot'])}, una di queste:")
         lines.extend(f"    · {option}" for option in meal["options"])
@@ -252,11 +256,8 @@ def rules_prompt(rules: dict, strict: bool) -> str:
     has_swaps = bool(rules.get("substitutions"))
     if strict:
         lines.append(
-            "Segui il piano ALLA LETTERA: per ogni pasto scegli una delle opzioni del "
-            "nutrizionista. Usa una ricetta candidata solo se corrisponde all'opzione; "
-            "altrimenti una ricetta nuova che la realizza con quelle grammature (in "
-            '"idea" scrivi l\'opzione scelta, con alimenti e grammature usati). '
-            "Ruota le opzioni nella settimana."
+            "Segui il piano ALLA LETTERA: ogni pasto e' una delle opzioni di quel pasto, "
+            "con i suoi alimenti e le sue grammature. Ruota le opzioni nella settimana."
         )
         if has_swaps:
             lines.append(
@@ -265,8 +266,8 @@ def rules_prompt(rules: dict, strict: bool) -> str:
             )
     else:
         lines.append(
-            "Puoi proporre piatti equivalenti alle opzioni, con le stesse grammature "
-            "e rispettando le frequenze; varia nella settimana."
+            "Puoi variare gli alimenti delle opzioni con altri equivalenti, con le stesse "
+            "grammature e rispettando le frequenze; varia nella settimana."
         )
         if has_swaps:
             lines.append(SWAP_RULE)
@@ -286,30 +287,6 @@ def meal_rules_text(rules: dict, slots: list[str]) -> str:
             + " | ".join(choices[:8])
             + "."
         )
-    if substitutions := substitutions_text(rules):
-        text += "\n" + substitutions + "\n" + SWAP_RULE
-    return text
-
-
-def combined_meal_text(rules: dict) -> str:
-    """Per la cena che fa anche da pranzo il giorno dopo (una sola cottura):
-    ogni porzione e' meta' pranzo e meta' cena del nutrizionista, cosi' i due
-    pasti insieme portano le grammature di tutti e due. A occhio, non al
-    grammo: l'utente ha scelto di mangiare a pranzo la cena."""
-    lunch = slot_options(rules, "lunch")[:4]
-    dinner = slot_options(rules, "dinner")[:4]
-    text = ""
-    if lunch or dinner:
-        text += (
-            "\nQuesta cena e' anche il pranzo del giorno dopo (una sola cottura). Ogni "
-            "porzione unisce, a occhio, meta' di un'opzione del pranzo e meta' di una "
-            "della cena del nutrizionista (porzione di una persona, da moltiplicare per le "
-            "porzioni)."
-        )
-        if lunch:
-            text += "\nPranzo, una di queste: " + " | ".join(lunch) + "."
-        if dinner:
-            text += "\nCena, una di queste: " + " | ".join(dinner) + "."
     if substitutions := substitutions_text(rules):
         text += "\n" + substitutions + "\n" + SWAP_RULE
     return text
@@ -384,6 +361,8 @@ def swaps_for(line: dict, rules: dict) -> list[str]:
     grammatura in proporzione: 50 g di pane con "80 g pasta = 100 g pane"
     diventano 40 g di pasta. Il conto lo fa il codice, non la chat."""
     unit = line.get("unit", "")
+    if line.get("quantity") is None:
+        return []  # "a volonta'": non c'e' niente da sostituire in proporzione
     quantity = Decimal(str(line["quantity"]))
     family = UNIT_FAMILY.get(unit)
     if family is None and line.get("approx"):

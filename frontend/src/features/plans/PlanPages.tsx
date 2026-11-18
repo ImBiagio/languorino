@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { Fragment, createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 
 import {
@@ -7,14 +8,17 @@ import {
   useBooks,
   useCurrentPlan,
   useDeletePlan,
+  keys,
   useJob,
   useMealIdeas,
+  useNutritionistPlans,
   usePlan,
   usePlans,
   useRecipes,
   useRegeneratePlan,
   useRetryPlan,
   useUpdateMeal,
+  useWriteSuggestion,
 } from '../../api/hooks'
 import { AiKeyIcon, useAiGate } from '../../components/Ai'
 import { AiCost } from '../../components/AiCost'
@@ -46,10 +50,12 @@ import type {
   PortionLine,
   RecipeBook,
   RecipeSummary,
+  Unit,
 } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
 import { formatMinutes, formatQuantity } from '../recipes/options'
 import { MakeShoppingDialog } from '../shopping/ShoppingPages'
+import { GuidelinesButton } from './NutritionistPages'
 import { SharePlanDialog, SharedWithMe } from './SharedPlanPages'
 import {
   addDays,
@@ -69,6 +75,20 @@ const SLOT_ORDER = MEAL_OPTIONS.map((option) => option.value)
  */
 export const RecipeLinkContext = createContext((id: string) => `/ricette/${id}`)
 
+/**
+ * Le ricette suggerite si aprono? No nel piano condiviso di un altro: lì si
+ * aprono solo le ricette approvate (ADR 0019, ADR 0023).
+ */
+export const SuggestionLinksContext = createContext(true)
+
+/** Il nome del piatto di un pasto: la ricetta approvata, la prima suggerita o gli alimenti. */
+export function dishName(meal: PlannedMeal): string {
+  if (meal.recipe) return meal.recipe.title
+  const first = meal.suggestions[0]
+  if (first) return 'recipe' in first ? first.recipe.title : first.title
+  return meal.components.map((item) => item.name).join(', ')
+}
+
 /* -------------------------------------------------------------- /piano ---- */
 
 /**
@@ -87,41 +107,78 @@ export function PlanHomePage() {
       <h1 className="mb-4 text-[28px] font-medium leading-9 md:text-headline-small">
         {gettext('Piano')}
       </h1>
+      <DietPlanCard />
       <EmptyState
         illustration={<EmptyPlateIllustration />}
-        title={gettext('Ancora nessun piano')}
+        title={gettext('Ancora nessuna preparazione')}
         description={gettext(
-          'Componi la settimana dalle tue ricette e dai ricettari PDF, con il meal prep che preferisci.',
+          'Metto il tuo piano nei giorni: per ogni pasto ingredienti e quantità, con il meal prep che preferisci, e sotto le ricette per cucinarli.',
         )}
         action={
           <Link to="/piano/nuovo" className="btn-filled">
             <Icon name="auto_awesome" size={20} />
-            {gettext('Crea il piano')}
+            {gettext('Prepara le settimane')}
           </Link>
         }
       />
-      <NutritionistLink />
       <SharedWithMe />
     </Page>
   )
 }
 
-/** Ingresso al piano del nutrizionista, sotto il piano. */
-function NutritionistLink() {
+/**
+ * Il piano alimentare, cioè cosa dovresti mangiare (ADR 0023): quello in uso,
+ * o come averne uno. La preparazione delle settimane lo segue.
+ */
+export function DietPlanCard() {
+  const { data: diets } = useNutritionistPlans()
+  if (!diets) return <Skeleton className="mb-4 h-20 rounded-card" />
+  const shown = diets.find((diet) => diet.status === 'confirmed') ?? diets[0]
+  if (!shown) {
+    return (
+      <section className="mb-4 grid gap-3 rounded-card bg-surface-container-low p-4">
+        <div className="flex items-start gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-primary-container text-on-primary-container">
+            <Icon name="nutrition" size={24} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-title-medium">{gettext('Prima, cosa dovresti mangiare')}</h2>
+            <p className="text-body-small text-on-surface-variant">
+              {gettext(
+                'Il piano alimentare dice alimenti, quantità e frequenze. Caricalo dal tuo nutrizionista o lo scrivo io dalle linee guida per una sana alimentazione e dal tuo profilo.',
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <GuidelinesButton />
+          <Link to="/piano/nutrizionista" className="btn-outlined">
+            <Icon name="clinical_notes" size={20} />
+            {gettext('Dal nutrizionista')}
+          </Link>
+        </div>
+      </section>
+    )
+  }
   return (
     <Link
-      to="/piano/nutrizionista"
-      className="state mt-4 flex items-center gap-4 rounded-card bg-surface-container-low p-4"
+      to={`/piano/nutrizionista/${shown.id}`}
+      className="state mb-4 flex items-center gap-4 rounded-card bg-surface-container-low p-4"
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-primary-container text-on-primary-container">
-        <Icon name="clinical_notes" size={24} />
+        <Icon name={shown.source === 'guidelines' ? 'nutrition' : 'clinical_notes'} size={24} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-body-large font-medium">
-          {gettext('Piano del nutrizionista')}
+        <span className="block text-label-medium text-on-surface-variant">
+          {gettext('Il tuo piano alimentare')}
         </span>
+        <span className="block truncate text-body-large font-medium">{shown.title}</span>
         <span className="block text-body-small text-on-surface-variant">
-          {gettext('Caricalo in PDF o foto e genero le settimane seguendolo')}
+          {shown.status === 'draft'
+            ? gettext('Da rivedere e confermare')
+            : shown.source === 'guidelines'
+              ? gettext('Dalle linee guida e dal tuo profilo')
+              : gettext('Dal tuo nutrizionista')}
         </span>
       </span>
       <Icon name="chevron_right" size={22} />
@@ -186,12 +243,12 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
           <div className="min-w-0 flex-1">
             <p className="text-body-medium opacity-90">
               {plan.status === 'active'
-                ? gettext('Il tuo piano')
+                ? gettext('La tua preparazione')
                 : plan.status === 'draft'
                   ? gettext('Bozza da attivare')
                   : plan.status === 'archived'
-                    ? gettext('Piano archiviato')
-                    : gettext('Piano in preparazione')}
+                    ? gettext('Preparazione archiviata')
+                    : gettext('Preparazione in corso')}
             </p>
             <h1 className="text-[26px] font-medium leading-8">
               {formatRange(plan.start_date, plan.end_date)}
@@ -206,7 +263,10 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
                   to={`/piano/nutrizionista/${plan.nutritionist.id}`}
                   className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
                 >
-                  <Icon name="clinical_notes" size={16} />
+                  <Icon
+                    name={plan.nutritionist.source === 'guidelines' ? 'nutrition' : 'clinical_notes'}
+                    size={16}
+                  />
                   {plan.nutritionist.title}
                 </Link>
               )}
@@ -239,19 +299,19 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
               icon="add"
               size="md"
               inheritColor
-              label={gettext('Nuovo piano')}
+              label={gettext('Nuova preparazione')}
               onClick={() => navigate('/piano/nuovo')}
             />
             <IconButton
               icon="delete"
               size="md"
               inheritColor
-              label={gettext('Elimina il piano')}
+              label={gettext('Elimina la preparazione')}
               onClick={async () => {
                 const ok = await confirm({
-                  title: gettext('Eliminare il piano?'),
+                  title: gettext('Eliminare la preparazione?'),
                   message: gettext(
-                    'Spariscono i pasti e le ricette scritte per il piano che non hai salvato.',
+                    'Spariscono i pasti e le ricette scritte per questi giorni che non hai salvato. Il piano alimentare resta.',
                   ),
                   confirmLabel: gettext('Elimina'),
                   icon: 'delete',
@@ -303,9 +363,10 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
       {plan.status === 'draft' && (
         <section className="mb-4 flex flex-wrap items-center gap-3 rounded-card bg-tertiary-container p-4 text-on-tertiary-container">
           <Icon name="rate_review" size={24} />
-          <p className="min-w-0 flex-1 text-body-medium">
+          {/* Almeno 12rem: su telefono i bottoni vanno a capo, non il testo in colonna. */}
+          <p className="min-w-[12rem] flex-1 text-body-medium">
             {gettext(
-              'Controlla i pasti e cambia quelli che non ti convincono, poi attiva il piano: comparirà in “Oggi”.',
+              'Controlla i pasti, scegli le ricette che ti piacciono, poi attiva: comparirà in “Oggi”.',
             )}
           </p>
           <button
@@ -315,7 +376,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
             title={redoGate.message || undefined}
             onClick={async () => {
               const ok = await confirm({
-                title: gettext('Rifare il piano?'),
+                title: gettext('Rifare la preparazione?'),
                 message: gettext('Ricompongo tutte le settimane con le stesse scelte.'),
                 confirmLabel: gettext('Rifai'),
                 icon: 'refresh',
@@ -334,7 +395,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
             onClick={() => activate.mutate(plan.id)}
           >
             <Icon name="check" size={18} />
-            {gettext('Attiva il piano')}
+            {gettext('Attiva')}
           </button>
         </section>
       )}
@@ -363,6 +424,7 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
               </div>
             )}
           </div>
+          <WeekFrequencies plan={plan} days={weekDays} />
           {view === 'eat' ? (
             <EatView plan={plan} days={weekDays} today={today} />
           ) : (
@@ -370,9 +432,42 @@ function PlanView({ plan }: { plan: MealPlanDetail }) {
           )}
         </>
       )}
-      <NutritionistLink />
+      <div className="mt-4">
+        <DietPlanCard />
+      </div>
       <SharedWithMe />
     </Page>
+  )
+}
+
+/**
+ * "Legumi 3/3 · pesce 1/2": le frequenze del piano alimentare contate sui
+ * pasti della settimana (un pranzo-avanzo conta come la sua cena).
+ */
+export function WeekFrequencies({ plan, days }: { plan: MealPlanDetail; days: string[] }) {
+  const weekly = plan.nutritionist?.weekly ?? []
+  const visible = new Set(days)
+  const meals = plan.meals.filter((meal) => visible.has(meal.date))
+  if (!weekly.length || !meals.some((meal) => meal.components.length)) return null
+  return (
+    <p className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-small text-on-surface-variant">
+      <span className="inline-flex items-center gap-1 font-medium text-on-surface">
+        <Icon name="event_repeat" size={16} />
+        {gettext('Frequenze della settimana:')}
+      </span>
+      {weekly.map((item) => {
+        const target = Math.round((item.times * days.length) / 7)
+        const count = meals.filter((meal) => meal.diet_foods.includes(item.food)).length
+        return (
+          <span
+            key={item.food}
+            className={clsx('whitespace-nowrap', count !== target && 'font-medium text-error')}
+          >
+            {item.food} {count}/{target}
+          </span>
+        )
+      })}
+    </p>
   )
 }
 
@@ -387,7 +482,7 @@ function Generating({ plan }: { plan: MealPlanDetail }) {
           </span>
         </div>
       }
-      title={gettext('Sto componendo il piano…')}
+      title={gettext('Sto componendo le settimane…')}
       description={
         plan.error
           ? gettext('In pausa: Gemini è sovraccarico, riprovo da solo tra qualche minuto.')
@@ -505,7 +600,9 @@ export function Portion({
           <span>
             {line.name}{' '}
             <span className="amount whitespace-nowrap font-medium">
-              {formatQuantity(line.quantity, line.unit, factor)}
+              {line.quantity === null
+                ? gettext('a volontà')
+                : formatQuantity(line.quantity, line.unit as Unit, factor)}
               {line.approx && (
                 <span className="font-normal text-on-surface-variant">
                   {' '}
@@ -524,6 +621,8 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
   const recipeLink = useContext(RecipeLinkContext)
   const slot = MEAL_OPTIONS.find((option) => option.value === meal.slot)
   const recipe = meal.recipe
+  // Per ingredienti (ADR 0023): prima cosa si mangia, poi come cucinarlo.
+  const byIngredients = meal.components.length > 0
   const restrictions = recipe?.warnings.filter((item) => item.kind !== 'dislike') ?? []
   return (
     <li className="flex items-start gap-3 rounded-row bg-surface p-2">
@@ -538,7 +637,21 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-label-small text-on-surface-variant">{slot?.label}</p>
-        {recipe ? (
+        {byIngredients ? (
+          <>
+            <Ingredients lines={meal.portion} />
+            {recipe ? (
+              <p className="mt-1 text-body-small">
+                <span className="font-medium text-primary">{gettext('Ricetta:')}</span>{' '}
+                <Link to={recipeLink(recipe.id)} className="font-medium hover:underline">
+                  {recipe.title}
+                </Link>
+              </p>
+            ) : (
+              <Suggestions meal={meal} onOpen={onEdit} />
+            )}
+          </>
+        ) : recipe ? (
           <Link
             to={recipeLink(recipe.id)}
             className="block truncate text-body-large font-medium hover:underline"
@@ -571,12 +684,13 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
             </span>
           )}
         </p>
-        {meal.diet_portion ? (
-          <DietPortion text={meal.diet_portion} />
-        ) : (
-          <Portion lines={meal.portion ?? []} label={gettext('A porzione:')} />
-        )}
-        {recipe && meal.note && (
+        {!byIngredients &&
+          (meal.diet_portion ? (
+            <DietPortion text={meal.diet_portion} />
+          ) : (
+            <Portion lines={meal.portion ?? []} label={gettext('A porzione:')} />
+          ))}
+        {(byIngredients || recipe) && meal.note && (
           <p className="mt-1 flex items-start gap-1 text-body-small text-on-surface-variant">
             <Icon name="info" size={14} className="mt-0.5 shrink-0" />
             {meal.note}
@@ -584,9 +698,80 @@ export function MealRow({ meal, onEdit }: { meal: PlannedMeal; onEdit?: () => vo
         )}
       </div>
       {onEdit && (
-        <IconButton icon="swap_horiz" label={gettext('Cambia il pasto')} onClick={onEdit} />
+        <IconButton
+          icon={byIngredients ? 'menu_book' : 'swap_horiz'}
+          label={byIngredients ? gettext('Scegli la ricetta') : gettext('Cambia il pasto')}
+          onClick={onEdit}
+        />
       )}
     </li>
+  )
+}
+
+/** Gli alimenti del pasto a persona, in evidenza: sono il piano. */
+function Ingredients({ lines, factor = 1 }: { lines: PortionLine[]; factor?: number }) {
+  return (
+    <p className="text-body-medium md:text-body-large">
+      {lines.map((line, index) => (
+        <Fragment key={`${line.name}-${index}`}>
+          {index > 0 && <span className="text-on-surface-variant"> · </span>}
+          <span>
+            <span className="amount whitespace-nowrap font-medium">
+              {line.quantity === null
+                ? gettext('a volontà')
+                : formatQuantity(line.quantity, line.unit as Unit, factor)}
+            </span>{' '}
+            {line.name}
+          </span>
+        </Fragment>
+      ))}
+    </p>
+  )
+}
+
+/** "Ricette suggerite: Zuppa di ceci · ✨ Pasta e ceci". */
+function Suggestions({ meal, onOpen }: { meal: PlannedMeal; onOpen?: () => void }) {
+  const recipeLink = useContext(RecipeLinkContext)
+  const linkable = useContext(SuggestionLinksContext)
+  if (!meal.suggestions.length) return null
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-small">
+      <span className="text-on-surface-variant">
+        {ngettext('Ricetta suggerita:', 'Ricette suggerite:', meal.suggestions.length)}
+      </span>
+      {meal.suggestions.map((item, index) =>
+        'recipe' in item ? (
+          linkable ? (
+            <Link
+              key={index}
+              to={recipeLink(item.recipe.id)}
+              className="font-medium text-primary hover:underline"
+            >
+              {item.recipe.title}
+            </Link>
+          ) : (
+            <span key={index} className="font-medium">
+              {item.recipe.title}
+            </span>
+          )
+        ) : onOpen ? (
+          <button
+            key={index}
+            type="button"
+            className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline"
+            onClick={onOpen}
+          >
+            <Icon name="auto_awesome" size={14} />
+            {item.title}
+          </button>
+        ) : (
+          <span key={index} className="inline-flex items-center gap-0.5 font-medium">
+            <Icon name="auto_awesome" size={14} />
+            {item.title}
+          </span>
+        ),
+      )}
+    </p>
   )
 }
 
@@ -602,8 +787,9 @@ export function CookView({
   today: string
 }) {
   const recipeLink = useContext(RecipeLinkContext)
-  // Le sessioni: i pasti con una ricetta, raggruppati per giorno di cottura;
-  // dentro, una riga per ricetta con le porzioni sommate.
+  // Le sessioni: i pasti raggruppati per giorno di cottura; dentro, una riga
+  // per piatto con le porzioni sommate. Per ingredienti (ADR 0023) un piatto
+  // sono gli stessi alimenti cucinati insieme (la cena e il pranzo-avanzo).
   const sessions = useMemo(() => {
     const visible = new Set(days)
     const byDay = new Map<
@@ -611,12 +797,20 @@ export function CookView({
       Map<string, { meal: PlannedMeal; servings: number; for: PlannedMeal[] }>
     >()
     for (const meal of plan.meals) {
-      if (!meal.recipe || !visible.has(meal.date)) continue
+      if (!visible.has(meal.date)) continue
+      let key: string
+      if (meal.components.length) {
+        key = `c:${JSON.stringify(meal.components)}:${meal.recipe?.id ?? ''}`
+      } else if (meal.recipe) {
+        key = `r:${meal.recipe.id}`
+      } else {
+        continue
+      }
       const day = byDay.get(meal.cooked_on) ?? new Map()
-      const entry = day.get(meal.recipe.id) ?? { meal, servings: 0, for: [] }
+      const entry = day.get(key) ?? { meal, servings: 0, for: [] }
       entry.servings += meal.servings
       entry.for.push(meal)
-      day.set(meal.recipe.id, entry)
+      day.set(key, entry)
       byDay.set(meal.cooked_on, day)
     }
     return [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b))
@@ -627,10 +821,10 @@ export function CookView({
   }
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      {sessions.map(([day, recipes]) => {
-        const items = [...recipes.values()]
+      {sessions.map(([day, dishes]) => {
+        const items = [...dishes.entries()]
         const minutes = items.reduce(
-          (total, item) => total + (item.meal.recipe?.total_minutes ?? 0),
+          (total, [, item]) => total + (item.meal.recipe?.total_minutes ?? 0),
           0,
         )
         return (
@@ -644,52 +838,71 @@ export function CookView({
             <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-title-medium">{formatDayLong(day)}</h2>
               <span className="text-body-small text-on-surface-variant">
-                {interpolate(ngettext('%s ricetta', '%s ricette', items.length), [items.length])}
+                {interpolate(ngettext('%s piatto', '%s piatti', items.length), [items.length])}
                 {minutes > 0 && ` · ~${formatMinutes(minutes)}`}
               </span>
             </header>
             <ul className="grid gap-2">
-              {items.map((item) => (
-                <li
-                  key={item.meal.recipe!.id}
-                  className="flex items-center gap-3 rounded-row bg-surface p-2"
-                >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px]">
-                    <RecipeCover recipe={item.meal.recipe!} size={28} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      to={recipeLink(item.meal.recipe!.id)}
-                      className="block truncate text-body-large font-medium hover:underline"
-                    >
-                      {item.meal.recipe!.title}
-                    </Link>
-                    <p className="text-body-small text-on-surface-variant">
-                      {interpolate(ngettext('%s porzione', '%s porzioni', item.servings), [
-                        item.servings,
-                      ])}
-                      {' · '}
-                      {interpolate(gettext('per %s'), [
-                        item.for
-                          .map(
-                            (meal) =>
-                              `${formatDayShort(meal.date)} ${MEAL_OPTIONS.find((o) => o.value === meal.slot)?.label.toLowerCase()}`,
-                          )
-                          .join(', '),
-                      ])}
-                    </p>
-                    {item.meal.diet_portion ? (
-                      <DietPortion text={item.meal.diet_portion} />
-                    ) : (
-                      <Portion
-                        lines={item.meal.portion ?? []}
-                        factor={item.servings}
-                        label={gettext('Da cucinare:')}
-                      />
-                    )}
-                  </div>
-                </li>
-              ))}
+              {items.map(([key, item]) => {
+                const recipe = item.meal.recipe
+                const byIngredients = item.meal.components.length > 0
+                const slot = MEAL_OPTIONS.find((o) => o.value === item.meal.slot)
+                return (
+                  <li key={key} className="flex items-start gap-3 rounded-row bg-surface p-2">
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[14px]">
+                      {recipe ? (
+                        <RecipeCover recipe={recipe} size={28} />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-surface-container-high">
+                          <Icon
+                            name={slot?.icon ?? 'skillet'}
+                            size={22}
+                            className="text-on-surface-variant"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {recipe ? (
+                        <Link
+                          to={recipeLink(recipe.id)}
+                          className="block truncate text-body-large font-medium hover:underline"
+                        >
+                          {recipe.title}
+                        </Link>
+                      ) : (
+                        <p className="truncate text-body-large font-medium">
+                          {dishName(item.meal)}
+                        </p>
+                      )}
+                      <p className="text-body-small text-on-surface-variant">
+                        {interpolate(ngettext('%s porzione', '%s porzioni', item.servings), [
+                          item.servings,
+                        ])}
+                        {' · '}
+                        {interpolate(gettext('per %s'), [
+                          item.for
+                            .map(
+                              (meal) =>
+                                `${formatDayShort(meal.date)} ${MEAL_OPTIONS.find((o) => o.value === meal.slot)?.label.toLowerCase()}`,
+                            )
+                            .join(', '),
+                        ])}
+                      </p>
+                      {byIngredients || !item.meal.diet_portion ? (
+                        <Portion
+                          lines={item.meal.portion ?? []}
+                          factor={item.servings}
+                          label={gettext('Da cucinare:')}
+                        />
+                      ) : (
+                        <DietPortion text={item.meal.diet_portion} />
+                      )}
+                      {byIngredients && !recipe && <Suggestions meal={item.meal} />}
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </section>
         )
@@ -720,6 +933,7 @@ function ChangeMealDialog({
   // Con il ricettario vuoto si apre direttamente su "Inventa".
   const active: Source = source ?? (cookbook && cookbook.count === 0 ? 'ai' : 'cookbook')
   const slot = MEAL_OPTIONS.find((option) => option.value === meal.slot)
+  const byIngredients = meal.components.length > 0
 
   const save = async (changes: { recipe_id?: string | null; servings?: number }) => {
     try {
@@ -756,6 +970,20 @@ function ChangeMealDialog({
             {gettext('Salva le porzioni')}
           </button>
         )}
+        {byIngredients && (
+          <>
+            <div className="rounded-row bg-surface-container-low p-3">
+              <p className="mb-1 text-label-medium text-on-surface-variant">
+                {gettext('Cosa mangi, a persona')}
+              </p>
+              <Ingredients lines={meal.portion} />
+            </div>
+            <SuggestionPicker plan={plan} meal={meal} onPick={(id) => save({ recipe_id: id })} />
+            <p className="text-label-large text-on-surface-variant">
+              {gettext('Oppure un’altra ricetta con questi ingredienti')}
+            </p>
+          </>
+        )}
         <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <Chip
@@ -785,14 +1013,29 @@ function ChangeMealDialog({
         )}
         <ErrorBanner error={update.error} />
         <div className="flex justify-between gap-2">
-          <button
-            type="button"
-            className="btn-text text-error"
-            onClick={() => save({ recipe_id: null })}
-          >
-            <Icon name="do_not_disturb_on" size={20} />
-            {gettext('Pasto libero')}
-          </button>
+          {byIngredients ? (
+            meal.recipe ? (
+              <button
+                type="button"
+                className="btn-text text-error"
+                onClick={() => save({ recipe_id: null })}
+              >
+                <Icon name="do_not_disturb_on" size={20} />
+                {gettext('Togli la ricetta')}
+              </button>
+            ) : (
+              <span />
+            )
+          ) : (
+            <button
+              type="button"
+              className="btn-text text-error"
+              onClick={() => save({ recipe_id: null })}
+            >
+              <Icon name="do_not_disturb_on" size={20} />
+              {gettext('Pasto libero')}
+            </button>
+          )}
           <button type="button" className="btn-text" onClick={onClose}>
             {gettext('Chiudi')}
           </button>
@@ -922,6 +1165,133 @@ function PickRow({
         </span>
       )}
     </button>
+  )
+}
+
+/**
+ * Le ricette suggerite per gli ingredienti del pasto (ADR 0023): quelle vere
+ * si approvano con un tocco; un'idea si fa scrivere per intero e poi si approva.
+ */
+function SuggestionPicker({
+  plan,
+  meal,
+  onPick,
+}: {
+  plan: MealPlanDetail
+  meal: PlannedMeal
+  onPick: (id: string) => void
+}) {
+  const client = useQueryClient()
+  const write = useWriteSuggestion(plan.id)
+  // Una ricetta col modello veloce: funzione piccola (ADR 0023).
+  const gate = useAiGate('meal_recipe', { fast: true })
+  const [jobs, setJobs] = useState<Record<number, string>>({})
+  if (!meal.suggestions.length) return null
+  return (
+    <div className="grid gap-1">
+      <p className="text-label-large text-on-surface-variant">
+        {gettext('Ricette suggerite: tocca quella che cucini')}
+      </p>
+      <ul className="grid gap-1">
+        {meal.suggestions.map((item, index) => (
+          <li key={index}>
+            {'recipe' in item ? (
+              <PickRow
+                recipe={item.recipe}
+                current={item.recipe.id === meal.recipe?.id}
+                onPick={onPick}
+              />
+            ) : (
+              <IdeaRow
+                title={item.title}
+                idea={item.idea}
+                jobId={jobs[index]}
+                disabled={!gate.allowed || write.isPending}
+                large={gate.large}
+                onWrite={async () => {
+                  try {
+                    const job = await write.mutateAsync({ mealId: meal.id, index })
+                    setJobs((current) => ({ ...current, [index]: job.id }))
+                  } catch {
+                    // Errore sotto.
+                  }
+                }}
+                onWritten={() => void client.invalidateQueries({ queryKey: keys.plan(plan.id) })}
+                onPick={onPick}
+              />
+            )}
+          </li>
+        ))}
+      </ul>
+      <ErrorBanner error={write.error} />
+    </div>
+  )
+}
+
+function IdeaRow({
+  title,
+  idea,
+  jobId,
+  disabled,
+  large,
+  onWrite,
+  onWritten,
+  onPick,
+}: {
+  title: string
+  idea: string
+  jobId?: string
+  disabled: boolean
+  large: boolean
+  onWrite: () => void
+  onWritten: () => void
+  onPick: (id: string) => void
+}) {
+  const { data: job } = useJob(jobId)
+  const working = !!jobId && (!job || job.status === 'queued' || job.status === 'running')
+  const written = job?.status === 'ready' ? job.result.recipe : undefined
+  useEffect(() => {
+    if (written) onWritten()
+    // Solo quando arriva la ricetta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [written?.id])
+  if (written) {
+    return (
+      <div className="grid gap-1">
+        <PickRow recipe={written} current={false} onPick={onPick} />
+        <Link to={`/ricette/${written.id}`} className="btn-text btn-sm w-fit">
+          <Icon name="open_in_new" size={18} />
+          {gettext('Leggi la ricetta')}
+        </Link>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-row px-3 py-2">
+      <Icon name="auto_awesome" size={20} className="text-primary" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-body-large">{title}</span>
+        {idea && <span className="block text-body-small text-on-surface-variant">{idea}</span>}
+        {working && (
+          <span className="block text-body-small text-on-surface-variant">
+            {gettext('Scrivo la ricetta con questi ingredienti…')}
+          </span>
+        )}
+        {job?.status === 'failed' && (
+          <span className="block text-body-small text-error">{job.error}</span>
+        )}
+      </span>
+      <button
+        type="button"
+        className="btn-tonal btn-sm"
+        disabled={disabled || working}
+        onClick={onWrite}
+      >
+        {gettext('Scrivi la ricetta')}
+        {large && <AiKeyIcon size={16} />}
+      </button>
+      <AiCost feature="meal_recipe" fast />
+    </div>
   )
 }
 

@@ -36,28 +36,37 @@ Tutto resta modificabile dopo, dal profilo.
 conversazione uno a uno con un agente AI che fa le stesse domande, anche a
 voce. Riempie gli stessi campi del wizard e alla fine li mostra per conferma.
 
-## 2. Piano alimentare
+## 2. Piano alimentare e preparazione
 
-Il piano dice, giorno per giorno, cosa mangiare a ogni pasto.
+Due cose distinte (ADR 0023): il **piano alimentare** dice cosa dovresti
+mangiare (alimenti, grammature, frequenze a settimana); la **preparazione**
+lo mette nei giorni, con il meal prep, e solo dopo suggerisce le ricette.
 
-**Da dove nasce:**
+**Da dove nasce il piano alimentare:**
 
 - **seguito da un nutrizionista**: si carica il piano del nutrizionista (di
   solito un PDF, o una foto); l'LLM lo legge e lo trasforma in dati, l'utente
   lo rivede e conferma;
-- **non seguito**: l'app chiede cosa si vuole ottenere e propone un piano
-  coerente con i principi nutrizionali e con le abitudini dichiarate.
+- **non seguito**: l'LLM lo scrive dalle Linee guida per una sana
+  alimentazione del CREA e dalle raccomandazioni dell'OMS, adattate al profilo
+  (età, peso, attività, obiettivi, allergie, gusti). Stessa forma, stessa
+  revisione e conferma; è indicativo e lo dice.
 
-**Generazione.** Si sceglie la durata (una, due, tre settimane, un mese) e
-l'LLM compone i giorni variando i piatti, rispettando profilo, allergie e
-gusti, e dando la precedenza ai cibi freschi nei primi giorni dopo la spesa.
+**Preparazione.** Si sceglie la durata (una, due, tre settimane, un mese) e
+l'LLM compone ogni pasto **per ingredienti**: alimenti e quantità a persona,
+presi dalle opzioni del piano, rispettando allergie, alimenti da evitare e
+frequenze (contate dal codice sui pasti). Esempio, cena: 100 g pasta, 200 g
+legumi, 200 g verdura.
 
-- **Ricette**: pesca prima dal ricettario dell'utente. Si possono includere o
-  escludere ricette per **tag** (es. la "pasta zucca e pancetta" del cuore
-  resta nel ricettario ma fuori dal piano).
-- **Ricette nuove**: se nel ricettario manca qualcosa di adatto, l'LLM ne
-  scrive una (anche prendendo spunto dal web). Nel piano si vede come le
-  altre, con un bottone **Salva nel ricettario**.
+- **Ricette suggerite**: sotto ogni pasto fino a due ricette che cucinano
+  quegli alimenti, prese prima dal ricettario dell'utente e dai ricettari PDF
+  (con tag inclusi o esclusi: la "pasta zucca e pancetta" del cuore resta
+  fuori). Se non ce ne sono, un'**idea** (es. "pasta e fagioli") che l'LLM
+  scrive per intero quando la si apre, con quelle quantità, e che si può
+  salvare nel ricettario.
+- **Ricetta approvata**: l'utente sceglie quella che cucina; vale per tutto il
+  piatto (la cena e il pranzo-avanzo) e aggiunge alla spesa i suoi ingredienti
+  in più.
 
 **Meal prep.** Opzioni di preparazione anticipata:
 
@@ -67,8 +76,9 @@ gusti, e dando la precedenza ai cibi freschi nei primi giorni dopo la spesa.
 - per ogni sessione di preparazione, quanto tempo si ha e la difficoltà
   accettata (facile, media, difficile).
 
-Il piano mostra quindi due viste: **cosa mangi** giorno per giorno e **cosa
-prepari** in ogni sessione di prep.
+La preparazione mostra quindi due viste: **cosa mangi** giorno per giorno
+(alimenti e ricette suggerite) e **cosa prepari** in ogni sessione di prep
+(alimenti per tutte le porzioni).
 
 **Condivisione.** Il piano è personale e non si condivide. Al massimo si
 condivide il prep.

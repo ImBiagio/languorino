@@ -46,7 +46,16 @@ def meal_ideas(plan: MealPlan, meal: PlannedMeal, hint: str = "", language: str 
     nutritionist = nutritionist_of(plan)
     avoid = nutritionist.rules.get("avoid_foods", []) if nutritionist else []
     extra = ""
-    if nutritionist is not None:
+    if meal.components:
+        # Per ingredienti (ADR 0023): le idee cucinano gli alimenti del pasto.
+        from .generation import components_text
+
+        extra += (
+            "\nUsa questi alimenti del piano, con queste quantita' a persona: "
+            + components_text(meal.components)
+            + ". Aggiungi solo aromi, spezie e condimenti."
+        )
+    elif nutritionist is not None:
         extra += meal_rules_text(nutritionist.rules, [meal.slot])
         if avoid:
             extra += "\nIl nutrizionista dice di evitare: " + ", ".join(avoid) + "."

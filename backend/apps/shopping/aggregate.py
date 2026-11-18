@@ -1,8 +1,15 @@
 """Dalla lista dei pasti alla lista della spesa (progettazione 4.7, ADR 0008).
 
-Per ogni pasto del piano nell'intervallo: le quantita' della ricetta scalate
-alle porzioni del pasto, sommate per ingrediente dopo averle portate alla
-stessa unita' (quella di default dell'ingrediente nel catalogo):
+Per ogni pasto del piano nell'intervallo, sommate per ingrediente dopo averle
+portate alla stessa unita' (quella di default dell'ingrediente nel catalogo):
+
+- per ingredienti (ADR 0023): gli alimenti del piano per le porzioni del
+  pasto e, solo se l'utente ha approvato una ricetta, i suoi ingredienti in
+  piu' (quelli che non sono gia' fra gli alimenti del pasto);
+- nei piani di prima, fatti di ricette: le quantita' della ricetta scalate
+  alle porzioni del pasto.
+
+Le unita':
 
 - g, kg -> g; ml, l, cucchiai, cucchiaini, tazze -> ml (e ml ~ g quando
   l'ingrediente si pesa: per olio, latte e simili l'errore e' piccolo);
@@ -21,7 +28,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import ROUND_CEILING, Decimal
 
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 
 from apps.plans.models import MealPlan, PlannedMeal
 from apps.recipes.models import Category, Ingredient, Recipe, RecipeIngredient, Unit
@@ -92,45 +99,94 @@ def plan_meals(plan: MealPlan, date_from: date, date_to: date):
     lines = RecipeIngredient.objects.select_related("ingredient").order_by("position")
     recipes = Recipe.all_objects.prefetch_related(Prefetch("ingredients", queryset=lines))
     return (
-        plan.meals.filter(date__gte=date_from, date__lte=date_to, recipe__isnull=False)
+        plan.meals.filter(date__gte=date_from, date__lte=date_to)
+        .filter(Q(recipe__isnull=False) | ~Q(components=[]))
+        .select_related("plan__owner")
         .prefetch_related(Prefetch("recipe", queryset=recipes))
         .order_by("date")
     )
 
 
+def _label(meal: PlannedMeal, titles: dict[str, str]) -> str:
+    """Per quale piatto serve: la ricetta approvata, la prima suggerita o il pasto."""
+    from apps.profiles.models import MealSlot
+
+    if meal.recipe is not None:
+        return meal.recipe.title
+    for item in meal.suggestions or []:
+        if title := item.get("title") or titles.get(item.get("recipe", "")):
+            return title
+    return str(MealSlot(meal.slot).label)
+
+
 def build_items(meals: list[PlannedMeal]) -> list[dict]:
     """Le voci della spesa per questi pasti, in ordine di reparto e di nome."""
+    from apps.recipes.services import resolve_ingredient
+
     lines: dict[tuple, Line] = {}
-    for meal in meals:
-        recipe = meal.recipe
-        factor = Decimal(meal.servings) / Decimal(recipe.servings or 1)
-        source = {"date": meal.date.isoformat(), "slot": meal.slot, "recipe": recipe.title}
-        for row in recipe.ingredients.all():
-            if row.optional:
-                continue
-            ingredient = row.ingredient
-            converted = None
-            if row.quantity is not None and row.unit != Unit.TO_TASTE:
-                converted = convert(row.quantity * factor, row.unit, ingredient)
-            unit = (
-                converted[1]
-                if converted
-                else (
-                    canonical_unit(ingredient)
-                    if row.quantity is None or row.unit == Unit.TO_TASTE
-                    else row.unit
-                )
+
+    def add(ingredient: Ingredient, quantity, unit: str, source: dict) -> None:
+        converted = None
+        if quantity is not None and unit != Unit.TO_TASTE:
+            converted = convert(quantity, unit, ingredient)
+        key_unit = (
+            converted[1]
+            if converted
+            else (
+                canonical_unit(ingredient)
+                if quantity is None or unit == Unit.TO_TASTE
+                else unit
             )
-            line = lines.setdefault((ingredient.id, unit), Line(ingredient=ingredient, unit=unit))
-            if converted:
-                line.quantity += converted[0]
-                line.has_quantity = True
-            elif row.quantity is not None and row.unit != Unit.TO_TASTE:
-                # Unita' che non si converte (es. scatola): si somma cosi' com'e'.
-                line.quantity += row.quantity * factor
-                line.has_quantity = True
-            if source not in line.sources:
-                line.sources.append(source)
+        )
+        line = lines.setdefault(
+            (ingredient.id, key_unit), Line(ingredient=ingredient, unit=key_unit)
+        )
+        if converted:
+            line.quantity += converted[0]
+            line.has_quantity = True
+        elif quantity is not None and unit != Unit.TO_TASTE:
+            # Unita' che non si converte (es. scatola): si somma cosi' com'e'.
+            line.quantity += quantity
+            line.has_quantity = True
+        if source not in line.sources:
+            line.sources.append(source)
+
+    from apps.plans.suggestions import suggested_recipe_ids
+
+    titles = {
+        str(pk): title
+        for pk, title in Recipe.all_objects.filter(id__in=suggested_recipe_ids(meals)).values_list(
+            "id", "title"
+        )
+    }
+    resolved: dict[str, Ingredient] = {}
+    for meal in meals:
+        source = {"date": meal.date.isoformat(), "slot": meal.slot, "recipe": _label(meal, titles)}
+        covered: set = set()
+        for item in meal.components or []:
+            name = item["name"]
+            if name not in resolved:
+                resolved[name] = resolve_ingredient(name, meal.plan.owner)
+            ingredient = resolved[name]
+            covered.add(ingredient.id)
+            quantity = item.get("quantity")
+            add(
+                ingredient,
+                None if quantity is None else Decimal(str(quantity)) * meal.servings,
+                item.get("unit") or Unit.GRAM,
+                source,
+            )
+        recipe = meal.recipe
+        if recipe is None:
+            continue
+        factor = Decimal(meal.servings) / Decimal(recipe.servings or 1)
+        for row in recipe.ingredients.all():
+            # Per ingredienti: della ricetta approvata solo cio' che il piano
+            # non dice gia' (la pasta la decide il piano, la cipolla la ricetta).
+            if row.optional or row.ingredient_id in covered:
+                continue
+            quantity = None if row.quantity is None else row.quantity * factor
+            add(row.ingredient, quantity, row.unit, source)
 
     items = []
     for line in lines.values():
