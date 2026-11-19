@@ -2,8 +2,10 @@
 
 Si condivide con l'email di chi ha gia' un account. Chi riceve vede il piano
 di oggi di chi condivide (``current_plan``), sempre aggiornato, e le sue
-ricette; non lo cambia, non ci fa la spesa e non lo copia. Il proprio piano
-se lo crea lui. Chi condivide spegne quando vuole, chi riceve puo' toglierlo.
+ricette; non lo cambia e non lo copia. Il proprio piano se lo crea lui. Le
+liste della spesa di chi condivide invece le usa anche lui (ADR 0025,
+``shopping.views.lists_of``): la spesa e' della casa. Chi condivide spegne
+quando vuole, chi riceve puo' toglierlo.
 """
 
 from __future__ import annotations
@@ -49,7 +51,8 @@ def _notify(share: PlanShare) -> None:
             name=viewer.display_name or viewer.email,
             intro=_(
                 "%(name)s ha condiviso con te il suo piano alimentare su %(app)s: "
-                "lo vedi così com'è, senza poterlo cambiare."
+                "lo vedi così com'è, senza poterlo cambiare. Le sue liste della spesa "
+                "invece le fate insieme: le trovi in Spesa."
             )
             % {"name": owner.display_name, "app": settings.APP_NAME},
             cta_label=_("Guarda il piano"),

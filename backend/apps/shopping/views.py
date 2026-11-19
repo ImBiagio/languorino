@@ -8,10 +8,12 @@ from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.plans.models import PlanShare
 from apps.recipes.models import Category
 from apps.recipes.services import match_ingredient
 
@@ -28,9 +30,15 @@ from .services import fill_from_plan
 
 
 def lists_of(user):
+    """Le liste che ``user`` usa: le sue e quelle di chi gli fa vedere il
+    piano (ADR 0025). La spesa e' della casa: chi vede il piano la fa insieme.
+    Con una sottoquery e non con un join: un join coi PlanShare moltiplicherebbe
+    i conteggi delle voci per le persone con cui si condivide."""
+    sharing = PlanShare.objects.filter(viewer=user).values("owner")
     # Le voci "ce l'ho gia'" non contano: non si comprano.
     to_buy = Q(items__in_pantry=False)
-    return ShoppingList.objects.filter(owner=user).annotate(
+    lists = ShoppingList.objects.filter(Q(owner=user) | Q(owner__in=sharing))
+    return lists.select_related("owner").annotate(
         item_count=Count("items", filter=to_buy),
         checked_count=Count("items", filter=to_buy & Q(items__checked=True)),
     )
@@ -38,7 +46,8 @@ def lists_of(user):
 
 def _detail(request, shopping_list: ShoppingList, code=status.HTTP_200_OK) -> Response:
     shopping_list = lists_of(request.user).prefetch_related("items").get(pk=shopping_list.pk)
-    return Response(ShoppingListDetailSerializer(shopping_list).data, status=code)
+    data = ShoppingListDetailSerializer(shopping_list, context={"request": request}).data
+    return Response(data, status=code)
 
 
 class ShoppingListView(APIView):
@@ -49,7 +58,8 @@ class ShoppingListView(APIView):
         lists = lists_of(request.user)
         if status_ := request.query_params.get("status"):
             lists = lists.filter(status=status_)
-        return Response(ShoppingListSerializer(lists[:30], many=True).data)
+        data = ShoppingListSerializer(lists[:30], many=True, context={"request": request}).data
+        return Response(data)
 
     @extend_schema(
         request=ShoppingListCreateSerializer, responses={201: ShoppingListDetailSerializer}
@@ -96,7 +106,9 @@ class ShoppingListDetailView(APIView):
     @extend_schema(request=ShoppingListSerializer, responses={200: ShoppingListDetailSerializer})
     def patch(self, request, pk):
         shopping_list = get_object_or_404(lists_of(request.user), pk=pk)
-        serializer = ShoppingListSerializer(shopping_list, data=request.data, partial=True)
+        serializer = ShoppingListSerializer(
+            shopping_list, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         recurring = serializer.validated_data.get("include_recurring")
         with transaction.atomic():
@@ -109,7 +121,11 @@ class ShoppingListDetailView(APIView):
 
     @extend_schema(responses={204: None})
     def delete(self, request, pk):
-        get_object_or_404(lists_of(request.user), pk=pk).delete(hard=True)
+        # Eliminare resta di chi ha fatto la lista: chi la condivide la usa.
+        shopping_list = get_object_or_404(lists_of(request.user), pk=pk)
+        if shopping_list.owner_id != request.user.id:
+            raise PermissionDenied(_("Solo chi ha fatto la lista può eliminarla."))
+        shopping_list.delete(hard=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -138,7 +154,8 @@ class ShoppingItemListView(APIView):
         shopping_list = get_object_or_404(lists_of(request.user), pk=pk)
         serializer = ShoppingItemSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        ingredient = match_ingredient(serializer.validated_data["label"], request.user)
+        # Il catalogo di chi ha fatto la lista: anche se aggiunge chi la condivide.
+        ingredient = match_ingredient(serializer.validated_data["label"], shopping_list.owner)
         last = shopping_list.items.order_by("-position").values_list("position", flat=True).first()
         item = serializer.save(
             shopping_list=shopping_list,
@@ -154,9 +171,8 @@ class ShoppingItemDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def _item(self, request, pk, item_id) -> ShoppingItem:
-        return get_object_or_404(
-            ShoppingItem, pk=item_id, shopping_list_id=pk, shopping_list__owner=request.user
-        )
+        shopping_list = get_object_or_404(lists_of(request.user), pk=pk)
+        return get_object_or_404(ShoppingItem, pk=item_id, shopping_list=shopping_list)
 
     @extend_schema(request=ShoppingItemSerializer, responses={200: ShoppingItemSerializer})
     def patch(self, request, pk, item_id):

@@ -73,6 +73,14 @@ class RecurringItemSerializer(serializers.ModelSerializer):
 class ShoppingListSerializer(serializers.ModelSerializer):
     item_count = serializers.IntegerField(read_only=True, default=0)
     checked_count = serializers.IntegerField(read_only=True, default=0)
+    # Di chi e' la lista, se non e' di chi chiede (ADR 0025): null = mia.
+    shared_by = serializers.SerializerMethodField()
+
+    def get_shared_by(self, obj) -> str | None:
+        request = self.context.get("request")
+        if request is None or obj.owner_id == request.user.id:
+            return None
+        return str(obj.owner)
 
     class Meta:
         model = ShoppingList
@@ -84,6 +92,7 @@ class ShoppingListSerializer(serializers.ModelSerializer):
             "date_to",
             "status",
             "include_recurring",
+            "shared_by",
             "item_count",
             "checked_count",
             "created_at",

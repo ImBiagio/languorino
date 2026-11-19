@@ -653,6 +653,9 @@ export function useShoppingList(id: UUID | undefined) {
     queryKey: keys.shoppingList(id!),
     queryFn: () => api.get<ShoppingListDetail>(`/api/shopping/${id}`),
     enabled: Boolean(id),
+    // La spesa si fa anche in due (ADR 0025): una lista aperta si riallinea da
+    // sola, così le spunte dell'altro arrivano senza ricaricare.
+    refetchInterval: (query) => (query.state.data?.status === 'open' ? 15_000 : false),
   })
 }
 

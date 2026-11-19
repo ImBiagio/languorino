@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 11:40+0100\n"
+"POT-Creation-Date: 2026-11-19 11:54+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1182,10 +1182,9 @@ msgstr "Share your plan"
 
 msgid ""
 "Chi scegli vede il tuo piano di oggi e le sue ricette, sempre aggiornato, ma "
-"non può cambiarlo. Gli arriva una mail. Serve che abbia un account."
-msgstr ""
-"The people you choose see your current plan and its recipes, always up to "
-"date, but can't change it. They get an email. They need an account."
+"non può cambiarlo. Le tue liste della spesa invece le fate insieme: le vede "
+"in Spesa, spunta e aggiunge. Gli arriva una mail. Serve che abbia un account."
+msgstr "The people you choose see your current plan and its recipes, always up to date, but can't change it. Your shopping lists, though, you share: they see them in Shopping, tick and add items. They get an email. They need an account."
 
 msgid "Email"
 msgstr "Email"
@@ -2657,6 +2656,7 @@ msgstr "Remove from shopping"
 msgid "Metti in spesa"
 msgstr "Add to shopping"
 
+#, javascript-format
 msgid "Togli “%s” dai ricorrenti"
 msgstr "Remove “%s” from recurring items"
 
@@ -2696,11 +2696,15 @@ msgstr ""
 "All the plan's meals are already in the meal prep: the shopping takes them "
 "from there."
 
+#, javascript-format
 msgid ""
 "Da “%s”, i pasti che non prepari. Spunta per aggiungere ai ricorrenti, togli "
 "la spunta per levarlo. Le volte a settimana dividono i 7 giorni fra le "
 "opzioni: dopo puoi cambiarle."
-msgstr "From “%s”, the meals you don't prep. Tick to add to your recurring items, untick to remove. Times a week split the 7 days across the options: you can change them later."
+msgstr ""
+"From “%s”, the meals you don't prep. Tick to add to your recurring items, "
+"untick to remove. Times a week split the 7 days across the options: you can "
+"change them later."
 
 msgid "Togli tutti"
 msgstr "Remove all"
@@ -2725,6 +2729,10 @@ msgstr "From the plan"
 
 msgid "Liste fatte"
 msgstr "Finished lists"
+
+#, javascript-format
+msgid "di %s"
+msgstr "by %s"
 
 msgid "Prossimi 3 giorni"
 msgstr "Next 3 days"
@@ -2757,6 +2765,10 @@ msgid "Lista della spesa"
 msgstr "Shopping list"
 
 #, javascript-format
+msgid "Lista di %s, la fate insieme"
+msgstr "%s's list, you shop together"
+
+#, javascript-format
 msgid "%s di %s nel carrello"
 msgstr "%s of %s in the cart"
 
@@ -2787,6 +2799,16 @@ msgstr "Already have it (%s)"
 
 msgid "Riapri la lista"
 msgstr "Reopen the list"
+
+msgid "Altre liste aperte"
+msgstr "Other open lists"
+
+msgid "Altre liste aperte:"
+msgstr "Other open lists:"
+
+#, javascript-format
+msgid "%s (di %s)"
+msgstr "%s (by %s)"
 
 msgid "Aggiungi qualcosa (es. detersivo, pane)"
 msgstr "Add something (e.g. washing-up liquid, bread)"

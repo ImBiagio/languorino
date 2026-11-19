@@ -4,8 +4,9 @@ Un utente fa vedere il suo piano a un altro account scrivendone l'email
 (`POST /api/plan-shares`, modello `plans.PlanShare` owner → viewer). Chi
 riceve vede **il piano di oggi** di chi condivide (`current_plan`, lo stesso
 della home), sempre com'è adesso, e le ricette che ci sono dentro. Non lo
-può cambiare, non ci fa la spesa e non lo copia: il suo piano se lo crea da
-sé (`apps/plans/sharing.py`).
+può cambiare e non lo copia: il suo piano se lo crea da sé
+(`apps/plans/sharing.py`). Dal 2026-11-19 usa però le liste della spesa di
+chi condivide (ADR 0025).
 
 - Si condivide la persona, non un piano: quando chi condivide attiva un
   piano nuovo, chi riceve vede quello.

@@ -630,6 +630,8 @@ export interface ShoppingList {
   status: 'open' | 'done'
   /** Aggiunge i ricorrenti attivi per i giorni della lista. */
   include_recurring: boolean
+  /** Chi ha fatto la lista, se è di chi mi fa vedere il piano (ADR 0025); null = mia. */
+  shared_by: string | null
   /** Voci da comprare (senza quelle "ce l'ho gia'"). */
   item_count: number
   checked_count: number

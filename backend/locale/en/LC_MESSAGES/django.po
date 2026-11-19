@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 09:19+0100\n"
+"POT-Creation-Date: 2026-11-19 11:54+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -348,33 +348,32 @@ msgstr "Invalid rules."
 msgid "La fine viene prima dell'inizio."
 msgstr "The end comes before the start."
 
-#: apps/plans/sharing.py:31
+#: apps/plans/sharing.py:32
 msgid "Il piano è già tuo."
 msgstr "The plan is already yours."
 
-#: apps/plans/sharing.py:35
+#: apps/plans/sharing.py:36
 msgid "Nessun account Languorino con questa email: prima deve registrarsi."
 msgstr "No Languorino account with this email: they need to sign up first."
 
-#: apps/plans/sharing.py:48
+#: apps/plans/sharing.py:49
 #, python-format
 msgid "%(name)s ti fa vedere il suo piano"
 msgstr "%(name)s is sharing their plan with you"
 
-#: apps/plans/sharing.py:51
+#: apps/plans/sharing.py:52
 #, python-format
 msgid ""
 "%(name)s ha condiviso con te il suo piano alimentare su %(app)s: lo vedi "
-"così com'è, senza poterlo cambiare."
-msgstr ""
-"%(name)s shared their meal plan with you on %(app)s: you see it as it is, "
-"without being able to change it."
+"così com'è, senza poterlo cambiare. Le sue liste della spesa invece le fate "
+"insieme: le trovi in Spesa."
+msgstr "%(name)s shared their meal plan with you on %(app)s: you see it as it is, without being able to change it. Their shopping lists, though, you share: you'll find them in Shopping."
 
-#: apps/plans/sharing.py:55
+#: apps/plans/sharing.py:57
 msgid "Guarda il piano"
 msgstr "View the plan"
 
-#: apps/plans/sharing.py:57
+#: apps/plans/sharing.py:59
 msgid "Il tuo piano resta tuo: puoi crearne uno quando vuoi."
 msgstr "Your plan stays yours: you can create one whenever you like."
 
@@ -918,24 +917,28 @@ msgstr "Write what to buy."
 msgid "Unità sconosciuta."
 msgstr "Unknown unit."
 
-#: apps/shopping/serializers.py:119
+#: apps/shopping/serializers.py:128
 msgid "Piano non trovato."
 msgstr "Plan not found."
 
-#: apps/shopping/serializers.py:125
+#: apps/shopping/serializers.py:134
 msgid "L'intervallo di giorni è vuoto."
 msgstr "The date range is empty."
 
-#: apps/shopping/views.py:70
+#: apps/shopping/views.py:80
 #, python-format
 msgid "Spesa dal %(start)s al %(end)s"
 msgstr "Shopping from %(start)s to %(end)s"
 
-#: apps/shopping/views.py:75
+#: apps/shopping/views.py:85
 msgid "Spesa"
 msgstr "Shopping"
 
-#: apps/shopping/views.py:126
+#: apps/shopping/views.py:127
+msgid "Solo chi ha fatto la lista può eliminarla."
+msgstr "Only the person who made the list can delete it."
+
+#: apps/shopping/views.py:142
 msgid "Questa lista non viene da un piano."
 msgstr "This list doesn't come from a plan."
 
