@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from apps.recipes.models import Unit
 
-from .models import ShoppingItem, ShoppingList
+from .models import RecurringItem, ShoppingItem, ShoppingList
 
 
 class ShoppingItemSerializer(serializers.ModelSerializer):
@@ -44,6 +44,32 @@ class ShoppingItemSerializer(serializers.ModelSerializer):
         return value
 
 
+class RecurringItemSerializer(serializers.ModelSerializer):
+    """Un ricorrente: quantita' per volta (per tutta la casa) e volte a settimana."""
+
+    class Meta:
+        model = RecurringItem
+        fields = ["id", "label", "quantity", "unit", "times_per_week", "slot", "active"]
+        read_only_fields = ["id"]
+        extra_kwargs = {"times_per_week": {"min_value": 1, "max_value": 21}}
+
+    validate_label = ShoppingItemSerializer.validate_label
+    validate_unit = ShoppingItemSerializer.validate_unit
+    validate_quantity = ShoppingItemSerializer.validate_quantity
+
+    def validate_slot(self, value: str) -> str:
+        from apps.profiles.models import MEAL_SLOT_ORDER
+
+        return value if value in MEAL_SLOT_ORDER else ""
+
+    def validate(self, attrs):
+        # "2 caffe'" senza unita': sono pezzi.
+        unit = attrs.get("unit", self.instance.unit if self.instance else "")
+        if attrs.get("quantity") is not None and not unit:
+            attrs["unit"] = Unit.PIECE
+        return attrs
+
+
 class ShoppingListSerializer(serializers.ModelSerializer):
     item_count = serializers.IntegerField(read_only=True, default=0)
     checked_count = serializers.IntegerField(read_only=True, default=0)
@@ -57,6 +83,7 @@ class ShoppingListSerializer(serializers.ModelSerializer):
             "date_from",
             "date_to",
             "status",
+            "include_recurring",
             "item_count",
             "checked_count",
             "created_at",
@@ -78,6 +105,7 @@ class ShoppingListCreateSerializer(serializers.Serializer):
     plan = serializers.UUIDField(required=False, allow_null=True)
     date_from = serializers.DateField(required=False)
     date_to = serializers.DateField(required=False)
+    include_recurring = serializers.BooleanField(required=False, default=False)
 
     def validate(self, attrs):
         from apps.plans.models import MealPlan

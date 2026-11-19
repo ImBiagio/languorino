@@ -30,6 +30,9 @@ class ShoppingList(BaseModel):
     date_from = models.DateField(null=True, blank=True)
     date_to = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=6, choices=Status.choices, default=Status.OPEN)
+    # Aggiunge i ricorrenti attivi (``RecurringItem``) per i giorni della
+    # lista: lo ricorda perche' il ricalcolo li rifaccia insieme al piano.
+    include_recurring = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-created_at"]
@@ -64,3 +67,38 @@ class ShoppingItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.label} {self.quantity or ''}{self.unit}"
+
+
+class RecurringItem(models.Model):
+    """Una cosa che si compra sempre, a prescindere dai pasti preparati (ADR 0024).
+
+    Es. la colazione tolta dalla preparazione ma da comprare lo stesso, il
+    caffe', il detersivo. La quantita' e' per volta e per tutta la casa;
+    ``times_per_week`` dice quante volte a settimana serve, e la spesa la
+    moltiplica per i giorni della lista. Senza quantita' e' una voce e basta.
+    """
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recurring_items"
+    )
+    # Vuoto per quello che non e' nel catalogo (detersivo, carta): resta una
+    # voce a se', in "Altro", senza sommarsi con niente.
+    ingredient = models.ForeignKey(
+        "recipes.Ingredient", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    label = models.CharField(max_length=120)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    unit = models.CharField(max_length=10, choices=Unit.choices, blank=True)
+    times_per_week = models.PositiveSmallIntegerField(default=7)
+    # Il pasto del piano alimentare da cui viene il suggerimento (vuoto se a mano).
+    slot = models.CharField(max_length=16, blank=True)
+    # Spento: resta nella lista dei ricorrenti ma non va in spesa.
+    active = models.BooleanField(default=True)
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.label} {self.quantity or ''}{self.unit} x{self.times_per_week}"

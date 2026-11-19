@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 15:04+0100\n"
+"POT-Creation-Date: 2026-11-19 09:19+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -918,24 +918,24 @@ msgstr "Write what to buy."
 msgid "Unità sconosciuta."
 msgstr "Unknown unit."
 
-#: apps/shopping/serializers.py:91
+#: apps/shopping/serializers.py:119
 msgid "Piano non trovato."
 msgstr "Plan not found."
 
-#: apps/shopping/serializers.py:97
+#: apps/shopping/serializers.py:125
 msgid "L'intervallo di giorni è vuoto."
 msgstr "The date range is empty."
 
-#: apps/shopping/views.py:68
+#: apps/shopping/views.py:70
 #, python-format
 msgid "Spesa dal %(start)s al %(end)s"
 msgstr "Shopping from %(start)s to %(end)s"
 
-#: apps/shopping/views.py:73
+#: apps/shopping/views.py:75
 msgid "Spesa"
 msgstr "Shopping"
 
-#: apps/shopping/views.py:116
+#: apps/shopping/views.py:126
 msgid "Questa lista non viene da un piano."
 msgstr "This list doesn't come from a plan."
 

@@ -15,8 +15,10 @@ from rest_framework.views import APIView
 from apps.recipes.models import Category
 from apps.recipes.services import match_ingredient
 
-from .models import ShoppingItem, ShoppingList
+from .models import RecurringItem, ShoppingItem, ShoppingList
+from .recurring import suggestions
 from .serializers import (
+    RecurringItemSerializer,
     ShoppingItemSerializer,
     ShoppingListCreateSerializer,
     ShoppingListDetailSerializer,
@@ -78,6 +80,7 @@ class ShoppingListView(APIView):
                 plan=values["plan"],
                 date_from=values.get("date_from"),
                 date_to=values.get("date_to"),
+                include_recurring=values["include_recurring"],
             )
             fill_from_plan(shopping_list)
         return _detail(request, shopping_list, status.HTTP_201_CREATED)
@@ -95,7 +98,13 @@ class ShoppingListDetailView(APIView):
         shopping_list = get_object_or_404(lists_of(request.user), pk=pk)
         serializer = ShoppingListSerializer(shopping_list, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        recurring = serializer.validated_data.get("include_recurring")
+        with transaction.atomic():
+            changed = recurring is not None and recurring != shopping_list.include_recurring
+            serializer.save()
+            if changed:
+                # Accesi o spenti i ricorrenti: si aggiungono o si tolgono subito.
+                fill_from_plan(shopping_list)
         return _detail(request, shopping_list)
 
     @extend_schema(responses={204: None})
@@ -105,14 +114,15 @@ class ShoppingListDetailView(APIView):
 
 
 class ShoppingListRegenerateView(APIView):
-    """Ricalcola dal piano (dopo un cambio di pasti), senza toccare le voci a mano."""
+    """Ricalcola dal piano (dopo un cambio di pasti) e dai ricorrenti, senza
+    toccare le voci a mano."""
 
     permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses={200: ShoppingListDetailSerializer})
     def post(self, request, pk):
         shopping_list = get_object_or_404(lists_of(request.user), pk=pk)
-        if shopping_list.plan is None:
+        if shopping_list.plan is None and not shopping_list.include_recurring:
             raise serializers.ValidationError({"detail": _("Questa lista non viene da un piano.")})
         fill_from_plan(shopping_list)
         return _detail(request, shopping_list)
@@ -162,4 +172,80 @@ class ShoppingItemDetailView(APIView):
     @extend_schema(responses={204: None})
     def delete(self, request, pk, item_id):
         self._item(request, pk, item_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# --- ricorrenti (ADR 0024) ---------------------------------------------------------------
+
+
+def _recurring_save(serializer, user, **extra):
+    """Il ricorrente col suo ingrediente del catalogo, se il nome c'e'."""
+    label = serializer.validated_data.get("label")
+    if label is not None:
+        extra["ingredient"] = match_ingredient(label, user)
+    return serializer.save(**extra)
+
+
+class RecurringItemListView(APIView):
+    """I ricorrenti dell'utente; si aggiungono uno alla volta o tutti insieme
+    (i suggerimenti scelti dal piano alimentare)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: RecurringItemSerializer(many=True)})
+    def get(self, request):
+        items = RecurringItem.objects.filter(owner=request.user)
+        return Response(RecurringItemSerializer(items, many=True).data)
+
+    @extend_schema(
+        request=RecurringItemSerializer(many=True),
+        responses={201: RecurringItemSerializer(many=True)},
+    )
+    def post(self, request):
+        many = isinstance(request.data, list)
+        rows = request.data if many else [request.data]
+        serializers_ = [RecurringItemSerializer(data=row) for row in rows[:50]]
+        for serializer in serializers_:
+            serializer.is_valid(raise_exception=True)
+        last = (
+            RecurringItem.objects.filter(owner=request.user)
+            .order_by("-position")
+            .values_list("position", flat=True)
+            .first()
+            or 0
+        )
+        with transaction.atomic():
+            items = [
+                _recurring_save(serializer, request.user, owner=request.user, position=last + n)
+                for n, serializer in enumerate(serializers_, start=1)
+            ]
+        data = RecurringItemSerializer(items, many=True).data
+        return Response(data if many else data[0], status=status.HTTP_201_CREATED)
+
+
+class RecurringSuggestionsView(APIView):
+    """Cosa proporre come ricorrente: gli alimenti dei pasti del piano
+    alimentare che la preparazione non prepara (colazione, merende)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: dict})
+    def get(self, request):
+        return Response(suggestions(request.user))
+
+
+class RecurringItemDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=RecurringItemSerializer, responses={200: RecurringItemSerializer})
+    def patch(self, request, item_id):
+        item = get_object_or_404(RecurringItem, pk=item_id, owner=request.user)
+        serializer = RecurringItemSerializer(item, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        _recurring_save(serializer, request.user)
+        return Response(serializer.data)
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, item_id):
+        get_object_or_404(RecurringItem, pk=item_id, owner=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
