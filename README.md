@@ -45,6 +45,10 @@ progettata in [docs/progettazione.md](docs/progettazione.md).
    ([ADR 0024](docs/decisions/0024-ricorrenti-della-spesa.md)). Chi vede il
    tuo piano vede anche le tue liste e la spesa la fate insieme: spunta,
    aggiunge, ricalcola ([ADR 0025](docs/decisions/0025-spesa-condivisa.md)).
+   Con **Manda a Scontrino** (nello stesso dialog) tutto il cibo del piano va
+   nella lista della casa su [Scontrino](https://scontr.inoo.it), insieme alle
+   cose per la casa, e si aggiorna da solo quando cambi i pasti
+   ([ADR 0026](docs/decisions/0026-cibo-del-piano-a-scontrino.md)).
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
 Tailwind con token Material 3, tutto in Docker Compose
@@ -178,6 +182,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/recipes/{id}/save` | una ricetta di un ricettario PDF, del piano o di "cosa cucino oggi" entra nel proprio ricettario |
 | `GET/POST /api/plans` · `GET /api/plans/current` · `GET/DELETE /api/plans/{id}` | preparazione ([ADR 0007](docs/decisions/0007-piano-alimentare.md), [0023](docs/decisions/0023-piano-e-preparazione-per-ingredienti.md)): si genera una settimana alla volta; `nutritionist_plan` obbligatorio |
 | `POST /api/plans/{id}/activate` · `regenerate` · `retry` · `PATCH …/meals/{meal_id}` | attiva, rifai, riprendi, cambia un pasto. Ogni pasto ha `components` (alimenti a persona), `suggestions` (ricette suggerite o idee), `portion`; `recipe_id` approva una ricetta per tutto il piatto; `components` cambia gli alimenti di tutto il piatto (toglie suggerimenti e ricetta se cambia un nome, rifiuta allergie e alimenti da evitare) |
+| `POST /api/plans/{id}/scontrino` `{new_list?}` | manda il cibo del piano alla lista di Scontrino con un token d'app di cornhub; 409 `not_linked` se l'utente non ha mai aperto Scontrino ([ADR 0026](docs/decisions/0026-cibo-del-piano-a-scontrino.md)) |
 | `GET /api/plans/{id}/meals/{meal_id}/swaps` | per ogni alimento del pasto gli equivalenti delle sostituzioni del piano, con la grammatura in proporzione |
 | `POST /api/plans/{id}/meals/{meal_id}/suggestions/{index}/write` | scrive per intero un'idea suggerita (job `meal_recipe`), che prende il posto dell'idea |
 | `POST /api/plans/{id}/meals/{meal_id}/ideas` `{hint}` | due ricette nuove per quel pasto, scritte dall'AI in un job, da scegliere con il PATCH |

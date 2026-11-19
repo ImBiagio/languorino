@@ -583,6 +583,25 @@ export interface MealPlan {
   error: string
   created_at: string
   finished_at: string | null
+  /** Il cibo del piano nella lista di casa su Scontrino (ADR 0026). */
+  scontrino: PlanScontrino
+}
+
+export interface PlanScontrino {
+  enabled: boolean
+  app_url: string
+  /** Ultimo invio: da allora ogni cambio di pasti si rimanda da solo. */
+  sent_at: string | null
+  list_title: string
+  list_url: string
+}
+
+export interface ScontrinoPush {
+  list: { id: UUID; title: string; url: string }
+  added: number
+  removed: number
+  kept_edited: number
+  sent_at: string
 }
 
 export interface MealPlanDetail extends MealPlan {

@@ -13,6 +13,7 @@ import {
   useDeleteShoppingList,
   useRecurringItems,
   useRegenerateShoppingList,
+  useSendPlanToScontrino,
   useShoppingList,
   useShoppingLists,
   useUpdateShoppingItem,
@@ -31,6 +32,7 @@ import {
   Skeleton,
   Switch,
 } from '../../components/ui'
+import { ApiError } from '../../lib/api'
 import { gettext, interpolate, intlLocale, ngettext } from '../../lib/i18n'
 import type { Category, MealPlan, ShoppingItem, ShoppingListDetail } from '../../lib/types'
 import { addDays, formatRange, todayIso } from '../plans/dates'
@@ -198,6 +200,7 @@ export function MakeShoppingDialog({ plan, onClose }: { plan: MealPlan; onClose:
   return (
     <Modal open onClose={onClose} title={gettext('Per quali giorni fai la spesa?')}>
       <div className="grid gap-2">
+        {plan.scontrino?.enabled && <ScontrinoOption plan={plan} />}
         {options.map((option) => {
           const to = option.days ? addDays(from, option.days - 1) : plan.end_date
           return (
@@ -251,6 +254,78 @@ export function MakeShoppingDialog({ plan, onClose }: { plan: MealPlan; onClose:
         <ErrorBanner error={create.error} />
       </div>
     </Modal>
+  )
+}
+
+/** La spesa di casa su Scontrino (ADR 0026): tutto il cibo del piano va nella
+ * lista della casa, insieme alle cose per la casa e ai ricorrenti. Dopo il
+ * primo invio ogni cambio di pasti si rimanda da solo. */
+function ScontrinoOption({ plan }: { plan: MealPlan }) {
+  const send = useSendPlanToScontrino()
+  const info = plan.scontrino
+  const result = send.data
+  const title = result?.list.title ?? info.list_title
+  const url = result?.list.url ?? info.list_url
+  const sent = Boolean(result ?? info.sent_at)
+  const notLinked =
+    send.error instanceof ApiError &&
+    (send.error.data as { code?: string } | null)?.code === 'not_linked'
+  return (
+    <section className="mb-2 grid gap-3 rounded-card bg-secondary-container p-4 text-on-secondary-container">
+      <div className="flex items-start gap-3">
+        <Icon name="receipt_long" size={22} />
+        <span className="min-w-0 flex-1">
+          <span className="block text-body-large font-medium">
+            {gettext('Manda a Scontrino')}
+          </span>
+          <span className="block text-body-small opacity-90">
+            {sent && title
+              ? interpolate(
+                  gettext('Il cibo del piano è in «%s» e si aggiorna da solo quando cambi i pasti.'),
+                  [title],
+                )
+              : gettext(
+                  'Tutto il cibo del piano nella lista di casa, con le cose per la casa e i ricorrenti di Scontrino.',
+                )}
+          </span>
+          {result && (
+            <span className="mt-1 block text-body-small font-medium">
+              {interpolate(
+                ngettext('%s voce nella lista', '%s voci nella lista', result.added),
+                [result.added],
+              )}
+            </span>
+          )}
+        </span>
+      </div>
+      {notLinked ? (
+        <p className="text-body-small">
+          {gettext('Apri Scontrino una volta con il tuo account, poi riprova.')}{' '}
+          <a href={info.app_url} target="_blank" rel="noreferrer" className="font-medium underline">
+            {gettext('Apri Scontrino')}
+          </a>
+        </p>
+      ) : (
+        <ErrorBanner error={send.error} />
+      )}
+      <div className="flex flex-wrap justify-end gap-2">
+        {url && (
+          <a href={url} target="_blank" rel="noreferrer" className="btn-text btn-sm">
+            <Icon name="open_in_new" size={18} />
+            {gettext('Apri la lista')}
+          </a>
+        )}
+        <button
+          type="button"
+          className="btn-filled btn-sm"
+          disabled={send.isPending}
+          onClick={() => send.mutate(plan.id)}
+        >
+          <Icon name={sent ? 'sync' : 'send'} size={18} />
+          {sent ? gettext('Rimanda ora') : gettext('Manda')}
+        </button>
+      </div>
+    </section>
   )
 }
 

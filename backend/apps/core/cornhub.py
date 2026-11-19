@@ -188,6 +188,46 @@ def user_status(sub: str) -> dict:
     return data
 
 
+# ------------------------------------------------------------------ fra app
+
+
+class AppLinkError(Exception):
+    """L'altra app non si puo' chiamare. ``code``: not_linked (l'utente non
+    l'ha mai aperta), denied (coppia non ammessa su cornhub), unavailable
+    (cornhub giu': riprovare), disabled (app senza CORNHUB_APP_TOKEN)."""
+
+    def __init__(self, message: str, code: str = "error"):
+        super().__init__(message)
+        self.message = message
+        self.code = code
+
+
+def app_token(audience: str, scope: str, *, user) -> str:
+    """Token per chiamare l'app ``audience`` a nome di ``user`` (ADR 0004 di
+    scontrino): lo firma cornhub, solo per le coppie ammesse e se l'utente
+    le ha aperte tutte e due. Vive 5 minuti: si chiede a ogni invio."""
+    sub = _sub(user)
+    if not is_enabled() or sub is None:
+        raise AppLinkError("cornhub non e' configurato (CORNHUB_APP_TOKEN).", "disabled")
+    try:
+        response = httpx.post(
+            _internal("/internal/apps/token"),
+            json={"audience": audience, "user": sub, "scope": scope},
+            headers=_headers(),
+            timeout=10,
+        )
+    except httpx.HTTPError as exc:
+        raise AppLinkError("cornhub non risponde: riprova tra poco.", "unavailable") from exc
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = {}
+    if response.status_code == 200 and payload.get("token"):
+        return payload["token"]
+    code = payload.get("code") or ("unavailable" if response.status_code >= 500 else "denied")
+    raise AppLinkError(payload.get("detail") or f"errore {response.status_code}", code)
+
+
 # ------------------------------------------------------------------------ AI
 
 

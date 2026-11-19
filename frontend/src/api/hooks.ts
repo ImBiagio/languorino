@@ -46,6 +46,7 @@ import type {
   RecurringItem,
   RecurringPayload,
   RecurringSuggestions,
+  ScontrinoPush,
   ShoppingItem,
   ShoppingList,
   ShoppingListDetail,
@@ -591,6 +592,16 @@ export function useRegeneratePlan() {
 
 export function useRetryPlan() {
   return usePlanMutation((id: UUID) => api.post<MealPlanDetail>(`/api/plans/${id}/retry`))
+}
+
+/** Manda il cibo del piano a Scontrino (ADR 0026); il piano si ricarica per
+ * mostrare dove e' finito. */
+export function useSendPlanToScontrino() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: UUID) => api.post<ScontrinoPush>(`/api/plans/${id}/scontrino`, {}),
+    onSuccess: (_data, id) => void client.invalidateQueries({ queryKey: keys.plan(id) }),
+  })
 }
 
 export function useDeletePlan() {

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-19 11:54+0100\n"
+"POT-Creation-Date: 2026-11-19 15:35+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -154,11 +154,11 @@ msgstr "Queued"
 msgid "In lavorazione"
 msgstr "In progress"
 
-#: apps/jobs/models.py:35 apps/plans/models.py:135
+#: apps/jobs/models.py:35 apps/plans/models.py:142
 msgid "Da rivedere"
 msgstr "To review"
 
-#: apps/jobs/models.py:36 apps/plans/models.py:136
+#: apps/jobs/models.py:36 apps/plans/models.py:143
 msgid "Confermato"
 msgstr "Confirmed"
 
@@ -196,8 +196,8 @@ msgid "Lavoro sconosciuto."
 msgstr "Unknown job."
 
 #: apps/jobs/views.py:83 apps/kitchen/views.py:45 apps/plans/views.py:93
-#: apps/plans/views.py:362 apps/plans/views.py:421 apps/plans/views.py:451
-#: apps/plans/views.py:530 apps/plans/views.py:561 apps/plans/views.py:598
+#: apps/plans/views.py:407 apps/plans/views.py:466 apps/plans/views.py:496
+#: apps/plans/views.py:575 apps/plans/views.py:606 apps/plans/views.py:643
 #: apps/profiles/live.py:156 apps/profiles/views.py:131
 #: apps/profiles/views.py:182 apps/recipes/views.py:233
 #: apps/recipes/views.py:344 apps/recipes/views.py:448
@@ -296,11 +296,11 @@ msgstr "Archived"
 msgid "Interrotto"
 msgstr "Stopped"
 
-#: apps/plans/models.py:139
+#: apps/plans/models.py:146
 msgid "Dal nutrizionista"
 msgstr "From the nutritionist"
 
-#: apps/plans/models.py:140
+#: apps/plans/models.py:147
 msgid "Dalle linee guida"
 msgstr "From the guidelines"
 
@@ -336,44 +336,47 @@ msgstr "From 1 to 50 servings."
 msgid "Non si può cucinare dopo averlo mangiato."
 msgstr "You can't cook it after eating it."
 
-#: apps/plans/serializers.py:296
+#: apps/plans/serializers.py:312
 msgid "Dai un nome al piano."
 msgstr "Give the plan a name."
 
-#: apps/plans/serializers.py:303
+#: apps/plans/serializers.py:319
 msgid "Regole non valide."
 msgstr "Invalid rules."
 
-#: apps/plans/serializers.py:310
+#: apps/plans/serializers.py:326
 msgid "La fine viene prima dell'inizio."
 msgstr "The end comes before the start."
 
-#: apps/plans/sharing.py:32
+#: apps/plans/sharing.py:33
 msgid "Il piano è già tuo."
 msgstr "The plan is already yours."
 
-#: apps/plans/sharing.py:36
+#: apps/plans/sharing.py:37
 msgid "Nessun account Languorino con questa email: prima deve registrarsi."
 msgstr "No Languorino account with this email: they need to sign up first."
 
-#: apps/plans/sharing.py:49
+#: apps/plans/sharing.py:50
 #, python-format
 msgid "%(name)s ti fa vedere il suo piano"
 msgstr "%(name)s is sharing their plan with you"
 
-#: apps/plans/sharing.py:52
+#: apps/plans/sharing.py:53
 #, python-format
 msgid ""
-"%(name)s ha condiviso con te il suo piano alimentare su %(app)s: lo vedi "
-"così com'è, senza poterlo cambiare. Le sue liste della spesa invece le fate "
+"%(name)s ha condiviso con te il suo piano alimentare su %(app)s: lo vedi così"
+" com'è, senza poterlo cambiare. Le sue liste della spesa invece le fate "
 "insieme: le trovi in Spesa."
-msgstr "%(name)s shared their meal plan with you on %(app)s: you see it as it is, without being able to change it. Their shopping lists, though, you share: you'll find them in Shopping."
+msgstr ""
+"%(name)s shared their meal plan with you on %(app)s: you see it as it is, "
+"without being able to change it. Their shopping lists, though, you share: "
+"you'll find them in Shopping."
 
-#: apps/plans/sharing.py:57
+#: apps/plans/sharing.py:58
 msgid "Guarda il piano"
 msgstr "View the plan"
 
-#: apps/plans/sharing.py:59
+#: apps/plans/sharing.py:60
 msgid "Il tuo piano resta tuo: puoi crearne uno quando vuoi."
 msgstr "Your plan stays yours: you can create one whenever you like."
 
@@ -393,44 +396,44 @@ msgstr "The recipe I wrote wasn't right for you. Try again."
 msgid "Questa settimana ci sta mettendo troppo. Riprova."
 msgstr "This week is taking too long. Try again."
 
-#: apps/plans/views.py:160
+#: apps/plans/views.py:169 apps/plans/views.py:217
 msgid "Il piano non è pronto."
 msgstr "The plan isn't ready."
 
-#: apps/plans/views.py:181
+#: apps/plans/views.py:190
 msgid "Si rifà solo una bozza o un piano interrotto."
 msgstr "Only a draft or a stopped plan can be redone."
 
-#: apps/plans/views.py:204
+#: apps/plans/views.py:249
 msgid "Si può riprendere solo un piano interrotto."
 msgstr "Only a stopped plan can be resumed."
 
-#: apps/plans/views.py:235
+#: apps/plans/views.py:280
 msgid "Questo pasto non è fatto di alimenti."
 msgstr "This meal isn't made of foods."
 
-#: apps/plans/views.py:241
+#: apps/plans/views.py:286
 msgid "Serve almeno un alimento."
 msgstr "Add at least one food."
 
-#: apps/plans/views.py:250
+#: apps/plans/views.py:295
 #, python-format
 msgid "Non puoi mangiarlo: %(foods)s."
 msgstr "You can't eat it: %(foods)s."
 
-#: apps/plans/views.py:308
+#: apps/plans/views.py:353
 msgid "Pasto libero."
 msgstr "Free meal."
 
-#: apps/plans/views.py:508
+#: apps/plans/views.py:553
 msgid "Serve almeno un pasto con le sue opzioni."
 msgstr "At least one meal with its options is needed."
 
-#: apps/plans/views.py:535
+#: apps/plans/views.py:580
 msgid "I file di questo piano non ci sono più: caricalo di nuovo."
 msgstr "This plan's files are gone: upload it again."
 
-#: apps/plans/views.py:605
+#: apps/plans/views.py:650
 msgid "Scrivi una domanda."
 msgstr "Write a question."
 
@@ -908,6 +911,31 @@ msgstr "I'm already working on it."
 #: apps/shopping/models.py:21
 msgid "Fatta"
 msgstr "Done"
+
+#: apps/shopping/scontrino.py:73
+#, python-format
+#| msgid "Spesa dal %(start)s al %(end)s"
+msgid "Piano dal %(start)s al %(end)s"
+msgstr "Plan from %(start)s to %(end)s"
+
+#: apps/shopping/scontrino.py:98
+#| msgid "Il piano non è pronto."
+msgid "Scontrino non è collegato."
+msgstr "Scontrino isn't connected."
+
+#: apps/shopping/scontrino.py:104 apps/shopping/scontrino.py:121
+msgid "Apri Scontrino una volta con il tuo account, poi riprova."
+msgstr "Open Scontrino once with your account, then try again."
+
+#: apps/shopping/scontrino.py:108 apps/shopping/scontrino.py:118
+#: apps/shopping/scontrino.py:124
+#| msgid "Qualcosa è andato storto. Riprova tra poco."
+msgid "Scontrino non risponde: riprova tra poco."
+msgstr "Scontrino isn't responding: try again shortly."
+
+#: apps/shopping/scontrino.py:127
+msgid "Scontrino ha rifiutato la richiesta."
+msgstr "Scontrino refused the request."
 
 #: apps/shopping/serializers.py:33
 msgid "Scrivi cosa comprare."
