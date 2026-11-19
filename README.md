@@ -42,7 +42,9 @@ progettata in [docs/progettazione.md](docs/progettazione.md).
    che compri sempre, anche se non sono nei pasti preparati: la colazione tolta
    dal piano, le merende, il caffè. Te le propongo dal piano alimentare, con le
    grammature e le volte a settimana, e le aggiungo a ogni lista
-   ([ADR 0024](docs/decisions/0024-ricorrenti-della-spesa.md)).
+   ([ADR 0024](docs/decisions/0024-ricorrenti-della-spesa.md)). Chi vede il
+   tuo piano vede anche le tue liste e la spesa la fate insieme: spunta,
+   aggiunge, ricalcola ([ADR 0025](docs/decisions/0025-spesa-condivisa.md)).
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
 Tailwind con token Material 3, tutto in Docker Compose
@@ -183,7 +185,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/nutritionist-plans/guidelines` | piano alimentare dalle linee guida CREA/OMS e dal profilo (job `guidelines_plan`), da rivedere come l'altro ([ADR 0023](docs/decisions/0023-piano-e-preparazione-per-ingredienti.md)) |
 | `GET/POST /api/plan-shares` `{email}` · `DELETE …/{id}` · `GET …/{id}/plan` · `GET …/{id}/recipes/{recipe_id}` | piano fatto vedere a un altro account, in sola lettura ([ADR 0019](docs/decisions/0019-piano-condiviso-in-sola-lettura.md)) |
 | `POST /api/ask` `{messages}` | una domanda alla chat "Chiedi a Languorino": job con la risposta da profilo, piano e piano del nutrizionista ([ADR 0016](docs/decisions/0016-chiedi-a-languorino.md)) |
-| `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)) |
+| `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)), anche quelle di chi ti fa vedere il piano con `shared_by` ([ADR 0025](docs/decisions/0025-spesa-condivisa.md)) |
 | `POST /api/shopping/{id}/items` · `PATCH/DELETE …/items/{item_id}` | voci a mano, spunta, "ce l'ho già", modifica |
 | `GET/POST /api/shopping/recurring` · `PATCH/DELETE …/{id}` · `GET …/suggestions` | ricorrenti della spesa e suggerimenti dai pasti non preparati ([ADR 0024](docs/decisions/0024-ricorrenti-della-spesa.md)) |
 | `POST /api/cook-today/scan` (multipart `files`) | foto del frigo → job con gli alimenti riconosciuti ([ADR 0009](docs/decisions/0009-cosa-cucino-oggi.md)) |

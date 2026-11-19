@@ -146,6 +146,11 @@ export function ShoppingHomePage() {
                 >
                   <Icon name="task_alt" size={22} className="text-success" />
                   <span className="min-w-0 flex-1 truncate text-body-large">{list.title}</span>
+                  {list.shared_by && (
+                    <span className="shrink-0 text-body-small text-on-surface-variant">
+                      {interpolate(gettext('di %s'), [list.shared_by])}
+                    </span>
+                  )}
                   <Icon name="chevron_right" size={22} />
                 </Link>
               </li>
@@ -293,6 +298,12 @@ function ShoppingView({ list }: { list: ShoppingListDetail }) {
               {done ? gettext('Spesa fatta') : gettext('Lista della spesa')}
             </p>
             <h1 className="truncate text-[24px] font-medium leading-8">{list.title}</h1>
+            {list.shared_by && (
+              <p className="mt-0.5 flex items-center gap-1 text-body-small opacity-90">
+                <Icon name="group" size={16} />
+                {interpolate(gettext('Lista di %s, la fate insieme'), [list.shared_by])}
+              </p>
+            )}
             <p className="mt-1 text-body-small opacity-90">
               {interpolate(gettext('%s di %s nel carrello'), [list.checked_count, list.item_count])}
             </p>
@@ -317,36 +328,43 @@ function ShoppingView({ list }: { list: ShoppingListDetail }) {
                 onClick={() => regenerate.mutate(list.id)}
               />
             )}
-            <IconButton
-              icon="delete"
-              size="md"
-              inheritColor
-              label={gettext('Elimina la lista')}
-              onClick={async () => {
-                const ok = await confirm({
-                  title: gettext('Eliminare la lista?'),
-                  confirmLabel: gettext('Elimina'),
-                  icon: 'delete',
-                  destructive: true,
-                })
-                if (!ok) return
-                await remove.mutateAsync(list.id)
-                navigate('/spesa', { replace: true })
-              }}
-            />
+            {/* Eliminare resta di chi ha fatto la lista. */}
+            {!list.shared_by && (
+              <IconButton
+                icon="delete"
+                size="md"
+                inheritColor
+                label={gettext('Elimina la lista')}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: gettext('Eliminare la lista?'),
+                    confirmLabel: gettext('Elimina'),
+                    icon: 'delete',
+                    destructive: true,
+                  })
+                  if (!ok) return
+                  await remove.mutateAsync(list.id)
+                  navigate('/spesa', { replace: true })
+                }}
+              />
+            )}
           </div>
         </div>
       </header>
       <ErrorBanner error={update.error ?? regenerate.error ?? remove.error} />
 
+      <OtherOpenLists current={list.id} />
       <AddItem listId={list.id} />
 
       <div className="mt-3 flex items-center gap-3 rounded-card bg-surface-container-low px-4 py-2">
         <Icon name="event_repeat" size={22} className="text-on-surface-variant" />
         <span className="min-w-0 flex-1 text-body-large">{gettext('Ricorrenti')}</span>
-        <Link to="/spesa/ricorrenti" className="btn-text">
-          {gettext('Scegli')}
-        </Link>
+        {/* I ricorrenti sono di chi ha fatto la lista: li sceglie lui. */}
+        {!list.shared_by && (
+          <Link to="/spesa/ricorrenti" className="btn-text">
+            {gettext('Scegli')}
+          </Link>
+        )}
         <Switch
           checked={list.include_recurring}
           disabled={update.isPending}
@@ -417,6 +435,32 @@ function ShoppingView({ list }: { list: ShoppingListDetail }) {
         )}
       </div>
     </Page>
+  )
+}
+
+/** Le altre liste aperte: con la spesa condivisa (ADR 0025) può esserci la
+ * mia e quella di chi mi fa vedere il piano, e la home apre solo la più nuova. */
+function OtherOpenLists({ current }: { current: string }) {
+  const { data: lists } = useShoppingLists()
+  const others = (lists ?? []).filter((list) => list.status === 'open' && list.id !== current)
+  if (!others.length) return null
+  return (
+    <nav
+      className="mb-3 flex flex-wrap items-center gap-2"
+      aria-label={gettext('Altre liste aperte')}
+    >
+      <span className="text-body-medium text-on-surface-variant">
+        {gettext('Altre liste aperte:')}
+      </span>
+      {others.map((list) => (
+        <Link key={list.id} to={`/spesa/${list.id}`} className="btn-tonal">
+          <Icon name={list.shared_by ? 'group' : 'shopping_cart'} size={18} />
+          {list.shared_by
+            ? interpolate(gettext('%s (di %s)'), [list.title, list.shared_by])
+            : list.title}
+        </Link>
+      ))}
+    </nav>
   )
 }
 

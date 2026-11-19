@@ -1,6 +1,7 @@
 // Piano fatto vedere a un altro account, in sola lettura (ADR 0019): chi
 // condivide sceglie con chi dall'email; chi riceve guarda il piano di oggi
-// dell'altro e le sue ricette, e il suo piano se lo crea da sé.
+// dell'altro e le sue ricette, e il suo piano se lo crea da sé. Le liste
+// della spesa invece si fanno insieme (ADR 0025): stanno nella pagina Spesa.
 
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -48,7 +49,7 @@ export function SharePlanDialog({ open, onClose }: { open: boolean; onClose: () 
       <div className="grid gap-4">
         <p className="text-body-medium text-on-surface-variant">
           {gettext(
-            'Chi scegli vede il tuo piano di oggi e le sue ricette, sempre aggiornato, ma non può cambiarlo. Gli arriva una mail. Serve che abbia un account.',
+            'Chi scegli vede il tuo piano di oggi e le sue ricette, sempre aggiornato, ma non può cambiarlo. Le tue liste della spesa invece le fate insieme: le vede in Spesa, spunta e aggiunge. Gli arriva una mail. Serve che abbia un account.',
           )}
         </p>
         <form
