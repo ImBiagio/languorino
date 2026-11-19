@@ -38,7 +38,11 @@ progettata in [docs/progettazione.md](docs/progettazione.md).
    ![Cosa cucini: un piatto per la cena e il pranzo dopo](docs/media/preparazione-cosa-cucini.jpg)
 
 5. **Spesa**: dagli alimenti del piano e, per le ricette approvate, i loro
-   ingredienti in più.
+   ingredienti in più. In **Ricorrenti** (`/spesa/ricorrenti`) scegli le cose
+   che compri sempre, anche se non sono nei pasti preparati: la colazione tolta
+   dal piano, le merende, il caffè. Te le propongo dal piano alimentare, con le
+   grammature e le volte a settimana, e le aggiungo a ogni lista
+   ([ADR 0024](docs/decisions/0024-ricorrenti-della-spesa.md)).
 
 Stack: Django + DRF + Postgres + Celery/Redis + React (Vite, TypeScript) +
 Tailwind con token Material 3, tutto in Docker Compose
@@ -132,7 +136,7 @@ backend/
     ├── plans/           preparazione: calendario del prep (schedule.py), settimane per ingredienti (generation.py), ricette suggerite (suggestions.py),
     │                    piano alimentare letto da PDF/foto (nutritionist.py) o dalle linee guida (guidelines.py), chat su profilo e piano (ask.py), piano condiviso in sola lettura (sharing.py)
     ├── community/       ricette pubbliche: profili /u/<handle> (profiles.py), voti, commenti con foto (ADR 0017)
-    ├── shopping/        lista della spesa: somme e conversioni dal piano (aggregate.py), ricalcolo
+    ├── shopping/        lista della spesa: somme e conversioni dal piano (aggregate.py), ricalcolo, ricorrenti suggeriti dal piano alimentare (recurring.py)
     └── kitchen/         cosa cucino oggi: foto del frigo, ricette che si possono fare, idee nuove (cook_today.py), pulizia delle idee mai salvate
 frontend/src/
 ├── api/hooks.ts         hook TanStack Query, una sezione per area
@@ -181,6 +185,7 @@ docs/decisions/          ADR (modello in 0000-modello.md)
 | `POST /api/ask` `{messages}` | una domanda alla chat "Chiedi a Languorino": job con la risposta da profilo, piano e piano del nutrizionista ([ADR 0016](docs/decisions/0016-chiedi-a-languorino.md)) |
 | `GET/POST /api/shopping` · `GET/PATCH/DELETE …/{id}` · `POST …/{id}/regenerate` | liste della spesa dal piano o a mano ([ADR 0008](docs/decisions/0008-lista-della-spesa.md)) |
 | `POST /api/shopping/{id}/items` · `PATCH/DELETE …/items/{item_id}` | voci a mano, spunta, "ce l'ho già", modifica |
+| `GET/POST /api/shopping/recurring` · `PATCH/DELETE …/{id}` · `GET …/suggestions` | ricorrenti della spesa e suggerimenti dai pasti non preparati ([ADR 0024](docs/decisions/0024-ricorrenti-della-spesa.md)) |
 | `POST /api/cook-today/scan` (multipart `files`) | foto del frigo → job con gli alimenti riconosciuti ([ADR 0009](docs/decisions/0009-cosa-cucino-oggi.md)) |
 | `POST /api/cook-today/suggest` | ricette che si possono fare con quegli ingredienti e job con due idee nuove |
 | `GET /api/i18n/catalog` · `POST /api/i18n/language` | traduzioni del frontend e lingua scelta |

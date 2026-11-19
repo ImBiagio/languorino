@@ -617,7 +617,8 @@ export interface ShoppingItem {
   in_pantry: boolean
   manual: boolean
   edited: boolean
-  sources: { date: string; slot: MealSlot; recipe: string }[]
+  /** Da quali pasti viene; `recurring` per i ricorrenti (senza giorno). */
+  sources: { date: string | null; slot: MealSlot | ''; recipe: string; recurring?: boolean }[]
 }
 
 export interface ShoppingList {
@@ -627,6 +628,8 @@ export interface ShoppingList {
   date_from: string | null
   date_to: string | null
   status: 'open' | 'done'
+  /** Aggiunge i ricorrenti attivi per i giorni della lista. */
+  include_recurring: boolean
   /** Voci da comprare (senza quelle "ce l'ho gia'"). */
   item_count: number
   checked_count: number
@@ -635,6 +638,34 @@ export interface ShoppingList {
 
 export interface ShoppingListDetail extends ShoppingList {
   items: ShoppingItem[]
+}
+
+/** Una cosa che si compra sempre (ADR 0024): quantita' per volta, per la casa. */
+export interface RecurringItem {
+  id: number
+  label: string
+  quantity: string | null
+  unit: Unit | ''
+  times_per_week: number
+  slot: MealSlot | ''
+  active: boolean
+}
+
+export type RecurringPayload = Omit<RecurringItem, 'id'>
+
+/** Un ricorrente proposto dal piano alimentare (colazione, merende...). */
+export interface RecurringSuggestion extends Omit<RecurringItem, 'id' | 'active' | 'slot'> {
+  key: string
+  slot: MealSlot
+  /** L'opzione del piano da cui viene. */
+  option: string
+  /** C'e' gia' fra i ricorrenti. */
+  saved: boolean
+}
+
+export interface RecurringSuggestions {
+  plan: { id: UUID; title: string } | null
+  items: RecurringSuggestion[]
 }
 
 /* -------------------------------------------------------- cosa cucino oggi -- */

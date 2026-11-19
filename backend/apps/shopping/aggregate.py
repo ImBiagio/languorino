@@ -119,8 +119,12 @@ def _label(meal: PlannedMeal, titles: dict[str, str]) -> str:
     return str(MealSlot(meal.slot).label)
 
 
-def build_items(meals: list[PlannedMeal]) -> list[dict]:
-    """Le voci della spesa per questi pasti, in ordine di reparto e di nome."""
+def build_items(meals: list[PlannedMeal], extras: list[tuple] = ()) -> list[dict]:
+    """Le voci della spesa per questi pasti, in ordine di reparto e di nome.
+
+    ``extras`` sono righe gia' pronte ``(ingrediente, quantita', unita', fonte)``
+    che si sommano a quelle dei pasti: i ricorrenti (ADR 0024), cosi' lo yogurt
+    della colazione e quello del piano fanno una voce sola."""
     from apps.recipes.services import resolve_ingredient
 
     lines: dict[tuple, Line] = {}
@@ -187,6 +191,8 @@ def build_items(meals: list[PlannedMeal]) -> list[dict]:
                 continue
             quantity = None if row.quantity is None else row.quantity * factor
             add(row.ingredient, quantity, row.unit, source)
+    for ingredient, quantity, unit, source in extras:
+        add(ingredient, quantity, unit, source)
 
     items = []
     for line in lines.values():

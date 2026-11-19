@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 15:04+0100\n"
+"POT-Creation-Date: 2026-11-19 09:19+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2618,6 +2618,91 @@ msgstr[1] "cans"
 msgid "q.b."
 msgstr "to taste"
 
+msgid "ogni giorno"
+msgstr "every day"
+
+#, javascript-format
+msgid "%s volta a settimana"
+msgid_plural "%s volte a settimana"
+msgstr[0] "%s time a week"
+msgstr[1] "%s times a week"
+
+msgid "Da comprare sempre"
+msgstr "Always buy"
+
+msgid "Ricorrenti"
+msgstr "Recurring"
+
+msgid ""
+"Le cose che compri sempre, anche se non sono nei pasti preparati: la "
+"colazione, le merende, il caffè, il detersivo. Le aggiungo alla spesa per i "
+"giorni della lista, insieme a quello che serve per il piano."
+msgstr "The things you always buy, even if they are not in the prepared meals: breakfast, snacks, coffee, washing-up liquid. I add them to the shopping for the days of the list, together with what the plan needs."
+
+msgid "Aggiungi (es. caffè, detersivo)"
+msgstr "Add (e.g. coffee, washing-up liquid)"
+
+msgid "Nessun ricorrente"
+msgstr "No recurring items"
+
+msgid "Scrivine uno sopra o sceglili dal tuo piano alimentare qui sotto."
+msgstr "Write one above or pick them from your eating plan below."
+
+msgid "Togli dalla spesa"
+msgstr "Remove from shopping"
+
+msgid "Metti in spesa"
+msgstr "Add to shopping"
+
+msgid "Modifica il ricorrente"
+msgstr "Edit the recurring item"
+
+msgid "Cosa"
+msgstr "What"
+
+msgid "Quantità per volta"
+msgstr "Quantity each time"
+
+msgid "Facoltativa"
+msgstr "Optional"
+
+msgid ""
+"La quantità è per tutta la casa. Per una spesa di 3 giorni conto 3/7 delle "
+"volte, per due settimane il doppio."
+msgstr "The quantity is for the whole household. For 3 days of shopping I count 3/7 of the times, for two weeks twice as many."
+
+msgid "Dal tuo piano alimentare"
+msgstr "From your eating plan"
+
+msgid ""
+"Con un piano alimentare confermato ti propongo qui gli alimenti di colazione "
+"e merende."
+msgstr "With a confirmed eating plan I suggest here the foods for breakfast and snacks."
+
+msgid "Hai già aggiunto tutto quello che ti proponevo."
+msgstr "You have already added everything I suggested."
+
+msgid ""
+"I pasti del piano sono già tutti nella preparazione: la spesa li prende da "
+"lì."
+msgstr "All the plan's meals are already in the meal prep: the shopping takes them from there."
+
+#, javascript-format
+msgid ""
+"Da “%s”, i pasti che non prepari. Le volte a settimana dividono i 7 giorni "
+"fra le opzioni: dopo puoi cambiarle."
+msgstr "From “%s”, the meals you don't prepare. The times a week split the 7 days among the options: you can change them later."
+
+msgid "Nessuno"
+msgstr "None"
+
+msgid "Tutti"
+msgstr "All"
+
+#, javascript-format
+msgid "Aggiungi ai ricorrenti (%s)"
+msgstr "Add to recurring (%s)"
+
 msgid "Nessuna lista aperta"
 msgstr "No open list"
 
@@ -2648,6 +2733,18 @@ msgstr "Until the end of the plan"
 msgid "Per quali giorni fai la spesa?"
 msgstr "Which days are you shopping for?"
 
+msgid "Aggiungi i ricorrenti"
+msgstr "Add the recurring items"
+
+#, javascript-format
+msgid "%s cosa che compri sempre, per questi giorni"
+msgid_plural "%s cose che compri sempre, per questi giorni"
+msgstr[0] "%s thing you always buy, for these days"
+msgstr[1] "%s things you always buy, for these days"
+
+msgid "Scegli colazione, merende e cose che compri sempre"
+msgstr "Choose breakfast, snacks and things you always buy"
+
 msgid "Spesa fatta"
 msgstr "Shopping done"
 
@@ -2664,11 +2761,17 @@ msgstr "In the cart"
 msgid "Ricalcola dal piano"
 msgstr "Recalculate from the plan"
 
+msgid "Ricalcola i ricorrenti"
+msgstr "Recalculate the recurring items"
+
 msgid "Elimina la lista"
 msgstr "Delete the list"
 
 msgid "Eliminare la lista?"
 msgstr "Delete the list?"
+
+msgid "Scegli"
+msgstr "Choose"
 
 msgid "Niente da comprare"
 msgstr "Nothing to buy"
@@ -2691,9 +2794,6 @@ msgstr "Already have it"
 
 msgid "Modifica la voce"
 msgstr "Edit item"
-
-msgid "Cosa"
-msgstr "What"
 
 #, javascript-format
 msgid "Quantità (%s)"

@@ -11,6 +11,7 @@ import {
   useCurrentPlan,
   useDeleteShoppingItem,
   useDeleteShoppingList,
+  useRecurringItems,
   useRegenerateShoppingList,
   useShoppingList,
   useShoppingLists,
@@ -28,6 +29,7 @@ import {
   Modal,
   Progress,
   Skeleton,
+  Switch,
 } from '../../components/ui'
 import { gettext, interpolate, intlLocale, ngettext } from '../../lib/i18n'
 import type { Category, MealPlan, ShoppingItem, ShoppingListDetail } from '../../lib/types'
@@ -91,9 +93,15 @@ export function ShoppingHomePage() {
 
   return (
     <Page className="px-5 pt-5 md:px-8 md:pt-8">
-      <h1 className="mb-4 text-[28px] font-medium leading-9 md:text-headline-small">
-        {gettext('Spesa')}
-      </h1>
+      <header className="mb-4 flex items-center gap-3">
+        <h1 className="flex-1 text-[28px] font-medium leading-9 md:text-headline-small">
+          {gettext('Spesa')}
+        </h1>
+        <Link to="/spesa/ricorrenti" className="btn-tonal">
+          <Icon name="event_repeat" size={20} />
+          {gettext('Ricorrenti')}
+        </Link>
+      </header>
       <EmptyState
         illustration={<EmptyPlateIllustration />}
         title={gettext('Nessuna lista aperta')}
@@ -157,6 +165,10 @@ export function ShoppingHomePage() {
 export function MakeShoppingDialog({ plan, onClose }: { plan: MealPlan; onClose: () => void }) {
   const navigate = useNavigate()
   const create = useCreateShoppingList()
+  const { data: recurring } = useRecurringItems()
+  const active = recurring?.filter((item) => item.active).length ?? 0
+  // Si', se ce ne sono: chi li ha scelti li vuole in spesa.
+  const [withRecurring, setWithRecurring] = useState(true)
   const today = todayIso()
   const from = today > plan.start_date ? today : plan.start_date
   const options = [
@@ -171,6 +183,7 @@ export function MakeShoppingDialog({ plan, onClose }: { plan: MealPlan; onClose:
         plan: plan.id,
         date_from: from,
         date_to: to > plan.end_date ? plan.end_date : to,
+        include_recurring: active > 0 && withRecurring,
       })
       navigate(`/spesa/${list.id}`)
     } catch {
@@ -201,6 +214,35 @@ export function MakeShoppingDialog({ plan, onClose }: { plan: MealPlan; onClose:
             </button>
           )
         })}
+        <div className="mt-2 flex items-center gap-3 rounded-row px-2 py-2">
+          <Icon name="event_repeat" size={22} className="text-on-surface-variant" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-body-large">{gettext('Aggiungi i ricorrenti')}</span>
+            <span className="block text-body-small text-on-surface-variant">
+              {active ? (
+                interpolate(
+                  ngettext(
+                    '%s cosa che compri sempre, per questi giorni',
+                    '%s cose che compri sempre, per questi giorni',
+                    active,
+                  ),
+                  [active],
+                )
+              ) : (
+                <Link to="/spesa/ricorrenti" className="text-primary underline">
+                  {gettext('Scegli colazione, merende e cose che compri sempre')}
+                </Link>
+              )}
+            </span>
+          </span>
+          {active > 0 && (
+            <Switch
+              checked={withRecurring}
+              onChange={setWithRecurring}
+              label={gettext('Aggiungi i ricorrenti')}
+            />
+          )}
+        </div>
         <ErrorBanner error={create.error} />
       </div>
     </Modal>
@@ -263,12 +305,14 @@ function ShoppingView({ list }: { list: ShoppingListDetail }) {
             </div>
           </div>
           <div className="flex gap-1">
-            {list.plan && (
+            {(list.plan || list.include_recurring) && (
               <IconButton
                 icon="refresh"
                 size="md"
                 inheritColor
-                label={gettext('Ricalcola dal piano')}
+                label={
+                  list.plan ? gettext('Ricalcola dal piano') : gettext('Ricalcola i ricorrenti')
+                }
                 disabled={regenerate.isPending}
                 onClick={() => regenerate.mutate(list.id)}
               />
@@ -296,6 +340,20 @@ function ShoppingView({ list }: { list: ShoppingListDetail }) {
       <ErrorBanner error={update.error ?? regenerate.error ?? remove.error} />
 
       <AddItem listId={list.id} />
+
+      <div className="mt-3 flex items-center gap-3 rounded-card bg-surface-container-low px-4 py-2">
+        <Icon name="event_repeat" size={22} className="text-on-surface-variant" />
+        <span className="min-w-0 flex-1 text-body-large">{gettext('Ricorrenti')}</span>
+        <Link to="/spesa/ricorrenti" className="btn-text">
+          {gettext('Scegli')}
+        </Link>
+        <Switch
+          checked={list.include_recurring}
+          disabled={update.isPending}
+          label={gettext('Aggiungi i ricorrenti')}
+          onChange={(include_recurring) => update.mutate({ id: list.id, include_recurring })}
+        />
+      </div>
 
       {!toBuy.length && <EmptyState icon="shopping_basket" title={gettext('Niente da comprare')} />}
       <div className="mt-4 grid gap-3">
@@ -403,7 +461,8 @@ function ItemRow({ listId, item }: { listId: string; item: ShoppingItem }) {
   const remove = useDeleteShoppingItem(listId)
   const [editing, setEditing] = useState(false)
   const amount = formatAmount(item)
-  const recipes = [...new Set(item.sources.map((source) => source.recipe))]
+  const recipes = [...new Set(item.sources.map((source) => source.recipe).filter(Boolean))]
+  const recurring = item.sources.some((source) => source.recurring)
   return (
     <li className="flex items-center gap-2 py-1">
       <button
@@ -428,6 +487,13 @@ function ItemRow({ listId, item }: { listId: string; item: ShoppingItem }) {
               item.checked && 'text-on-surface-variant line-through',
             )}
           >
+            {recurring && (
+              <Icon
+                name="event_repeat"
+                size={16}
+                className="mr-1 align-[-2px] text-on-surface-variant"
+              />
+            )}
             {item.label}
           </span>
           {recipes.length > 0 && (
@@ -484,6 +550,7 @@ function EditItemDialog({
     item.quantity === null ? '' : String(Number(item.quantity)),
   )
   const [error, setError] = useState<unknown>(null)
+  const meals = item.sources.filter((source) => !source.recurring).length
   return (
     <Modal open onClose={onClose} title={gettext('Modifica la voce')}>
       <form
@@ -522,15 +589,11 @@ function EditItemDialog({
             onChange={(e) => setQuantity(e.target.value.replace(/[^\d.,]/g, ''))}
           />
         </label>
-        {item.sources.length > 0 && (
+        {meals > 0 && (
           <p className="text-body-small text-on-surface-variant">
             {interpolate(
-              ngettext(
-                'Serve per %s pasto del piano.',
-                'Serve per %s pasti del piano.',
-                item.sources.length,
-              ),
-              [item.sources.length],
+              ngettext('Serve per %s pasto del piano.', 'Serve per %s pasti del piano.', meals),
+              [meals],
             )}{' '}
             {gettext('Se la cambi, ricalcolando dal piano resta com’è.')}
           </p>

@@ -21,6 +21,7 @@ import { RecipeDetailPage } from './features/recipes/RecipeDetailPage'
 import { RecipeFormPage } from './features/recipes/RecipeFormPage'
 import { RecipesPage } from './features/recipes/RecipesPage'
 import { SharedRecipePage } from './features/recipes/Sharing'
+import { RecurringPage } from './features/shopping/RecurringPage'
 import { ShoppingHomePage, ShoppingPage } from './features/shopping/ShoppingPages'
 import { useProfile } from './api/hooks'
 import { useAuth } from './lib/auth'
@@ -104,6 +105,7 @@ export default function App() {
         />
         <Route path="piano/:planId" element={<PlanPage />} />
         <Route path="spesa" element={<ShoppingHomePage />} />
+        <Route path="spesa/ricorrenti" element={<RecurringPage />} />
         <Route path="spesa/:listId" element={<ShoppingPage />} />
         <Route path="ricette" element={<RecipesPage />} />
         <Route path="ricette/nuova" element={<RecipeFormPage />} />

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ShoppingItem, ShoppingList
+from .models import RecurringItem, ShoppingItem, ShoppingList
 
 
 class ShoppingItemInline(admin.TabularInline):
@@ -16,3 +16,11 @@ class ShoppingListAdmin(admin.ModelAdmin):
     list_filter = ["status"]
     search_fields = ["title", "owner__email"]
     inlines = [ShoppingItemInline]
+
+
+@admin.register(RecurringItem)
+class RecurringItemAdmin(admin.ModelAdmin):
+    list_display = ["label", "owner", "quantity", "unit", "times_per_week", "active"]
+    list_filter = ["active"]
+    search_fields = ["label", "owner__email"]
+    raw_id_fields = ["ingredient"]

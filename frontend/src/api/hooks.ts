@@ -43,6 +43,9 @@ import type {
   Visibility,
   PlanShares,
   SharedPlan,
+  RecurringItem,
+  RecurringPayload,
+  RecurringSuggestions,
   ShoppingItem,
   ShoppingList,
   ShoppingListDetail,
@@ -71,6 +74,8 @@ export const keys = {
   mealSwaps: (planId: UUID, mealId: number) => ['plans', 'swaps', planId, mealId] as const,
   shoppingLists: ['shopping'] as const,
   shoppingList: (id: UUID) => ['shopping', 'detail', id] as const,
+  recurring: ['shopping-recurring'] as const,
+  recurringSuggestions: ['shopping-recurring', 'suggestions'] as const,
   nutritionistPlans: ['nutritionist-plans'] as const,
   nutritionistPlan: (id: UUID) => ['nutritionist-plans', 'detail', id] as const,
 }
@@ -90,7 +95,8 @@ export function useAuthConfig() {
 export function useAiQuote(features: string[], fast = false, enabled = true) {
   return useQuery({
     queryKey: keys.aiQuote(features, fast),
-    queryFn: () => api.get<AiQuote>('/api/ai/quote', { features: features.join(','), fast: fast ? 1 : 0 }),
+    queryFn: () =>
+      api.get<AiQuote>('/api/ai/quote', { features: features.join(','), fast: fast ? 1 : 0 }),
     enabled: enabled && features.length > 0,
     staleTime: 60_000,
     retry: false,
@@ -663,8 +669,13 @@ function useListMutation<T>(fn: (arg: T) => Promise<ShoppingListDetail>) {
 
 export function useCreateShoppingList() {
   return useListMutation(
-    (body: { plan?: UUID; date_from?: string; date_to?: string; title?: string }) =>
-      api.post<ShoppingListDetail>('/api/shopping', body),
+    (body: {
+      plan?: UUID
+      date_from?: string
+      date_to?: string
+      title?: string
+      include_recurring?: boolean
+    }) => api.post<ShoppingListDetail>('/api/shopping', body),
   )
 }
 
@@ -676,8 +687,15 @@ export function useRegenerateShoppingList() {
 
 export function useUpdateShoppingList() {
   return useListMutation(
-    ({ id, ...body }: { id: UUID; title?: string; status?: 'open' | 'done' }) =>
-      api.patch<ShoppingListDetail>(`/api/shopping/${id}`, body),
+    ({
+      id,
+      ...body
+    }: {
+      id: UUID
+      title?: string
+      status?: 'open' | 'done'
+      include_recurring?: boolean
+    }) => api.patch<ShoppingListDetail>(`/api/shopping/${id}`, body),
   )
 }
 
@@ -691,6 +709,47 @@ export function useDeleteShoppingList() {
       void client.invalidateQueries({ queryKey: keys.shoppingLists, exact: true })
     },
   })
+}
+
+/* ------------------------------------------------- ricorrenti della spesa -- */
+
+export function useRecurringItems() {
+  return useQuery({
+    queryKey: keys.recurring,
+    queryFn: () => api.get<RecurringItem[]>('/api/shopping/recurring'),
+  })
+}
+
+export function useRecurringSuggestions() {
+  return useQuery({
+    queryKey: keys.recurringSuggestions,
+    queryFn: () => api.get<RecurringSuggestions>('/api/shopping/recurring/suggestions'),
+  })
+}
+
+/** Dopo ogni cambio: ricorrenti e suggerimenti ("gia' aggiunto") di nuovo. */
+function useRecurringMutation<T, R>(fn: (arg: T) => Promise<R>) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.recurring }),
+  })
+}
+
+export function useAddRecurringItems() {
+  return useRecurringMutation((rows: Partial<RecurringPayload>[]) =>
+    api.post<RecurringItem[]>('/api/shopping/recurring', rows),
+  )
+}
+
+export function useUpdateRecurringItem() {
+  return useRecurringMutation(({ id, ...body }: { id: number } & Partial<RecurringPayload>) =>
+    api.patch<RecurringItem>(`/api/shopping/recurring/${id}`, body),
+  )
+}
+
+export function useDeleteRecurringItem() {
+  return useRecurringMutation((id: number) => api.delete<void>(`/api/shopping/recurring/${id}`))
 }
 
 /** Aggiorna una voce nella cache della lista (e i contatori). */
@@ -1073,8 +1132,7 @@ export function useWriteSuggestion(planId: UUID) {
 export function useMealSwaps(planId: UUID, mealId: number, enabled = true) {
   return useQuery({
     queryKey: keys.mealSwaps(planId, mealId),
-    queryFn: () =>
-      api.get<{ swaps: MealSwap[][] }>(`/api/plans/${planId}/meals/${mealId}/swaps`),
+    queryFn: () => api.get<{ swaps: MealSwap[][] }>(`/api/plans/${planId}/meals/${mealId}/swaps`),
     enabled,
   })
 }
