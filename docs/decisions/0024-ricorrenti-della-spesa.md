@@ -28,8 +28,9 @@ medio Frutta fresca" → frutta fresca 150 g), le misure davanti ("1 tazza di
 latte" → latte, 1 tazza) e "a volontà". La quantità è moltiplicata per le
 persone di casa. Le volte a settimana dividono i 7 giorni fra le opzioni del
 pasto: con 3 colazioni diverse ognuna vale 2 volte, e un alimento presente in
-più opzioni somma le volte. L'utente spunta quali aggiungere e poi può
-cambiare tutto.
+più opzioni somma le volte. La spunta su un suggerimento lo aggiunge o lo
+toglie subito dai ricorrenti (c'è anche "aggiungi/togli tutti" per pasto), e
+ogni ricorrente si toglie con la sua X. Poi si può cambiare tutto.
 
 **Perché:** chi toglie la colazione dalla preparazione la mangia lo stesso e
 deve comprarla. Prima l'unico modo era scriverla a mano a ogni lista. Si è

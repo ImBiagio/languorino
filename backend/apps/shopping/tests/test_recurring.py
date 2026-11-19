@@ -88,6 +88,7 @@ def test_suggerimenti_solo_dei_pasti_non_preparati(user, api, prepared):
     assert items["caffè"]["quantity"] is None
     assert items["frutto"]["times_per_week"] == 7
     assert not items["frutto"]["saved"]
+    assert items["frutto"]["saved_id"] is None
 
 
 def test_configurare_e_spesa_con_i_ricorrenti(user, api, prepared):
@@ -107,7 +108,9 @@ def test_configurare_e_spesa_con_i_ricorrenti(user, api, prepared):
     ]
     # Gia' salvato: il suggerimento lo dice.
     suggested = client.get(f"{RECURRING}/suggestions").data["items"]
-    assert next(item for item in suggested if item["label"] == "yogurt greco")["saved"]
+    yogurt_hint = next(item for item in suggested if item["label"] == "yogurt greco")
+    assert yogurt_hint["saved"]
+    assert yogurt_hint["saved_id"] == created.data[0]["id"]
 
     body = {
         "plan": str(prepared.id),

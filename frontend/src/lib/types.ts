@@ -661,6 +661,8 @@ export interface RecurringSuggestion extends Omit<RecurringItem, 'id' | 'active'
   option: string
   /** C'e' gia' fra i ricorrenti. */
   saved: boolean
+  /** Il ricorrente gia' salvato con questo nome, per toglierlo da qui. */
+  saved_id: number | null
 }
 
 export interface RecurringSuggestions {

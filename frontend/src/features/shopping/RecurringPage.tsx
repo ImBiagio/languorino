@@ -27,13 +27,7 @@ import {
   Switch,
 } from '../../components/ui'
 import { gettext, interpolate, ngettext } from '../../lib/i18n'
-import type {
-  MealSlot,
-  RecurringItem,
-  RecurringPayload,
-  RecurringSuggestion,
-  Unit,
-} from '../../lib/types'
+import type { MealSlot, RecurringItem, RecurringSuggestion, Unit } from '../../lib/types'
 import { MEAL_OPTIONS } from '../profile/options'
 import { UNIT_OPTIONS, unitLabel } from '../recipes/options'
 import { formatAmount } from './ShoppingPages'
@@ -130,6 +124,7 @@ export function RecurringPage() {
 
 function RecurringRow({ item }: { item: RecurringItem }) {
   const update = useUpdateRecurringItem()
+  const remove = useDeleteRecurringItem()
   const [editing, setEditing] = useState(false)
   return (
     <li className="flex items-center gap-3 px-2 py-2">
@@ -153,6 +148,12 @@ function RecurringRow({ item }: { item: RecurringItem }) {
         </span>
       </button>
       <IconButton icon="edit" label={gettext('Modifica')} onClick={() => setEditing(true)} />
+      <IconButton
+        icon="close"
+        label={interpolate(gettext('Togli “%s” dai ricorrenti'), [item.label])}
+        disabled={remove.isPending}
+        onClick={() => remove.mutate(item.id)}
+      />
       {editing && <EditRecurringDialog item={item} onClose={() => setEditing(false)} />}
     </li>
   )
@@ -267,24 +268,50 @@ function EditRecurringDialog({ item, onClose }: { item: RecurringItem; onClose: 
   )
 }
 
-/** Gli alimenti di colazione e merende del piano alimentare, da scegliere. */
+/** Gli alimenti di colazione e merende del piano alimentare: la spunta li
+ * aggiunge o li toglie subito dai ricorrenti, senza un passo di conferma. */
 function Suggestions() {
   const { data } = useRecurringSuggestions()
   const add = useAddRecurringItems()
-  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const remove = useDeleteRecurringItem()
+  // Le righe in corso, perché la spunta non scatti due volte prima della risposta.
+  const [busy, setBusy] = useState<Set<string>>(new Set())
   const groups = useMemo(() => {
     const out = new Map<MealSlot, RecurringSuggestion[]>()
     for (const item of data?.items ?? []) {
-      if (!item.saved) out.set(item.slot, [...(out.get(item.slot) ?? []), item])
+      out.set(item.slot, [...(out.get(item.slot) ?? []), item])
     }
     return [...out.entries()]
   }, [data])
   if (!data) return null
-  const toggle = (key: string) => {
-    const next = new Set(picked)
-    if (next.has(key)) next.delete(key)
-    else next.add(key)
-    setPicked(next)
+
+  /** Mette (on) o toglie (off) dai ricorrenti un gruppo di suggerimenti. */
+  const apply = async (items: RecurringSuggestion[], on: boolean) => {
+    const todo = items.filter((item) => item.saved !== on && !busy.has(item.key))
+    if (!todo.length) return
+    const keys = todo.map((item) => item.key)
+    setBusy((current) => new Set([...current, ...keys]))
+    try {
+      if (on) {
+        await add.mutateAsync(
+          todo.map(({ label, quantity, unit, times_per_week, slot }) => ({
+            label,
+            quantity,
+            unit,
+            times_per_week,
+            slot,
+          })),
+        )
+      } else {
+        // Lo stesso alimento può stare in due pasti: un ricorrente si toglie una volta.
+        const ids = new Set(todo.map((item) => item.saved_id).filter((id) => id !== null))
+        await Promise.all([...ids].map((id) => remove.mutateAsync(id)))
+      }
+    } catch {
+      // Errore sotto.
+    } finally {
+      setBusy((current) => new Set([...current].filter((key) => !keys.includes(key))))
+    }
   }
 
   return (
@@ -298,25 +325,24 @@ function Suggestions() {
         </p>
       ) : !groups.length ? (
         <p className="text-body-medium text-on-surface-variant">
-          {data.items.length
-            ? gettext('Hai già aggiunto tutto quello che ti proponevo.')
-            : gettext(
-                'I pasti del piano sono già tutti nella preparazione: la spesa li prende da lì.',
-              )}
+          {gettext(
+            'I pasti del piano sono già tutti nella preparazione: la spesa li prende da lì.',
+          )}
         </p>
       ) : (
         <>
           <p className="mb-3 text-body-medium text-on-surface-variant">
             {interpolate(
               gettext(
-                'Da “%s”, i pasti che non prepari. Le volte a settimana dividono i 7 giorni fra le opzioni: dopo puoi cambiarle.',
+                'Da “%s”, i pasti che non prepari. Spunta per aggiungere ai ricorrenti, togli la spunta per levarlo. Le volte a settimana dividono i 7 giorni fra le opzioni: dopo puoi cambiarle.',
               ),
               [data.plan.title],
             )}
           </p>
+          <ErrorBanner error={add.error ?? remove.error} />
           <div className="grid gap-3">
             {groups.map(([slot, items]) => {
-              const all = items.every((item) => picked.has(item.key))
+              const all = items.every((item) => item.saved)
               return (
                 <section key={slot} className="rounded-card bg-surface-container-low p-3">
                   <div className="mb-1 flex items-center gap-2 px-2">
@@ -325,16 +351,10 @@ function Suggestions() {
                     <button
                       type="button"
                       className="btn-text"
-                      onClick={() => {
-                        const next = new Set(picked)
-                        for (const item of items) {
-                          if (all) next.delete(item.key)
-                          else next.add(item.key)
-                        }
-                        setPicked(next)
-                      }}
+                      disabled={items.some((item) => busy.has(item.key))}
+                      onClick={() => apply(items, !all)}
                     >
-                      {all ? gettext('Nessuno') : gettext('Tutti')}
+                      {all ? gettext('Togli tutti') : gettext('Aggiungi tutti')}
                     </button>
                   </div>
                   <ul>
@@ -343,19 +363,20 @@ function Suggestions() {
                         <button
                           type="button"
                           role="checkbox"
-                          aria-checked={picked.has(item.key)}
-                          onClick={() => toggle(item.key)}
-                          className="state flex w-full items-center gap-3 rounded-row px-2 py-2 text-left"
+                          aria-checked={item.saved}
+                          disabled={busy.has(item.key)}
+                          onClick={() => apply([item], !item.saved)}
+                          className="state flex w-full items-center gap-3 rounded-row px-2 py-2 text-left disabled:opacity-60"
                         >
                           <span
                             className={clsx(
                               'flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] border-2 transition',
-                              picked.has(item.key)
+                              item.saved
                                 ? 'border-primary bg-primary text-on-primary'
                                 : 'border-outline',
                             )}
                           >
-                            {picked.has(item.key) && <Icon name="check" size={18} />}
+                            {item.saved && <Icon name="check" size={18} />}
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-body-large">{item.label}</span>
@@ -370,34 +391,6 @@ function Suggestions() {
                 </section>
               )
             })}
-          </div>
-          <ErrorBanner error={add.error} />
-          <div className="mt-3 flex justify-end">
-            <button
-              type="button"
-              className="btn-filled"
-              disabled={!picked.size || add.isPending}
-              onClick={async () => {
-                const rows: Partial<RecurringPayload>[] = data.items
-                  .filter((item) => picked.has(item.key))
-                  .map(({ label, quantity, unit, times_per_week, slot }) => ({
-                    label,
-                    quantity,
-                    unit,
-                    times_per_week,
-                    slot,
-                  }))
-                try {
-                  await add.mutateAsync(rows)
-                  setPicked(new Set())
-                } catch {
-                  // Errore sopra.
-                }
-              }}
-            >
-              <Icon name="add" size={20} />
-              {interpolate(gettext('Aggiungi ai ricorrenti (%s)'), [picked.size])}
-            </button>
           </div>
         </>
       )}

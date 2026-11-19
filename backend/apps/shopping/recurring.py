@@ -113,7 +113,11 @@ def suggestions(user) -> dict:
         return {"plan": None, "items": []}
     profile = getattr(user, "food_profile", None)
     household = Decimal(getattr(profile, "household_size", 1) or 1)
-    saved = {normalize(label) for label in user.recurring_items.values_list("label", flat=True)}
+    # Il ricorrente gia' salvato per ogni nome: la pagina lo toglie da qui.
+    saved = {
+        normalize(label): item_id
+        for item_id, label in user.recurring_items.order_by("-id").values_list("id", "label")
+    }
     items: list[dict] = []
     for meal in diet.rules.get("meals", []):
         slot, options = meal.get("slot"), meal.get("options") or []
@@ -143,6 +147,7 @@ def suggestions(user) -> dict:
                     "slot": slot,
                     "option": food["option"],
                     "saved": name in saved,
+                    "saved_id": saved.get(name),
                 }
             )
     items.sort(key=lambda item: MEAL_SLOT_ORDER.index(item["slot"]))
