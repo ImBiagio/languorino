@@ -897,3 +897,8 @@ def generate_week(plan: MealPlan, week: int) -> None:
     with transaction.atomic():
         plan.meals.filter(date__in=[row["date"] for row in state.all_rows]).delete()
         PlannedMeal.objects.bulk_create(created)
+        # bulk_create non manda segnali: se il piano e' gia' in Scontrino,
+        # la settimana nuova va rimandata (ADR 0026).
+        from apps.shopping.scontrino import schedule_push
+
+        schedule_push(plan.id)

@@ -51,6 +51,13 @@ class MealPlan(BaseModel):
     error = models.CharField(max_length=500, blank=True)
     language = models.CharField(max_length=8, default="it")
     finished_at = models.DateTimeField(null=True, blank=True)
+    # Mandato a Scontrino (ADR 0026): da allora ogni cambio di pasti si
+    # rimanda da solo. Lista e link sono quelli dell'ultimo invio.
+    scontrino_sent_at = models.DateTimeField(null=True, blank=True)
+    # Default anche nel DB: il codice di prima (e i container vecchi durante
+    # un deploy) inserisce piani senza conoscere queste colonne.
+    scontrino_list_title = models.CharField(max_length=120, blank=True, db_default="")
+    scontrino_list_url = models.URLField(max_length=300, blank=True, db_default="")
 
     class Meta:
         ordering = ["-start_date", "-created_at"]

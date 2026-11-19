@@ -325,6 +325,13 @@ CORNHUB_CLIENT_SECRET = env("CORNHUB_CLIENT_SECRET", "")
 # Token per il gateway AI e lo stato degli utenti. Vuoto: AI spenta.
 CORNHUB_APP_TOKEN = env("CORNHUB_APP_TOKEN", "")
 
+# --- Scontrino: il cibo del piano va nella lista della casa (ADR 0026) ---
+# Da server a server sulla rete Docker "cornhub", con un token d'app chiesto
+# a cornhub per l'utente. Vuoto: "Manda a Scontrino" non compare.
+SCONTRINO_INTERNAL_URL = env("SCONTRINO_INTERNAL_URL", "http://scontrino-backend:8000")
+# Dove il browser apre Scontrino (per chi non ci e' mai entrato).
+SCONTRINO_URL = env("SCONTRINO_URL", "https://scontr.inoo.it")
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5177")
 

@@ -216,6 +216,7 @@ class MealPlanSerializer(serializers.ModelSerializer):
     weeks_total = serializers.IntegerField(read_only=True)
     end_date = serializers.SerializerMethodField()
     nutritionist = serializers.SerializerMethodField()
+    scontrino = serializers.SerializerMethodField()
 
     class Meta:
         model = MealPlan
@@ -232,8 +233,23 @@ class MealPlanSerializer(serializers.ModelSerializer):
             "nutritionist",
             "created_at",
             "finished_at",
+            "scontrino",
         ]
         read_only_fields = fields
+
+    def get_scontrino(self, plan: MealPlan) -> dict:
+        """Se si puo' mandare a Scontrino e dove e' finito l'ultimo invio (ADR 0026)."""
+        from django.conf import settings
+
+        from apps.shopping.scontrino import is_enabled
+
+        return {
+            "enabled": is_enabled(),
+            "app_url": settings.SCONTRINO_URL,
+            "sent_at": plan.scontrino_sent_at,
+            "list_title": plan.scontrino_list_title,
+            "list_url": plan.scontrino_list_url,
+        }
 
     def get_nutritionist(self, plan: MealPlan) -> dict | None:
         chosen = plan.settings.get("nutritionist_plan")

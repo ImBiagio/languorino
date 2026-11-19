@@ -142,9 +142,16 @@ class PlanDetailView(APIView):
                     id__in=used | suggested_recipe_ids(plan.meals.all()),
                 )
             )
+            sent = plan.scontrino_sent_at is not None
+            plan_id, owner_id = str(plan.id), plan.owner_id
             plan.delete(hard=True)
             for recipe in written:
                 recipe.delete(hard=True)
+            if sent:
+                # Il suo cibo esce anche dalla lista di Scontrino (ADR 0026).
+                from apps.shopping.tasks import remove_plan_from_scontrino
+
+                transaction.on_commit(lambda: remove_plan_from_scontrino.delay(plan_id, owner_id))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -188,6 +195,44 @@ class PlanRegenerateView(APIView):
             plan.save()
             enqueue_plan(plan)
         return _detail(request, plan, status.HTTP_202_ACCEPTED)
+
+
+class PlanScontrinoView(APIView):
+    """Manda il cibo del piano nella lista della casa su Scontrino (ADR 0026).
+    Da qui in poi ogni cambio di pasti si rimanda da solo."""
+
+    permission_classes = [IsAuthenticated]
+
+    class Input(serializers.Serializer):
+        new_list = serializers.BooleanField(required=False, default=False)
+
+    @extend_schema(request=Input, responses={200: dict})
+    def post(self, request, pk):
+        from apps.shopping import scontrino
+
+        plan = get_object_or_404(plans_of(request.user).select_related("owner"), pk=pk)
+        if plan.status in (MealPlan.Status.GENERATING, MealPlan.Status.FAILED):
+            raise serializers.ValidationError({"detail": _("Il piano non è pronto.")})
+        data = self.Input(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            result = scontrino.push_plan(plan, new_list=data.validated_data["new_list"])
+        except scontrino.ScontrinoError as exc:
+            code = {
+                "not_linked": status.HTTP_409_CONFLICT,
+                "unavailable": status.HTTP_503_SERVICE_UNAVAILABLE,
+                "disabled": status.HTTP_400_BAD_REQUEST,
+            }.get(exc.code, status.HTTP_502_BAD_GATEWAY)
+            return Response({"detail": exc.message, "code": exc.code}, status=code)
+        return Response(
+            {
+                "list": result.get("list"),
+                "added": result.get("added", 0),
+                "removed": result.get("removed", 0),
+                "kept_edited": result.get("kept_edited", 0),
+                "sent_at": plan.scontrino_sent_at,
+            }
+        )
 
 
 class PlanRetryView(APIView):
@@ -291,9 +336,7 @@ class PlannedMealView(APIView):
         if "recipe_id" in data:
             recipe_id = data.pop("recipe_id")
             recipe = (
-                get_object_or_404(Recipe, pk=recipe_id, owner=request.user)
-                if recipe_id
-                else None
+                get_object_or_404(Recipe, pk=recipe_id, owner=request.user) if recipe_id else None
             )
             if meal.components:
                 # Per ingredienti (ADR 0023): la ricetta approvata vale per tutto
